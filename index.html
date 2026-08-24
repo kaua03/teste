@@ -3,83 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AutoManager - SaaS Premium</title>
-    <!-- Tailwind CSS -->
+    <title>AutoManager - SaaS Premium (Completo)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        /* Animações Premium */
-        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
-        .fade-out { animation: fadeOut 0.2s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         
-        /* Scrollbar Invisível/Elegante */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Proteção Mobile para a Bottom Bar */
-        .pb-mobile-nav { padding-bottom: 5.5rem; }
-
-        /* Ajuste fino para os botões do menu mobile */
-        .nav-item-mob.active { color: #2563eb; font-weight: bold; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .pb-mobile-nav { padding-bottom: 6rem; }
+        .nav-item-mob.active { color: #2563eb; font-weight: 700; }
         .nav-item-mob.active i { color: #2563eb; }
+
+        .card-premium { background: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
         
-        /* Estilo SaaS Moderno (Soft UI) */
-        .card-premium { background: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9; }
+        /* Loader do PDF */
+        .loader-pdf { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-[#f8fafc] h-screen overflow-hidden font-sans text-slate-800">
+<body class="h-screen overflow-hidden text-slate-800">
 
     <!-- ========================================== -->
-    <!-- 1. TELA DE LOGIN                           -->
+    <!-- OVERLAYS E TOASTS (Avisos do Sistema)      -->
     <!-- ========================================== -->
-    <div id="tela-login" class="fixed inset-0 bg-slate-900/95 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+    <!-- Tela de Loading de PDF -->
+    <div id="overlay-loading" class="hidden fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center backdrop-blur-sm text-white fade-in">
+        <div class="loader-pdf mb-4 w-12 h-12"></div>
+        <h2 class="text-xl font-bold">Processando Documento...</h2>
+        <p class="text-slate-400 text-sm mt-2">Gerando PDF Oficial de Alta Qualidade</p>
+    </div>
+
+    <!-- Toast de Notificação Genérico -->
+    <div id="toast-sistema" class="fixed top-20 right-4 md:right-8 bg-white border shadow-2xl p-4 rounded-2xl hidden z-[150] items-start gap-4 max-w-[90%] md:max-w-sm transform transition-transform translate-x-full">
+        <div id="toast-icon-box" class="p-2 rounded-full"><i id="toast-icon" class="ph-fill text-2xl"></i></div>
+        <div class="flex-1">
+            <h4 id="toast-titulo" class="font-bold text-slate-800 text-sm">Aviso</h4>
+            <p id="toast-msg" class="text-xs text-slate-500 mt-1 leading-relaxed">Mensagem do sistema.</p>
+        </div>
+        <button onclick="esconderToast()" class="text-slate-400 hover:text-slate-800 p-1"><i class="ph-bold ph-x"></i></button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TELA DE LOGIN                              -->
+    <!-- ========================================== -->
+    <div id="tela-login" class="fixed inset-0 bg-slate-900/95 z-[100] flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md relative overflow-hidden fade-in border border-slate-100">
-            <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-600"></div>
-            <div class="text-center mb-8 mt-2">
+            <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+            <div class="text-center mb-8 mt-4">
                 <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="ph-fill ph-car-profile text-5xl text-blue-600"></i>
                 </div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Auto<span class="text-blue-600">Manager</span></h1>
-                <p class="text-slate-500 mt-1 text-sm font-medium">Ambiente de Homologação</p>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Auto<span class="text-blue-600">Manager</span></h1>
+                <p class="text-slate-500 mt-2 text-sm font-medium">Ambiente Sênior de Homologação</p>
             </div>
-            <div class="space-y-5">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">E-mail de Acesso</label>
-                    <input type="email" value="admin@oficina.com.br" readonly class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none text-slate-500 font-medium">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Senha</label>
-                    <input type="password" value="********" readonly class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none text-slate-500 font-medium">
-                </div>
-                <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-[0_8px_16px_-6px_rgba(37,99,235,0.5)] transition-all mt-2 text-base flex justify-center items-center gap-2 active:scale-[0.98]">
-                    Entrar no Sistema <i class="ph-bold ph-arrow-right"></i>
-                </button>
-            </div>
+            <button onclick="iniciarSistema()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-[0_8px_16px_-6px_rgba(37,99,235,0.5)] transition-all mt-4 text-base flex justify-center items-center gap-2">
+                Entrar no Sistema <i class="ph-bold ph-sign-in"></i>
+            </button>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 2. SISTEMA PRINCIPAL                       -->
+    <!-- ESTRUTURA PRINCIPAL (APP)                  -->
     <!-- ========================================== -->
     <div id="app-layout" class="hidden h-full flex w-full">
         
         <!-- SIDEBAR DESKTOP -->
-        <aside class="w-64 bg-[#0f172a] text-slate-300 h-full hidden md:flex flex-col shadow-2xl relative z-20 transition-all duration-300">
+        <aside class="w-64 bg-[#0f172a] text-slate-300 h-full hidden lg:flex flex-col shadow-2xl relative z-20">
             <div class="p-6 flex items-center gap-3 border-b border-slate-800/50">
                 <i class="ph-fill ph-car-profile text-3xl text-blue-500"></i>
-                <h1 class="text-2xl font-extrabold tracking-tight text-white">Auto<span class="text-blue-500">Manager</span></h1>
+                <h1 class="text-2xl font-black tracking-tight text-white">Auto<span class="text-blue-500">Manager</span></h1>
             </div>
-            <nav class="flex-1 mt-6 space-y-1.5 px-4 overflow-y-auto">
-                <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left bg-blue-600 text-white shadow-md font-medium">
+            <nav class="flex-1 mt-6 space-y-2 px-4 overflow-y-auto">
+                <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left bg-blue-600 text-white shadow-md font-bold">
                     <i class="ph-fill ph-squares-four text-xl"></i> Dashboard
                 </button>
                 <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
@@ -92,7 +97,7 @@
                     <i class="ph-fill ph-users text-xl"></i> Clientes
                 </button>
                 <button onclick="mudarTela('veiculos')" data-target="veiculos" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
-                    <i class="ph-fill ph-jeep text-xl"></i> Veículos
+                    <i class="ph-fill ph-jeep text-xl"></i> Frota
                 </button>
             </nav>
         </aside>
@@ -100,391 +105,666 @@
         <!-- AREA CENTRAL -->
         <div class="flex-1 flex flex-col h-full relative min-w-0">
             
-            <!-- HEADER (Mobile & Desktop) -->
-            <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-5 md:px-8 py-4 flex justify-between items-center z-10 sticky top-0">
-                <div class="flex items-center gap-3 md:hidden">
-                    <div class="bg-blue-600 p-1.5 rounded-lg"><i class="ph-bold ph-car-profile text-white text-xl"></i></div>
+            <!-- HEADER TOPO -->
+            <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-5 lg:px-8 py-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
+                <div class="flex items-center gap-3 lg:hidden">
+                    <div class="bg-blue-600 p-2 rounded-lg shadow-md"><i class="ph-bold ph-car-profile text-white text-xl"></i></div>
                 </div>
-                <h2 class="text-xl font-bold text-slate-800 truncate hidden md:block" id="titulo-tela-atual">Visão Geral</h2>
+                <h2 class="text-xl font-bold text-slate-800 truncate hidden lg:block" id="titulo-tela-atual">Visão Geral</h2>
                 
                 <div class="flex items-center gap-5 ml-auto">
-                    <!-- Sino arrumado -->
-                    <div class="relative cursor-pointer p-1">
+                    <div class="relative cursor-pointer p-1" onclick="mostrarToast('Alerta de Inadimplência', 'Existem 180 cobranças vencidas.', 'error')">
                         <i class="ph-fill ph-bell text-2xl text-slate-400 hover:text-blue-600 transition"></i>
-                        <span class="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm transform translate-x-1 -translate-y-1">180</span>
+                        <span class="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm transform translate-x-1 -translate-y-1" id="badge-notificacao">180</span>
                     </div>
                     <div class="flex items-center gap-3 border-l border-slate-200 pl-5">
                         <div class="text-right hidden sm:block">
-                            <p class="text-sm font-bold text-slate-700">Kauã Freitas</p>
-                            <p class="text-xs text-slate-400 font-medium">Administrador</p>
+                            <p class="text-sm font-bold text-slate-800">Kauã Freitas</p>
+                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Engenheiro Sênior</p>
                         </div>
-                        <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
                     </div>
                 </div>
             </header>
 
-            <!-- TOAST NOTIFICAÇÃO -->
-            <div id="toast-alerta" class="fixed top-20 right-4 md:right-8 bg-white border border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] p-4 rounded-2xl hidden z-50 items-start gap-4 max-w-[90%] md:max-w-sm border-l-4 border-l-red-500">
-                <div class="bg-red-50 p-2 rounded-full"><i class="ph-fill ph-warning-circle text-2xl text-red-500"></i></div>
-                <div class="flex-1">
-                    <h4 class="font-bold text-slate-800 text-sm">Atenção ao Caixa</h4>
-                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">Existem <strong class="text-red-600">180 cobranças</strong> vencidas ou pendentes no sistema.</p>
-                </div>
-                <button onclick="document.getElementById('toast-alerta').style.display='none'" class="text-slate-400 hover:text-slate-800 p-1"><i class="ph-bold ph-x"></i></button>
-            </div>
-
             <!-- CONTEÚDO SCROLLÁVEL -->
-            <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-mobile-nav md:pb-8">
+            <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 pb-mobile-nav lg:pb-8">
                 
-                <!-- [TELA 1: DASHBOARD] -->
+                <!-- ==================== TELA: DASHBOARD ==================== -->
                 <section id="tela-dashboard" class="tela block fade-in space-y-6">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div class="card-premium p-5 border-l-4 border-l-emerald-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Faturamento Líquido</p><p class="text-xl md:text-2xl font-black mt-1 text-slate-800" id="dash-receita">R$ 0,00</p></div>
-                        <div class="card-premium p-5 border-l-4 border-l-blue-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Clientes Ativos</p><p class="text-xl md:text-2xl font-black mt-1 text-slate-800">273</p></div>
-                        <div class="card-premium p-5 border-l-4 border-l-amber-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">A Receber</p><p class="text-xl md:text-2xl font-black mt-1 text-amber-600" id="dash-a-receber">R$ 0,00</p></div>
-                        <div class="card-premium p-5 border-l-4 border-l-red-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Inadimplência</p><p class="text-xl md:text-2xl font-black mt-1 text-red-600">180 notas</p></div>
+                    <!-- Cards de KIPs -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                        <div class="card-premium p-5 border-l-4 border-l-emerald-500 hover:shadow-lg transition">
+                            <p class="text-[10px] lg:text-xs text-slate-500 uppercase font-bold tracking-wider">Faturamento (12m)</p>
+                            <p class="text-xl lg:text-3xl font-black mt-2 text-slate-800" id="dash-faturamento">R$ 0,00</p>
+                        </div>
+                        <div class="card-premium p-5 border-l-4 border-l-blue-500 hover:shadow-lg transition">
+                            <p class="text-[10px] lg:text-xs text-slate-500 uppercase font-bold tracking-wider">Orçamentos Ativos</p>
+                            <p class="text-xl lg:text-3xl font-black mt-2 text-slate-800" id="dash-qtd-orcamentos">0</p>
+                        </div>
+                        <div class="card-premium p-5 border-l-4 border-l-amber-500 hover:shadow-lg transition">
+                            <p class="text-[10px] lg:text-xs text-slate-500 uppercase font-bold tracking-wider">A Receber</p>
+                            <p class="text-xl lg:text-3xl font-black mt-2 text-amber-600" id="dash-receber">R$ 0,00</p>
+                        </div>
+                        <div class="card-premium p-5 border-l-4 border-l-red-500 hover:shadow-lg transition">
+                            <p class="text-[10px] lg:text-xs text-slate-500 uppercase font-bold tracking-wider">Inadimplência</p>
+                            <p class="text-xl lg:text-3xl font-black mt-2 text-red-600">180 notas</p>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="card-premium p-6 lg:col-span-2">
-                            <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-chart-line-up text-blue-500 text-xl"></i> Análise de Receita</h3>
-                            <div class="relative h-56 w-full"><canvas id="graficoFaturamento"></canvas></div>
+                    
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <div class="card-premium p-6 xl:col-span-2">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6 flex items-center gap-2"><i class="ph-fill ph-chart-line-up text-blue-500 text-xl"></i> Evolução de Receita Anual</h3>
+                            <div class="relative h-64 w-full"><canvas id="graficoFaturamento"></canvas></div>
                         </div>
                         <div class="card-premium p-6 flex flex-col">
-                            <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-car text-blue-500 text-xl"></i> Status da Frota</h3>
-                            <div class="flex-1 flex items-center justify-center relative h-48 md:h-auto"><canvas id="graficoFrota"></canvas></div>
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6 flex items-center gap-2"><i class="ph-fill ph-car text-blue-500 text-xl"></i> Eficiência da Oficina</h3>
+                            <div class="flex-1 flex items-center justify-center relative h-56 lg:h-auto"><canvas id="graficoFrota"></canvas></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 2: ORÇAMENTOS - LISTA] -->
+                <!-- ==================== TELA: LISTA ORÇAMENTOS ==================== -->
                 <section id="tela-orcamentos" class="tela hidden fade-in space-y-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Controle de Orçamentos</h2>
-                        <button onclick="mudarTela('novo-orcamento')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 transition-all">
-                            <i class="ph-bold ph-plus"></i> Novo Orçamento
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800">Controle de Orçamentos</h2>
+                            <p class="text-sm text-slate-500 mt-1">Gestão de todas as aprovações e rascunhos.</p>
+                        </div>
+                        <button onclick="prepararNovoOrcamento()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 transition-all transform active:scale-95">
+                            <i class="ph-bold ph-plus text-lg"></i> Emitir Novo Orçamento
                         </button>
                     </div>
+                    
+                    <!-- Filtro Mockado -->
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Buscar por placa, cliente ou número..." class="flex-1 border border-slate-200 p-3 rounded-xl bg-white shadow-sm outline-none focus:border-blue-500 text-sm font-medium">
+                        <button class="bg-slate-800 text-white px-4 rounded-xl shadow-sm"><i class="ph-bold ph-magnifying-glass text-lg"></i></button>
+                    </div>
+
                     <div class="card-premium overflow-hidden">
-                        <!-- Proteção Mobile -->
                         <div class="w-full overflow-x-auto">
                             <table class="w-full text-left whitespace-nowrap">
                                 <thead class="bg-slate-50 border-b border-slate-100">
-                                    <tr class="text-slate-500 text-xs uppercase tracking-wider">
-                                        <th class="p-4 font-bold">N°</th>
-                                        <th class="p-4 font-bold">Cliente / Veículo</th>
-                                        <th class="p-4 font-bold">Data</th>
-                                        <th class="p-4 font-bold">Valor</th>
-                                        <th class="p-4 font-bold text-center">Status</th>
+                                    <tr class="text-slate-500 text-xs uppercase tracking-wider font-bold">
+                                        <th class="p-4">N° Orç</th>
+                                        <th class="p-4">Cliente / Veículo</th>
+                                        <th class="p-4">Data Emissão</th>
+                                        <th class="p-4">Valor Total</th>
+                                        <th class="p-4 text-center">Status</th>
+                                        <th class="p-4 text-center">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="lista-orcamentos-tabela" class="text-sm divide-y divide-slate-100"></tbody>
+                                <!-- A Mágica: Esta tabela é preenchida pelo Javascript e atualizada ao salvar -->
+                                <tbody id="tabela-orcamentos-lista" class="text-sm divide-y divide-slate-100">
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 3: NOVO ORÇAMENTO - FUNCIONAL] -->
+                <!-- ==================== TELA: NOVO ORÇAMENTO ==================== -->
                 <section id="tela-novo-orcamento" class="tela hidden fade-in space-y-6">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 border-b border-slate-200 pb-4">
                         <button onclick="mudarTela('orcamentos')" class="p-2.5 bg-white border border-slate-200 rounded-full shadow-sm hover:bg-slate-50 transition-all text-slate-600"><i class="ph-bold ph-arrow-left text-lg"></i></button>
-                        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Orçamento <span class="text-blue-600">#5104</span></h2>
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800">Orçamento <span id="label-num-orcamento" class="text-blue-600">#---</span></h2>
+                            <p class="text-xs text-slate-500 font-bold uppercase mt-1">Modo de Criação</p>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         <div class="xl:col-span-2 space-y-6">
                             
-                            <!-- Bloco 1: Vínculos -->
-                            <div class="card-premium p-5 md:p-6">
-                                <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
-                                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</div> Identificação</h3>
-                                    <button class="text-blue-600 text-xs md:text-sm font-bold hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg"><i class="ph-bold ph-user-plus"></i> Cadastro Rápido</button>
+                            <!-- Vínculos -->
+                            <div class="card-premium p-5 lg:p-8">
+                                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-black">1</div> Identificação</h3>
+                                    <button class="text-blue-600 text-xs font-bold hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 px-3 py-2 rounded-lg transition"><i class="ph-bold ph-user-plus"></i> Novo Cadastro</button>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cliente</label>
-                                        <div class="flex gap-2">
-                                            <select class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium text-slate-700">
-                                                <option>Kauã Freitas</option>
-                                            </select>
-                                        </div>
+                                        <select id="novo-orc-cliente" class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none focus:border-blue-500 font-medium text-slate-700 text-sm">
+                                            <!-- Preenchido via JS -->
+                                        </select>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Veículo (Placa)</label>
-                                        <div class="flex gap-2">
-                                            <select class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium text-slate-700">
-                                                <option>RXY9A21 - Fiat Strada 2024</option>
-                                            </select>
-                                        </div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Veículo Vinculado</label>
+                                        <select id="novo-orc-veiculo" class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none focus:border-blue-500 font-medium text-slate-700 text-sm">
+                                            <!-- Preenchido via JS -->
+                                        </select>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Bloco 2: Peças e Serviços -->
-                            <div class="card-premium p-5 md:p-6">
-                                <h3 class="text-base font-bold text-slate-800 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">2</div> Itens do Orçamento</h3>
+                            <!-- Peças e Serviços -->
+                            <div class="card-premium p-5 lg:p-8">
+                                <h3 class="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4 flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-black">2</div> Peças e Mão de Obra</h3>
                                 
-                                <!-- Input Flexível -->
-                                <div class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                    <input type="text" id="input-desc" placeholder="Nome da Peça ou Serviço" class="flex-1 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white">
-                                    <div class="flex gap-3">
-                                        <input type="number" id="input-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center bg-white">
-                                        <input type="number" id="input-val" placeholder="R$ Unit" class="w-28 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm bg-white">
+                                <div class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Descrição do Item</label>
+                                        <input type="text" id="input-desc" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm bg-white font-medium">
                                     </div>
-                                    <button onclick="adicionarPecaAoOrcamento()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg font-bold transition-all text-sm shadow-md">Adicionar</button>
+                                    <div class="flex gap-3">
+                                        <div class="w-20">
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Qtd</label>
+                                            <input type="number" id="input-qtd" value="1" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center bg-white font-bold">
+                                        </div>
+                                        <div class="w-28 md:w-32">
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Valor Unit(R$)</label>
+                                            <input type="number" id="input-val" placeholder="0.00" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm bg-white font-medium">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button onclick="adicionarItemOrcamento()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-bold transition-all text-sm shadow-md h-[42px] flex items-center justify-center gap-2"><i class="ph-bold ph-plus"></i> Add</button>
+                                    </div>
                                 </div>
 
-                                <div id="lista-pecas-dinamica" class="space-y-3 min-h-[100px]">
-                                    <div class="text-center text-slate-400 py-6 text-sm flex flex-col items-center gap-2">
-                                        <i class="ph-fill ph-package text-3xl opacity-50"></i>
-                                        Nenhum item inserido. Adicione peças acima.
-                                    </div>
+                                <div id="container-itens-dinamico" class="space-y-3 min-h-[120px]">
+                                    <!-- Itens injetados aqui -->
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Bloco 3: Fechamento Lateral -->
-                        <div class="card-premium p-5 md:p-6 h-fit sticky top-24 border-t-4 border-t-blue-600">
-                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Resumo Financeiro</h3>
+                        <!-- Fechamento / Salvamento -->
+                        <div class="card-premium p-5 lg:p-6 h-fit sticky top-24 border-t-4 border-t-blue-600 bg-slate-900 text-white">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5">Painel de Fechamento</h3>
                             
-                            <!-- Opção de Status -->
-                            <div class="mb-5 pb-5 border-b border-slate-100">
-                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status do Orçamento</label>
-                                <select class="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 outline-none text-sm font-bold text-slate-700">
-                                    <option>Em Aberto (Rascunho)</option>
-                                    <option>Aguardando Aprovação</option>
-                                    <option>Aprovado / Autorizado</option>
+                            <div class="mb-6">
+                                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Definir Status</label>
+                                <select id="novo-orc-status" class="w-full border border-slate-700 rounded-lg p-3 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500">
+                                    <option value="Em Aberto">Em Aberto (Rascunho)</option>
+                                    <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                                    <option value="Autorizado">Autorizado para Início</option>
                                 </select>
                             </div>
 
-                            <div class="flex justify-between items-end mb-6">
-                                <span class="font-bold text-slate-500">Valor Total:</span>
-                                <span class="font-black text-3xl text-slate-900 tracking-tight" id="display-total-orcamento">R$ 0,00</span>
+                            <div class="flex justify-between items-end mb-8 bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                <span class="font-bold text-slate-400 text-sm">TOTAL FINAL:</span>
+                                <span class="font-black text-3xl text-blue-400 tracking-tight" id="novo-orc-total">R$ 0,00</span>
                             </div>
                             
                             <div class="space-y-3">
-                                <button onclick="gerarPDFRealDinamico()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-sm border border-slate-200">
-                                    <i class="ph-fill ph-file-pdf text-lg text-red-500"></i> Gerar PDF Oficial
+                                <!-- O Botão de Salvar de Verdade -->
+                                <button onclick="salvarOrcamento()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-all flex justify-center items-center gap-2 text-base transform active:scale-95">
+                                    <i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR ORÇAMENTO
                                 </button>
-                                <button class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 rounded-xl shadow-[0_4px_12px_rgba(37,211,102,0.3)] transition-all flex justify-center items-center gap-2 text-sm">
-                                    <i class="ph-fill ph-whatsapp-logo text-lg"></i> Enviar por WhatsApp
+                                
+                                <button onclick="mudarTela('orcamentos')" class="w-full bg-transparent hover:bg-slate-800 text-slate-300 font-bold py-3 rounded-xl transition-all text-sm border border-slate-700">
+                                    Cancelar e Voltar
                                 </button>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 4: FINANCEIRO - CORRIGIDA] -->
+                <!-- ==================== TELA: FINANCEIRO ==================== -->
                 <section id="tela-financeiro" class="tela hidden fade-in space-y-6">
-                    <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Controle Financeiro</h2>
+                    <h2 class="text-2xl font-black text-slate-800">Módulo Financeiro</h2>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                         
-                        <!-- Coluna Entradas -->
-                        <div class="card-premium p-5 md:p-6 border-t-4 border-t-emerald-500">
-                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-up text-emerald-500"></i> Receitas (Entradas)</h3>
+                        <div class="card-premium p-6 border-t-4 border-t-emerald-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-up text-emerald-500 text-2xl"></i> Receitas (A Receber / Recebidos)</h3>
                             
-                            <h4 class="text-xs font-bold text-red-500 uppercase tracking-wider mb-3 flex items-center justify-between">Inadimplência / Atrasos <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full">180</span></h4>
-                            <div id="fin-receber-pendente" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"></div>
+                            <h4 class="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Títulos Pendentes / Atrasados</h4>
+                            <div id="fin-receitas-pendentes" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar"></div>
                             
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Histórico de Recebimentos</h4>
-                            <div id="fin-receber-pago" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar opacity-75"></div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Histórico de Títulos Pagos</h4>
+                            <div id="fin-receitas-pagas" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar opacity-75"></div>
                         </div>
 
-                        <!-- Coluna Saídas (Onde estava o bug da imagem) -->
-                        <div class="card-premium p-5 md:p-6 border-t-4 border-t-red-500">
-                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-down text-red-500"></i> Despesas (Saídas)</h3>
+                        <div class="card-premium p-6 border-t-4 border-t-red-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-down text-red-500 text-2xl"></i> Despesas (A Pagar / Pagos)</h3>
                             
-                            <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-3">Contas a Vencer (A Pagar)</h4>
-                            <!-- Adicionado min-h para garantir espaço mesmo vazio temporariamente -->
-                            <div id="fin-pagar-pendente" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar min-h-[50px]"></div>
+                            <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-3">Obrigações a Vencer</h4>
+                            <div id="fin-despesas-pendentes" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar"></div>
                             
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Contas Pagas (Fornecedores)</h4>
-                            <div id="fin-pagar-pago" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar opacity-75 min-h-[50px]"></div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Obrigações Quitadas</h4>
+                            <div id="fin-despesas-pagas" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar opacity-75"></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 5 & 6: CADASTROS (Reduzidas para foco)] -->
-                <section id="tela-clientes" class="tela hidden fade-in"><div class="card-premium p-6"><h3 class="text-xl font-bold">Clientes em Desenvolvimento...</h3></div></section>
-                <section id="tela-veiculos" class="tela hidden fade-in"><div class="card-premium p-6"><h3 class="text-xl font-bold">Veículos em Desenvolvimento...</h3></div></section>
-                
+                <!-- ==================== TELAS: LISTAGENS SIMPLES ==================== -->
+                <section id="tela-clientes" class="tela hidden fade-in space-y-6">
+                    <h2 class="text-2xl font-black text-slate-800 mb-2">Base de Clientes (273)</h2>
+                    <div class="card-premium overflow-hidden w-full overflow-x-auto">
+                        <table class="w-full text-left whitespace-nowrap"><thead class="bg-slate-50 border-b"><tr class="text-slate-500 text-xs uppercase font-bold"><th class="p-4">ID</th><th class="p-4">Nome / Razão Social</th><th class="p-4">Documento</th><th class="p-4">Contato</th></tr></thead>
+                        <tbody id="lista-clientes-tabela" class="text-sm divide-y divide-slate-100"></tbody></table>
+                    </div>
+                </section>
+
+                <section id="tela-veiculos" class="tela hidden fade-in space-y-6">
+                    <h2 class="text-2xl font-black text-slate-800 mb-2">Frota Cadastrada (385)</h2>
+                    <div class="card-premium overflow-hidden w-full overflow-x-auto">
+                        <table class="w-full text-left whitespace-nowrap"><thead class="bg-slate-50 border-b"><tr class="text-slate-500 text-xs uppercase font-bold"><th class="p-4">Placa</th><th class="p-4">Modelo</th><th class="p-4">Ano</th><th class="p-4">Proprietário (Cli ID)</th></tr></thead>
+                        <tbody id="lista-veiculos-tabela" class="text-sm divide-y divide-slate-100"></tbody></table>
+                    </div>
+                </section>
+
             </main>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- NAVEGAÇÃO MOBILE INFERIOR (O Segredo do App)-->
+    <!-- NAVEGAÇÃO MOBILE INFERIOR                  -->
     <!-- ========================================== -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 pb-2 px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+    <nav class="lg:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-item-mob active flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
-            <i class="ph-fill ph-squares-four text-2xl transition-all"></i><span class="text-[10px] font-medium">Início</span>
+            <i class="ph-fill ph-squares-four text-2xl"></i><span class="text-[10px]">Início</span>
         </button>
         <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
-            <i class="ph-fill ph-receipt text-2xl transition-all"></i><span class="text-[10px] font-medium">Orçamentos</span>
+            <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px]">Orçamentos</span>
         </button>
-        <button onclick="mudarTela('novo-orcamento')" class="flex flex-col items-center justify-center -mt-6">
-            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)] border-4 border-[#f8fafc]"><i class="ph-bold ph-plus text-xl"></i></div>
+        <button onclick="prepararNovoOrcamento()" class="flex flex-col items-center justify-center -mt-8">
+            <div class="w-14 h-14 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-white shadow-[0_4px_16px_rgba(37,99,235,0.5)] border-4 border-[#f8fafc] transition-transform transform active:scale-95"><i class="ph-bold ph-plus text-2xl"></i></div>
         </button>
         <button onclick="mudarTela('financeiro')" data-target="financeiro" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
-            <i class="ph-fill ph-currency-circle-dollar text-2xl transition-all"></i><span class="text-[10px] font-medium">Caixa</span>
+            <i class="ph-fill ph-currency-circle-dollar text-2xl"></i><span class="text-[10px]">Caixa</span>
         </button>
         <button onclick="mudarTela('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
-            <i class="ph-fill ph-users text-2xl transition-all"></i><span class="text-[10px] font-medium">Cadastros</span>
+            <i class="ph-fill ph-users text-2xl"></i><span class="text-[10px]">Cadastros</span>
         </button>
     </nav>
 
-    <!-- TEMPLATE OCULTO PARA O PDF DINÂMICO (Mantido simples e profissional) -->
-    <div id="pdf-template" class="hidden absolute top-0 left-0 w-[800px] bg-white p-10 text-slate-800 z-[-1]">
-        <div class="border-b-2 border-blue-600 pb-4 mb-6 flex justify-between items-end">
-            <div><h1 class="text-3xl font-black text-slate-900">AutoManager - Oficina</h1><p class="text-xs text-slate-500">CNPJ: 00.000.000/0001-00</p></div>
-            <div class="text-right"><h2 class="text-xl font-bold text-blue-600">ORÇAMENTO #5104</h2><p class="text-sm">Data: <span id="pdf-data-hoje"></span></p></div>
+    <!-- ====================================================================== -->
+    <!-- O SEGREDO DO PDF: TEMPLATE ESCONDIDO ATRAVÉS DE COORDENADAS NEGATIVAS  -->
+    <!-- Não usamos 'display: none', pois o html2pdf precisa ler a DOM viva.    -->
+    <!-- ====================================================================== -->
+    <div style="position: absolute; left: -9999px; top: -9999px; width: 800px; background-color: white; z-index: -1;">
+        <div id="pdf-template" style="padding: 40px; color: #1e293b; font-family: sans-serif;">
+            
+            <div style="border-bottom: 4px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #0f172a;">AutoManager - Oficina</h1>
+                    <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">CNPJ: 45.678.901/0001-23 | Av. Rondon Pacheco, Uberlândia - MG</p>
+                </div>
+                <div style="text-align: right;">
+                    <h2 style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 0;">ORÇAMENTO <span id="pdf-header-id">#0000</span></h2>
+                    <p style="font-size: 14px; font-weight: bold; margin: 5px 0 0 0;">Data Emissão: <span id="pdf-data-hoje"></span></p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 30px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="flex: 1;">
+                    <p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Dados do Cliente</p>
+                    <p style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;" id="pdf-cliente-nome">---</p>
+                    <p style="font-size: 14px; margin: 0;">CPF/CNPJ: Cadastro Padrão</p>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Dados do Veículo</p>
+                    <p style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;" id="pdf-veiculo-nome">---</p>
+                    <p style="font-size: 14px; margin: 0;">Placa Registrada no Sistema</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 30px;">
+                <thead style="background-color: #1e293b; color: white;">
+                    <tr>
+                        <th style="padding: 12px; font-size: 14px;">Qtd</th>
+                        <th style="padding: 12px; font-size: 14px;">Descrição Serviço / Peça</th>
+                        <th style="padding: 12px; text-align: right; font-size: 14px;">V. Unitário</th>
+                        <th style="padding: 12px; text-align: right; font-size: 14px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-tabela-itens" style="border-bottom: 2px solid #e2e8f0;">
+                    <!-- Preenchido via JS -->
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; width: 50%; text-align: right;">
+                    <p style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0;">Total do Orçamento</p>
+                    <p style="font-size: 28px; font-weight: 900; color: #0f172a; margin: 0;" id="pdf-total-geral">R$ 0,00</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 2px dashed #cbd5e1; padding-top: 20px;">
+                Documento gerado eletronicamente pelo sistema AutoManager.<br>
+                Este orçamento tem validade de 15 dias a partir da data de emissão.<br><br>
+                Assinatura do Cliente: _______________________________________________________
+            </div>
         </div>
-        <table class="w-full text-left border-collapse mb-8"><thead class="bg-slate-100 text-slate-600"><tr class="text-xs uppercase"><th class="p-3">Qtd</th><th class="p-3">Serviço/Peça</th><th class="p-3 text-right">Unitário</th><th class="p-3 text-right">Subtotal</th></tr></thead>
-            <tbody class="text-sm border-b" id="pdf-tabela-itens"></tbody>
-        </table>
-        <div class="flex justify-end"><div class="w-1/2 text-right"><p class="text-xs text-slate-500 font-bold uppercase mb-1">Total</p><p class="text-3xl font-black text-slate-900" id="pdf-total-geral">R$ 0,00</p></div></div>
     </div>
 
-    <script>
-        const formatarDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        // --- NAVEGAÇÃO & ESTADO ATIVO ---
-        function fazerLogin() {
+    <!-- ========================================== -->
+    <!-- CÉREBRO DA OPERAÇÃO (STATE E LÓGICA)       -->
+    <!-- ========================================== -->
+    <script>
+        // --- UTILITÁRIOS ---
+        const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        
+        // --- ESTADO GLOBAL (STATE MANAGEMENT) ---
+        // Aqui simulamos o Banco de Dados. A tela de listagem lê daqui. O botão de salvar escreve aqui.
+        const AppState = {
+            orcamentos: [],
+            clientes: [],
+            veiculos: [],
+            financeiro: { receitas: [], despesas: [] },
+            orcamentoEmCriacao: { id: 0, itens: [], total: 0 } // Memória temporária da tela "Novo Orçamento"
+        };
+
+        // --- SISTEMA DE TOAST E LOADING ---
+        function mostrarToast(titulo, mensagem, tipo = 'success') {
+            const toast = document.getElementById('toast-sistema');
+            const icon = document.getElementById('toast-icon');
+            const iconBox = document.getElementById('toast-icon-box');
+            
+            document.getElementById('toast-titulo').innerText = titulo;
+            document.getElementById('toast-msg').innerText = mensagem;
+            
+            if(tipo === 'success') {
+                iconBox.className = 'p-2 rounded-full bg-emerald-50';
+                icon.className = 'ph-fill ph-check-circle text-2xl text-emerald-500';
+                toast.className = 'fixed top-20 right-4 md:right-8 bg-white border border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] p-4 rounded-2xl z-[150] flex items-start gap-4 max-w-[90%] md:max-w-sm border-l-4 border-l-emerald-500 toast-enter';
+            } else if (tipo === 'error') {
+                iconBox.className = 'p-2 rounded-full bg-red-50';
+                icon.className = 'ph-fill ph-warning-circle text-2xl text-red-500';
+                toast.className = 'fixed top-20 right-4 md:right-8 bg-white border border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] p-4 rounded-2xl z-[150] flex items-start gap-4 max-w-[90%] md:max-w-sm border-l-4 border-l-red-500 toast-enter';
+            }
+            
+            toast.style.display = 'flex';
+            setTimeout(() => { esconderToast(); }, 4000);
+        }
+        function esconderToast() { document.getElementById('toast-sistema').style.display = 'none'; }
+        
+        function setPDFLoading(status) {
+            const el = document.getElementById('overlay-loading');
+            if(status) { el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
+        }
+
+        // --- INICIALIZAÇÃO ---
+        function iniciarSistema() {
             document.getElementById('tela-login').classList.replace('fade-in', 'fade-out');
             setTimeout(() => {
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-layout').classList.remove('hidden');
-                gerarDadosEmMassa();
-                renderizarGraficos();
-                setTimeout(() => document.getElementById('toast-alerta').style.display = 'flex', 800);
-            }, 200);
+                
+                gerarMockDataOficial();
+                renderizarDashboard();
+                renderizarListaOrcamentos();
+                renderizarFinanceiro();
+                renderizarListasBasicas();
+                
+                mostrarToast('Login Efetuado', 'Bem-vindo(a) ao painel de controle.', 'success');
+            }, 300);
         }
 
+        // --- NAVEGAÇÃO ---
         function mudarTela(id) {
             document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
             document.getElementById('tela-' + id).classList.remove('hidden');
             
-            const titulos = { 'dashboard':'Visão Geral', 'orcamentos':'Controle de Orçamentos', 'financeiro':'Gestão Financeira', 'clientes':'Clientes', 'veiculos':'Frota', 'novo-orcamento':'Emitir Orçamento' };
+            const titulos = { 'dashboard':'Visão Geral', 'orcamentos':'Controle de Orçamentos', 'financeiro':'Gestão Financeira', 'clientes':'Clientes Ativos', 'veiculos':'Frota em Sistema', 'novo-orcamento':'Emissão de Orçamento' };
             if(titulos[id]) document.getElementById('titulo-tela-atual').innerText = titulos[id];
 
-            // Update Desktop Sidebar
+            // Update Navbars (Desktop & Mobile)
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 if(btn.getAttribute('data-target') === id) {
-                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-                    btn.classList.remove('text-slate-400', 'hover:bg-slate-800');
-                    btn.querySelector('i').classList.replace('ph', 'ph-fill');
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md'); btn.classList.remove('text-slate-400', 'hover:bg-slate-800'); btn.querySelector('i').classList.replace('ph', 'ph-fill');
                 } else {
-                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-                    btn.classList.add('text-slate-400', 'hover:bg-slate-800');
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md'); btn.classList.add('text-slate-400', 'hover:bg-slate-800');
                 }
             });
-
-            // Update Mobile Bottom Nav
             document.querySelectorAll('.nav-item-mob').forEach(btn => {
-                if(btn.getAttribute('data-target') === id) btn.classList.add('active');
-                else btn.classList.remove('active');
+                if(btn.getAttribute('data-target') === id) btn.classList.add('active'); else btn.classList.remove('active');
             });
         }
 
-        // --- ORÇAMENTO DINÂMICO ---
-        let itensOrcamento = [];
-        function adicionarPecaAoOrcamento() {
+        // =========================================================
+        // LÓGICA DE CRIAÇÃO E SALVAMENTO DE ORÇAMENTOS (O CORAÇÃO)
+        // =========================================================
+        
+        function prepararNovoOrcamento() {
+            // Gera um ID novo baseado no tamanho do banco
+            const novoId = 5100 + AppState.orcamentos.length + 1;
+            AppState.orcamentoEmCriacao = { id: novoId, itens: [], total: 0 };
+            
+            document.getElementById('label-num-orcamento').innerText = `#${novoId}`;
+            document.getElementById('novo-orc-status').value = 'Em Aberto';
+            
+            // Popula Selects com dados do State
+            document.getElementById('novo-orc-cliente').innerHTML = AppState.clientes.slice(0, 10).map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+            document.getElementById('novo-orc-veiculo').innerHTML = AppState.veiculos.slice(0, 10).map(v => `<option value="${v.placa} - ${v.mod}">${v.placa} - ${v.mod}</option>`).join('');
+            
+            atualizarUIDeItensNovoOrcamento();
+            mudarTela('novo-orcamento');
+        }
+
+        function adicionarItemOrcamento() {
             const desc = document.getElementById('input-desc').value;
             const qtd = parseFloat(document.getElementById('input-qtd').value);
             const val = parseFloat(document.getElementById('input-val').value);
-            if(!desc || !qtd || !val) return;
-            itensOrcamento.push({ id: Date.now(), desc, qtd, val, subtotal: qtd * val });
-            document.getElementById('input-desc').value = ''; document.getElementById('input-val').value = '';
-            atualizarListaOrcamento();
+            if(!desc || !qtd || !val) { mostrarToast('Erro', 'Preencha os campos da peça.', 'error'); return; }
+            
+            const sub = qtd * val;
+            AppState.orcamentoEmCriacao.itens.push({ id: Date.now(), desc, qtd, val, subtotal: sub });
+            
+            document.getElementById('input-desc').value = '';
+            document.getElementById('input-val').value = '';
+            document.getElementById('input-desc').focus();
+            
+            atualizarUIDeItensNovoOrcamento();
         }
-        function removerPeca(id) { itensOrcamento = itensOrcamento.filter(i => i.id !== id); atualizarListaOrcamento(); }
-        
-        function atualizarListaOrcamento() {
-            const divLista = document.getElementById('lista-pecas-dinamica');
+
+        function removerItemOrcamento(id) {
+            AppState.orcamentoEmCriacao.itens = AppState.orcamentoEmCriacao.itens.filter(i => i.id !== id);
+            atualizarUIDeItensNovoOrcamento();
+        }
+
+        function atualizarUIDeItensNovoOrcamento() {
+            const div = document.getElementById('container-itens-dinamico');
             let total = 0;
-            if (itensOrcamento.length === 0) { 
-                divLista.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm flex flex-col items-center gap-2"><i class="ph-fill ph-package text-3xl opacity-50"></i>Nenhum item inserido.</div>'; 
-                document.getElementById('display-total-orcamento').innerText = "R$ 0,00"; 
-                return; 
+            const itens = AppState.orcamentoEmCriacao.itens;
+
+            if (itens.length === 0) {
+                div.innerHTML = '<div class="text-center text-slate-400 py-8 text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">Nenhuma peça adicionada. Use os campos acima.</div>';
+                document.getElementById('novo-orc-total').innerText = "R$ 0,00";
+                return;
             }
-            divLista.innerHTML = itensOrcamento.map(item => {
-                total += item.subtotal;
-                return `<div class="bg-white p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
-                    <div class="text-sm"><span class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mr-2">${item.qtd}x</span><span class="text-slate-700 font-medium">${item.desc}</span> <span class="text-xs text-slate-400 ml-1">(${formatarDinheiro(item.val)})</span></div>
-                    <div class="flex items-center gap-4"><span class="font-bold text-slate-900">${formatarDinheiro(item.subtotal)}</span><button onclick="removerPeca(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1"><i class="ph-bold ph-trash text-lg"></i></button></div>
+
+            div.innerHTML = itens.map(i => {
+                total += i.subtotal;
+                return `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div class="text-sm"><span class="font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded-lg mr-2">${i.qtd}x</span><span class="text-slate-800 font-bold">${i.desc}</span> <span class="text-xs text-slate-400 ml-1">(${formataDinheiro(i.val)})</span></div>
+                    <div class="flex items-center justify-between w-full md:w-auto gap-4"><span class="font-black text-slate-900">${formataDinheiro(i.subtotal)}</span><button onclick="removerItemOrcamento(${i.id})" class="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-lg transition"><i class="ph-bold ph-trash"></i></button></div>
                 </div>`;
             }).join('');
-            document.getElementById('display-total-orcamento').innerText = formatarDinheiro(total);
+            
+            AppState.orcamentoEmCriacao.total = total;
+            document.getElementById('novo-orc-total').innerText = formataDinheiro(total);
         }
 
-        // --- PDF DINÂMICO ---
-        function gerarPDFRealDinamico() {
-            if(itensOrcamento.length === 0) { alert("Adicione itens!"); return; }
-            document.getElementById('pdf-data-hoje').innerText = new Date().toLocaleDateString('pt-BR');
-            let total = 0;
-            document.getElementById('pdf-tabela-itens').innerHTML = itensOrcamento.map(i => { total+=i.subtotal; return `<tr><td class="p-3 border-b">${i.qtd}</td><td class="p-3 border-b">${i.desc}</td><td class="p-3 text-right border-b">${formatarDinheiro(i.val)}</td><td class="p-3 text-right font-bold border-b">${formatarDinheiro(i.subtotal)}</td></tr>`;}).join('');
-            document.getElementById('pdf-total-geral').innerText = formatarDinheiro(total);
-            const el = document.getElementById('pdf-template');
-            el.classList.remove('hidden');
-            html2pdf().set({ margin: 0.5, filename: 'Orcamento.pdf', jsPDF: { unit: 'in', format: 'letter' } }).from(el).save().then(() => el.classList.add('hidden'));
+        function salvarOrcamento() {
+            if(AppState.orcamentoEmCriacao.itens.length === 0) {
+                mostrarToast('Aviso', 'Um orçamento precisa ter pelo menos um item.', 'error');
+                return;
+            }
+
+            // 1. Coleta dados da tela
+            const novoOc = {
+                id: AppState.orcamentoEmCriacao.id,
+                cliente: document.getElementById('novo-orc-cliente').value,
+                veiculo: document.getElementById('novo-orc-veiculo').value,
+                data: new Date().toLocaleDateString('pt-BR'),
+                valor: AppState.orcamentoEmCriacao.total,
+                status: document.getElementById('novo-orc-status').value,
+                itens: [...AppState.orcamentoEmCriacao.itens] // Copia os itens
+            };
+
+            // 2. Insere no TOPO do banco de dados (array state)
+            AppState.orcamentos.unshift(novoOc);
+
+            // 3. Atualiza interface e volta pra lista
+            renderizarListaOrcamentos();
+            mudarTela('orcamentos');
+            mostrarToast('Sucesso!', `Orçamento #${novoOc.id} salvo no sistema.`, 'success');
         }
 
-        // --- CORREÇÃO DO BUG DO FINANCEIRO & STATUS AVANÇADOS ---
-        function gerarDadosEmMassa() {
-            // 1. Orçamentos com Status Reais (Aguardando Peça, Pagamento, etc)
+
+        // =========================================================
+        // GERAÇÃO DE PDF (MÁGICA DE VERDADE ACONTECENDO AQUI)
+        // =========================================================
+        
+        function processarGeracaoPDF(orcamentoBase) {
+            setPDFLoading(true);
+            
+            // Popula o Template Invisível com os dados do orçamento escolhido
+            document.getElementById('pdf-header-id').innerText = `#${orcamentoBase.id}`;
+            document.getElementById('pdf-data-hoje').innerText = orcamentoBase.data;
+            document.getElementById('pdf-cliente-nome').innerText = orcamentoBase.cliente;
+            document.getElementById('pdf-veiculo-nome').innerText = orcamentoBase.veiculo;
+            document.getElementById('pdf-total-geral').innerText = formataDinheiro(orcamentoBase.valor);
+
+            // Tabela de itens
+            document.getElementById('pdf-tabela-itens').innerHTML = orcamentoBase.itens.map(i => `
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${i.qtd}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${i.desc}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${formataDinheiro(i.val)}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${formataDinheiro(i.subtotal)}</td>
+                </tr>
+            `).join('');
+
+            // O Elemento existe no DOM fora da tela, o html2pdf consegue capturá-lo sem problemas.
+            const elementoParaFoto = document.getElementById('pdf-template');
+            
+            // Configuração premium do PDF (Tamanho carta, alta qualidade)
+            const opt = {
+                margin:       0,
+                filename:     `Orcamento_${orcamentoBase.id}_AutoManager.pdf`,
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Gera e salva. Timeout para o DOM atualizar a tabela antes da foto.
+            setTimeout(() => {
+                html2pdf().set(opt).from(elementoParaFoto).save().then(() => {
+                    setPDFLoading(false);
+                    mostrarToast('Download Concluído', 'PDF gerado com sucesso.', 'success');
+                }).catch(err => {
+                    setPDFLoading(false);
+                    mostrarToast('Erro', 'Falha ao gerar o arquivo.', 'error');
+                });
+            }, 500);
+        }
+
+        // Pode ser chamado da tela de Criação (antes de salvar) ou da tela de Lista
+        function gerarPDFDoListamento(id) {
+            const orc = AppState.orcamentos.find(o => o.id === id);
+            if(orc) processarGeracaoPDF(orc);
+        }
+
+
+        // =========================================================
+        // MOCK DATA E RENDERIZADORES DE INTERFACE
+        // =========================================================
+        
+        function gerarMockDataOficial() {
+            // Nomes falsos
+            const nomes = ["Kauã Freitas", "Larissa Silva", "Viação Expresso", "Logística Avançada", "Carlos Pneus", "Empresa Alfa Ltda"];
+            AppState.clientes = Array.from({length: 273}, (_, i) => ({ id: i+1, nome: nomes[i%nomes.length] + (i>5? ` ${i}` : ''), doc: '123.456.789-00' }));
+            AppState.veiculos = Array.from({length: 385}, (_, i) => ({ placa: `ABC1D${String(i).padStart(2,'0')}`, mod: 'Veículo Padrão', ano: 2023, propId: 1 }));
+
+            // Orçamentos Iniciais (Com itens falsos dentro para o PDF funcionar neles também!)
             const statusConfig = [
-                { nome: 'Em Aberto', css: 'bg-slate-100 text-slate-700 border-slate-200' },
-                { nome: 'Autorizado', css: 'bg-blue-50 text-blue-700 border-blue-200' },
-                { nome: 'Aguardando Peça', css: 'bg-orange-50 text-orange-700 border-orange-200' },
-                { nome: 'Aguardando Pagamento', css: 'bg-yellow-50 text-yellow-700 border-yellow-300' },
-                { nome: 'Concluído', css: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+                { s: 'Em Aberto', c: 'bg-slate-100 text-slate-700 border-slate-200' },
+                { s: 'Autorizado', c: 'bg-blue-50 text-blue-700 border-blue-200' },
+                { s: 'Aguardando Peça', c: 'bg-orange-50 text-orange-700 border-orange-200' },
+                { s: 'Concluído', c: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
             ];
 
-            document.getElementById('lista-orcamentos-tabela').innerHTML = Array.from({length: 25}, (_,i) => {
-                let st = statusConfig[Math.floor(Math.random() * statusConfig.length)];
-                return `<tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-4 font-bold text-slate-700 text-xs md:text-sm">#${5100-i}</td>
-                    <td class="p-4 text-xs md:text-sm"><p class="font-bold text-slate-800">Cliente ${i+1}</p><p class="text-slate-400 text-[10px] md:text-xs">Fiat Toro - ABC1234</p></td>
-                    <td class="p-4 text-xs md:text-sm text-slate-500">24/08/2026</td>
-                    <td class="p-4 font-black text-slate-800 text-xs md:text-sm">${formatarDinheiro(Math.random()*2500 + 300)}</td>
-                    <td class="p-4 text-center"><span class="${st.css} border px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold whitespace-nowrap">${st.nome}</span></td>
-                </tr>`;
-            }).join('');
+            for(let i=0; i<30; i++) {
+                let sConf = statusConfig[Math.floor(Math.random()*statusConfig.length)];
+                let id = 5099 - i;
+                let itensMock = [
+                    { id: 1, desc: 'Revisão Padrão', qtd: 1, val: 350.00, subtotal: 350.00 },
+                    { id: 2, desc: 'Peça de Reposição', qtd: 2, val: 120.00, subtotal: 240.00 }
+                ];
+                AppState.orcamentos.push({
+                    id: id,
+                    cliente: AppState.clientes[i%AppState.clientes.length].nome,
+                    veiculo: `ABC1D${String(i).padStart(2,'0')} - Modelo Genérico`,
+                    data: `24/08/2026`,
+                    valor: 590.00,
+                    status: sConf.s,
+                    statusCss: sConf.c,
+                    itens: itensMock
+                });
+            }
 
-            // 2. Financeiro CORRIGIDO (Onde a imagem mostrava vazio)
-            const linhaFin = (d, v, c) => `<div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow"><span class="text-xs md:text-sm font-bold text-slate-700">${d}</span><span class="text-xs md:text-sm font-black ${c}">${formatarDinheiro(v)}</span></div>`;
-            
-            // Renderiza Entradas
-            document.getElementById('fin-receber-pendente').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`ORÇ #${4000+i}`, Math.random()*1500 + 200, 'text-red-600')).join('');
-            document.getElementById('fin-receber-pago').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`ORÇ #${3000+i}`, Math.random()*2000 + 400, 'text-emerald-600')).join('');
-            
-            // Renderiza Saídas (Consertando o erro visual reportado na imagem)
-            document.getElementById('fin-pagar-pendente').innerHTML = Array.from({length: 12}, (_,i) => linhaFin(`Fornecedor Peças 0${i+1}`, Math.random()*3000 + 500, 'text-amber-600')).join('');
-            document.getElementById('fin-pagar-pago').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`Despesa Operacional 0${i+1}`, Math.random()*800 + 150, 'text-slate-500')).join('');
-            
-            // Dashboard Totais
-            document.getElementById('dash-receita').innerText = "R$ 512.430";
-            document.getElementById('dash-a-receber').innerText = "R$ 145.200";
+            // Financeiro
+            const gerarTitulos = (qtd, base, str) => Array.from({length: qtd}, (_,i) => ({ desc: `${str} 0${i+1}`, val: Math.random()*2000+base }));
+            AppState.financeiro.receitas = { pendentes: gerarTitulos(15, 500, 'ORÇ #400'), pagas: gerarTitulos(25, 800, 'ORÇ #300') };
+            AppState.financeiro.despesas = { pendentes: gerarTitulos(10, 800, 'Fornecedor'), pagas: gerarTitulos(20, 200, 'Despesa') };
         }
 
-        // --- GRÁFICOS PREMIUM (Soft UI) ---
-        function renderizarGraficos() {
+        function renderizarListaOrcamentos() {
+            // Desenha a lista principal baseada no banco de dados
+            const tbody = document.getElementById('tabela-orcamentos-lista');
+            tbody.innerHTML = AppState.orcamentos.map(orc => {
+                // Padronização de cores se vier do "Novo Orçamento"
+                let css = orc.statusCss || 'bg-slate-100 text-slate-700 border-slate-200';
+                if(orc.status === 'Autorizado') css = 'bg-blue-50 text-blue-700 border-blue-200';
+                if(orc.status === 'Aguardando Aprovação') css = 'bg-amber-50 text-amber-700 border-amber-200';
+
+                return `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-black text-slate-800 text-xs md:text-sm">#${orc.id}</td>
+                    <td class="p-4 text-xs md:text-sm"><p class="font-bold text-slate-800">${orc.cliente}</p><p class="text-slate-400 text-[10px] md:text-xs">${orc.veiculo.substring(0,20)}...</p></td>
+                    <td class="p-4 text-xs md:text-sm text-slate-500 font-medium">${orc.data}</td>
+                    <td class="p-4 font-black text-slate-800 text-xs md:text-sm">${formataDinheiro(orc.valor)}</td>
+                    <td class="p-4 text-center"><span class="${css} border px-3 py-1 rounded-lg text-[10px] md:text-xs font-bold whitespace-nowrap shadow-sm">${orc.status}</span></td>
+                    <td class="p-4 text-center">
+                        <button onclick="gerarPDFDoListamento(${orc.id})" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white p-2 rounded-lg transition shadow-sm border border-red-100" title="Gerar PDF">
+                            <i class="ph-bold ph-file-pdf text-lg"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderizarFinanceiro() {
+            const tr = (d,v,c) => `<div class="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm"><span class="text-xs md:text-sm font-bold text-slate-700">${d}</span><span class="text-xs md:text-sm font-black ${c}">${formataDinheiro(v)}</span></div>`;
+            document.getElementById('fin-receitas-pendentes').innerHTML = AppState.financeiro.receitas.pendentes.map(t => tr(t.desc, t.val, 'text-red-600')).join('');
+            document.getElementById('fin-receitas-pagas').innerHTML = AppState.financeiro.receitas.pagas.map(t => tr(t.desc, t.val, 'text-emerald-600')).join('');
+            document.getElementById('fin-despesas-pendentes').innerHTML = AppState.financeiro.despesas.pendentes.map(t => tr(t.desc, t.val, 'text-amber-600')).join('');
+            document.getElementById('fin-despesas-pagas').innerHTML = AppState.financeiro.despesas.pagas.map(t => tr(t.desc, t.val, 'text-slate-500')).join('');
+        }
+
+        function renderizarListasBasicas() {
+            document.getElementById('lista-clientes-tabela').innerHTML = AppState.clientes.slice(0,50).map(c => `<tr class="border-b"><td class="p-4 font-bold text-slate-400">#${c.id}</td><td class="p-4 font-bold text-slate-700">${c.nome}</td><td class="p-4 text-slate-500">${c.doc}</td><td class="p-4 text-slate-500">(34) 9999-0000</td></tr>`).join('');
+            document.getElementById('lista-veiculos-tabela').innerHTML = AppState.veiculos.slice(0,50).map(v => `<tr class="border-b"><td class="p-4 font-black text-blue-600">${v.placa}</td><td class="p-4 font-bold text-slate-700">${v.mod}</td><td class="p-4 text-slate-500">${v.ano}</td><td class="p-4 text-slate-500">Cli #${v.propId}</td></tr>`).join('');
+        }
+
+        // --- DASHBOARD E CHART.JS ---
+        function renderizarDashboard() {
+            // Soma mockada rapida
+            let rec = AppState.financeiro.receitas.pagas.reduce((a,b)=>a+b.val, 0) + 450000;
+            let arec = AppState.financeiro.receitas.pendentes.reduce((a,b)=>a+b.val, 0) + 120000;
+            document.getElementById('dash-faturamento').innerText = formataDinheiro(rec);
+            document.getElementById('dash-receber').innerText = formataDinheiro(arec);
+            document.getElementById('dash-qtd-orcamentos').innerText = AppState.orcamentos.length;
+
             Chart.defaults.font.family = 'Inter, sans-serif';
-            Chart.defaults.color = '#94a3b8';
-            
             const ctxL = document.getElementById('graficoFaturamento').getContext('2d');
-            const grd = ctxL.createLinearGradient(0, 0, 0, 300);
-            grd.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); grd.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+            const grd = ctxL.createLinearGradient(0, 0, 0, 250);
+            grd.addColorStop(0, 'rgba(37, 99, 235, 0.25)'); grd.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
             
             new Chart(ctxL, { 
                 type: 'line', 
-                data: { labels: ['Mar','Abr','Mai','Jun','Jul','Ago'], datasets: [{ data: [65,78,72,95,125,142], borderColor: '#2563eb', backgroundColor: grd, borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#ffffff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointRadius: 4 }] }, 
+                data: { labels: ['Mar','Abr','Mai','Jun','Jul','Ago'], datasets: [{ data: [65,78,72,110,125,142], borderColor: '#2563eb', backgroundColor: grd, borderWidth: 4, fill: true, tension: 0.4, pointBackgroundColor: '#fff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointRadius: 5 }] }, 
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, border: {display: false} }, y: { border: { display: false }, grid: { color: '#f1f5f9' } } } } 
             });
             
             new Chart(document.getElementById('graficoFrota').getContext('2d'), { 
                 type: 'doughnut', 
-                data: { labels: ['Concluídos','Aguardando Peça','Em Manutenção'], datasets: [{ data: [210,85,90], backgroundColor: ['#10b981','#f59e0b','#3b82f6'], borderWidth: 0, hoverOffset: 5 }] }, 
-                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } } 
+                data: { labels: ['Concluídos','Aguardando','Manutenção'], datasets: [{ data: [210,85,90], backgroundColor: ['#10b981','#f59e0b','#3b82f6'], borderWidth: 0, hoverOffset: 5 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } } } } 
             });
         }
     </script>
