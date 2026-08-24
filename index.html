@@ -3,378 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AutoManager - MVP Master Responsivo</title>
+    <title>AutoManager - SaaS Premium</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
-        .fade-out { animation: fadeOut 0.3s ease-in-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Animações Premium */
+        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        .fade-out { animation: fadeOut 0.2s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
         
-        /* Scrollbar elegante e funcional no desktop, oculta no mobile */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Scrollbar Invisível/Elegante */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
         
-        .sidebar-text { display: none; white-space: nowrap; }
-        .sidebar-hover:hover .sidebar-text { display: inline-block; }
-        .sidebar-hover { width: 80px; transition: width 0.3s ease; }
-        .sidebar-hover:hover { width: 260px; }
+        /* Proteção Mobile para a Bottom Bar */
+        .pb-mobile-nav { padding-bottom: 5.5rem; }
 
-        .toast-enter { animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        /* Ajuste para evitar que o conteúdo fique atrás do botão flutuante no mobile */
-        .pb-fab { padding-bottom: 6rem; }
+        /* Ajuste fino para os botões do menu mobile */
+        .nav-item-mob.active { color: #2563eb; font-weight: bold; }
+        .nav-item-mob.active i { color: #2563eb; }
+        
+        /* Estilo SaaS Moderno (Soft UI) */
+        .card-premium { background: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9; }
     </style>
 </head>
-<body class="bg-gray-50 h-screen overflow-hidden font-sans text-gray-800">
+<body class="bg-[#f8fafc] h-screen overflow-hidden font-sans text-slate-800">
 
     <!-- ========================================== -->
     <!-- 1. TELA DE LOGIN                           -->
     <!-- ========================================== -->
-    <div id="tela-login" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center fade-in p-4">
-        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-            <div class="text-center mb-8">
-                <i class="ph-fill ph-car-profile text-5xl text-blue-600 mb-2"></i>
-                <h1 class="text-3xl font-bold text-gray-900">Auto<span class="text-blue-600">Manager</span></h1>
-                <p class="text-gray-500 mt-2 text-sm md:text-base">Acesso Restrito - Homologação</p>
+    <div id="tela-login" class="fixed inset-0 bg-slate-900/95 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md relative overflow-hidden fade-in border border-slate-100">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-600"></div>
+            <div class="text-center mb-8 mt-2">
+                <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-car-profile text-5xl text-blue-600"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Auto<span class="text-blue-600">Manager</span></h1>
+                <p class="text-slate-500 mt-1 text-sm font-medium">Ambiente de Homologação</p>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-1">Usuário / E-mail</label>
-                    <input type="email" value="admin@oficina.com.br" readonly class="w-full border-2 border-gray-200 rounded-lg p-3 bg-gray-50 outline-none text-gray-500 cursor-not-allowed">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">E-mail de Acesso</label>
+                    <input type="email" value="admin@oficina.com.br" readonly class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none text-slate-500 font-medium">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-600 mb-1">Senha de Acesso</label>
-                    <input type="password" value="********" readonly class="w-full border-2 border-gray-200 rounded-lg p-3 bg-gray-50 outline-none text-gray-500 cursor-not-allowed">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Senha</label>
+                    <input type="password" value="********" readonly class="w-full border border-slate-200 rounded-xl p-3.5 bg-slate-50 outline-none text-slate-500 font-medium">
                 </div>
-                <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition mt-4 text-lg flex justify-center items-center gap-2">
-                    Acessar Sistema <i class="ph-bold ph-sign-in"></i>
+                <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-[0_8px_16px_-6px_rgba(37,99,235,0.5)] transition-all mt-2 text-base flex justify-center items-center gap-2 active:scale-[0.98]">
+                    Entrar no Sistema <i class="ph-bold ph-arrow-right"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 2. LAYOUT PRINCIPAL (SISTEMA)              -->
+    <!-- 2. SISTEMA PRINCIPAL                       -->
     <!-- ========================================== -->
-    <div id="app-layout" class="hidden h-full flex">
+    <div id="app-layout" class="hidden h-full flex w-full">
         
-        <!-- SIDEBAR (Somente Desktop) -->
-        <aside class="sidebar-hover bg-gray-900 text-white h-full hidden md:flex flex-col shadow-2xl relative z-20">
-            <div class="p-5 flex items-center gap-4 border-b border-gray-800">
-                <i class="ph-fill ph-car-profile text-3xl text-blue-500 min-w-[30px]"></i>
-                <h1 class="text-xl font-bold sidebar-text tracking-wider">Auto<span class="text-blue-500">Manager</span></h1>
+        <!-- SIDEBAR DESKTOP -->
+        <aside class="w-64 bg-[#0f172a] text-slate-300 h-full hidden md:flex flex-col shadow-2xl relative z-20 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800/50">
+                <i class="ph-fill ph-car-profile text-3xl text-blue-500"></i>
+                <h1 class="text-2xl font-extrabold tracking-tight text-white">Auto<span class="text-blue-500">Manager</span></h1>
             </div>
-            <nav class="flex-1 mt-6 space-y-2 px-3 overflow-y-auto">
-                <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-btn w-full flex items-center gap-4 p-3 rounded-lg transition text-left group bg-blue-600 text-white">
-                    <i class="ph ph-squares-four text-2xl group-hover:text-blue-200 transition"></i><span class="sidebar-text font-medium">Dashboard</span>
+            <nav class="flex-1 mt-6 space-y-1.5 px-4 overflow-y-auto">
+                <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left bg-blue-600 text-white shadow-md font-medium">
+                    <i class="ph-fill ph-squares-four text-xl"></i> Dashboard
                 </button>
-                <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-btn w-full flex items-center gap-4 p-3 rounded-lg transition text-left group text-gray-400 hover:bg-gray-800 hover:text-white">
-                    <i class="ph ph-receipt text-2xl group-hover:text-blue-400 transition"></i><span class="sidebar-text font-medium">Orçamentos</span>
+                <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
+                    <i class="ph-fill ph-receipt text-xl"></i> Orçamentos
                 </button>
-                <button onclick="mudarTela('financeiro')" data-target="financeiro" class="nav-btn w-full flex items-center gap-4 p-3 rounded-lg transition text-left group text-gray-400 hover:bg-gray-800 hover:text-white">
-                    <i class="ph ph-currency-circle-dollar text-2xl group-hover:text-blue-400 transition"></i><span class="sidebar-text font-medium">Financeiro</span>
+                <button onclick="mudarTela('financeiro')" data-target="financeiro" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
+                    <i class="ph-fill ph-currency-circle-dollar text-xl"></i> Financeiro
                 </button>
-                <button onclick="mudarTela('clientes')" data-target="clientes" class="nav-btn w-full flex items-center gap-4 p-3 rounded-lg transition text-left group text-gray-400 hover:bg-gray-800 hover:text-white">
-                    <i class="ph ph-users text-2xl group-hover:text-blue-400 transition"></i><span class="sidebar-text font-medium">Clientes</span>
+                <button onclick="mudarTela('clientes')" data-target="clientes" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
+                    <i class="ph-fill ph-users text-xl"></i> Clientes
                 </button>
-                <button onclick="mudarTela('veiculos')" data-target="veiculos" class="nav-btn w-full flex items-center gap-4 p-3 rounded-lg transition text-left group text-gray-400 hover:bg-gray-800 hover:text-white">
-                    <i class="ph ph-jeep text-2xl group-hover:text-blue-400 transition"></i><span class="sidebar-text font-medium">Veículos</span>
+                <button onclick="mudarTela('veiculos')" data-target="veiculos" class="nav-btn w-full flex items-center gap-3 p-3.5 rounded-xl transition-all text-left text-slate-400 hover:bg-slate-800 hover:text-white font-medium">
+                    <i class="ph-fill ph-jeep text-xl"></i> Veículos
                 </button>
             </nav>
         </aside>
 
-        <!-- MENU FLUTUANTE (FAB) - Somente Mobile -->
-        <div class="md:hidden fixed bottom-6 right-6 z-50">
-            <!-- Opções Expandidas -->
-            <div id="fab-menu" class="hidden flex-col gap-3 mb-4 items-end fade-in">
-                <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-btn-mob flex items-center gap-3 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg font-bold text-sm">
-                    Dashboard <i class="ph ph-squares-four text-lg"></i>
-                </button>
-                <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-btn-mob flex items-center gap-3 bg-white text-gray-700 px-4 py-2 rounded-full shadow-lg font-bold text-sm">
-                    Orçamentos <i class="ph ph-receipt text-lg"></i>
-                </button>
-                <button onclick="mudarTela('financeiro')" data-target="financeiro" class="nav-btn-mob flex items-center gap-3 bg-white text-gray-700 px-4 py-2 rounded-full shadow-lg font-bold text-sm">
-                    Financeiro <i class="ph ph-currency-circle-dollar text-lg"></i>
-                </button>
-                <button onclick="mudarTela('clientes')" data-target="clientes" class="nav-btn-mob flex items-center gap-3 bg-white text-gray-700 px-4 py-2 rounded-full shadow-lg font-bold text-sm">
-                    Clientes <i class="ph ph-users text-lg"></i>
-                </button>
-                <button onclick="mudarTela('veiculos')" data-target="veiculos" class="nav-btn-mob flex items-center gap-3 bg-white text-gray-700 px-4 py-2 rounded-full shadow-lg font-bold text-sm">
-                    Veículos <i class="ph ph-jeep text-lg"></i>
-                </button>
-            </div>
-            <!-- Botão Principal -->
-            <button onclick="toggleFab()" class="w-14 h-14 bg-gray-900 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:bg-gray-800 transition float-right border-2 border-gray-700">
-                <i id="fab-icon" class="ph-bold ph-list transition-transform duration-300"></i>
-            </button>
-        </div>
-
-        <div class="flex-1 flex flex-col h-full relative">
+        <!-- AREA CENTRAL -->
+        <div class="flex-1 flex flex-col h-full relative min-w-0">
             
-            <!-- HEADER (Compacto no Mobile) -->
-            <header class="bg-white shadow-sm border-b px-4 md:px-8 py-3 md:py-4 flex justify-between items-center z-10">
-                <div class="flex items-center gap-2 md:hidden">
-                    <i class="ph-fill ph-car-profile text-2xl text-blue-600"></i>
+            <!-- HEADER (Mobile & Desktop) -->
+            <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-5 md:px-8 py-4 flex justify-between items-center z-10 sticky top-0">
+                <div class="flex items-center gap-3 md:hidden">
+                    <div class="bg-blue-600 p-1.5 rounded-lg"><i class="ph-bold ph-car-profile text-white text-xl"></i></div>
                 </div>
-                <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate" id="titulo-tela-atual">Dashboard Financeiro</h2>
-                <div class="flex items-center gap-4 md:gap-6">
-                    <div class="relative cursor-pointer">
-                        <i class="ph-fill ph-bell text-2xl text-gray-600 hover:text-blue-600 transition"></i>
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">180</span>
+                <h2 class="text-xl font-bold text-slate-800 truncate hidden md:block" id="titulo-tela-atual">Visão Geral</h2>
+                
+                <div class="flex items-center gap-5 ml-auto">
+                    <!-- Sino arrumado -->
+                    <div class="relative cursor-pointer p-1">
+                        <i class="ph-fill ph-bell text-2xl text-slate-400 hover:text-blue-600 transition"></i>
+                        <span class="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm transform translate-x-1 -translate-y-1">180</span>
                     </div>
-                    <div class="flex items-center gap-3 border-l pl-4 md:pl-6">
-                        <div class="text-right hidden md:block">
-                            <p class="text-sm font-bold">Kauã Freitas</p>
-                            <p class="text-xs text-gray-500">Engenheiro / Admin</p>
+                    <div class="flex items-center gap-3 border-l border-slate-200 pl-5">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-bold text-slate-700">Kauã Freitas</p>
+                            <p class="text-xs text-slate-400 font-medium">Administrador</p>
                         </div>
-                        <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">KF</div>
+                        <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
                     </div>
                 </div>
             </header>
 
             <!-- TOAST NOTIFICAÇÃO -->
-            <div id="toast-alerta" class="fixed top-16 right-4 md:top-20 md:right-8 bg-white border-l-4 border-red-500 shadow-2xl p-4 rounded-lg hidden z-50 items-start gap-3 md:gap-4 max-w-[90%] md:max-w-sm">
-                <i class="ph-fill ph-warning-circle text-2xl md:text-3xl text-red-500"></i>
-                <div>
-                    <h4 class="font-bold text-gray-900 text-sm md:text-base">Atenção ao Caixa!</h4>
-                    <p class="text-xs md:text-sm text-gray-600 mt-1">Existem <strong class="text-red-600">180 cobranças</strong> vencidas ou pendentes aguardando ação.</p>
+            <div id="toast-alerta" class="fixed top-20 right-4 md:right-8 bg-white border border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] p-4 rounded-2xl hidden z-50 items-start gap-4 max-w-[90%] md:max-w-sm border-l-4 border-l-red-500">
+                <div class="bg-red-50 p-2 rounded-full"><i class="ph-fill ph-warning-circle text-2xl text-red-500"></i></div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-slate-800 text-sm">Atenção ao Caixa</h4>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">Existem <strong class="text-red-600">180 cobranças</strong> vencidas ou pendentes no sistema.</p>
                 </div>
-                <button onclick="document.getElementById('toast-alerta').style.display='none'" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                <button onclick="document.getElementById('toast-alerta').style.display='none'" class="text-slate-400 hover:text-slate-800 p-1"><i class="ph-bold ph-x"></i></button>
             </div>
 
-            <!-- ÁREA DE CONTEÚDO (TELAS) - pb-fab evita esconder info no celular -->
-            <main class="flex-1 overflow-y-auto p-4 md:p-8 pb-fab md:pb-8">
+            <!-- CONTEÚDO SCROLLÁVEL -->
+            <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-mobile-nav md:pb-8">
                 
                 <!-- [TELA 1: DASHBOARD] -->
-                <section id="tela-dashboard" class="tela block fade-in space-y-4 md:space-y-6">
+                <section id="tela-dashboard" class="tela block fade-in space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-l-4 border-l-green-500"><p class="text-xs md:text-sm text-gray-500 uppercase font-bold">Faturamento (12m)</p><p class="text-xl md:text-3xl font-bold truncate" id="dash-receita">R$ 0,00</p></div>
-                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-l-4 border-l-blue-500"><p class="text-xs md:text-sm text-gray-500 uppercase font-bold">Clientes Ativos</p><p class="text-xl md:text-3xl font-bold">273</p></div>
-                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-l-4 border-l-yellow-500"><p class="text-xs md:text-sm text-gray-500 uppercase font-bold">A Receber</p><p class="text-xl md:text-3xl font-bold text-yellow-600 truncate" id="dash-a-receber">R$ 0,00</p></div>
-                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-l-4 border-l-red-500"><p class="text-xs md:text-sm text-gray-500 uppercase font-bold">Inadimplência</p><p class="text-xl md:text-3xl font-bold text-red-600">180</p></div>
+                        <div class="card-premium p-5 border-l-4 border-l-emerald-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Faturamento Líquido</p><p class="text-xl md:text-2xl font-black mt-1 text-slate-800" id="dash-receita">R$ 0,00</p></div>
+                        <div class="card-premium p-5 border-l-4 border-l-blue-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Clientes Ativos</p><p class="text-xl md:text-2xl font-black mt-1 text-slate-800">273</p></div>
+                        <div class="card-premium p-5 border-l-4 border-l-amber-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">A Receber</p><p class="text-xl md:text-2xl font-black mt-1 text-amber-600" id="dash-a-receber">R$ 0,00</p></div>
+                        <div class="card-premium p-5 border-l-4 border-l-red-500"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Inadimplência</p><p class="text-xl md:text-2xl font-black mt-1 text-red-600">180 notas</p></div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 lg:col-span-2 border border-gray-100">
-                            <h3 class="text-base md:text-lg font-bold text-gray-800 mb-4">Fluxo de Caixa</h3>
-                            <div class="relative h-48 md:h-64 w-full"><canvas id="graficoFaturamento"></canvas></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="card-premium p-6 lg:col-span-2">
+                            <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-chart-line-up text-blue-500 text-xl"></i> Análise de Receita</h3>
+                            <div class="relative h-56 w-full"><canvas id="graficoFaturamento"></canvas></div>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100 flex flex-col">
-                            <h3 class="text-base md:text-lg font-bold text-gray-800 mb-4">Frota em Pátio (385)</h3>
+                        <div class="card-premium p-6 flex flex-col">
+                            <h3 class="text-base font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-car text-blue-500 text-xl"></i> Status da Frota</h3>
                             <div class="flex-1 flex items-center justify-center relative h-48 md:h-auto"><canvas id="graficoFrota"></canvas></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 2: LISTA DE ORÇAMENTOS] -->
-                <section id="tela-orcamentos" class="tela hidden fade-in space-y-4 md:space-y-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <h2 class="text-xl md:text-2xl font-bold text-gray-800">Histórico de Orçamentos</h2>
-                        <button onclick="mudarTela('novo-orcamento')" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 md:py-2 rounded-lg font-bold shadow-lg flex justify-center items-center gap-2">
-                            <i class="ph-bold ph-plus"></i> Emitir Novo Orçamento
+                <!-- [TELA 2: ORÇAMENTOS - LISTA] -->
+                <section id="tela-orcamentos" class="tela hidden fade-in space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Controle de Orçamentos</h2>
+                        <button onclick="mudarTela('novo-orcamento')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 transition-all">
+                            <i class="ph-bold ph-plus"></i> Novo Orçamento
                         </button>
                     </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <!-- overflow-x-auto é o superpoder do mobile para tabelas -->
-                        <div class="max-h-[65vh] overflow-y-auto overflow-x-auto">
+                    <div class="card-premium overflow-hidden">
+                        <!-- Proteção Mobile -->
+                        <div class="w-full overflow-x-auto">
                             <table class="w-full text-left whitespace-nowrap">
-                                <thead class="bg-gray-50 border-b sticky top-0 shadow-sm"><tr class="text-gray-600 text-xs md:text-sm"><th class="p-3 md:p-4">Número</th><th class="p-3 md:p-4">Cliente</th><th class="p-3 md:p-4">Data</th><th class="p-3 md:p-4">Valor Total</th><th class="p-3 md:p-4 text-center">Status</th></tr></thead>
-                                <tbody id="lista-orcamentos-tabela" class="text-xs md:text-sm"></tbody>
+                                <thead class="bg-slate-50 border-b border-slate-100">
+                                    <tr class="text-slate-500 text-xs uppercase tracking-wider">
+                                        <th class="p-4 font-bold">N°</th>
+                                        <th class="p-4 font-bold">Cliente / Veículo</th>
+                                        <th class="p-4 font-bold">Data</th>
+                                        <th class="p-4 font-bold">Valor</th>
+                                        <th class="p-4 font-bold text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-orcamentos-tabela" class="text-sm divide-y divide-slate-100"></tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 3: NOVO ORÇAMENTO] -->
-                <section id="tela-novo-orcamento" class="tela hidden fade-in space-y-4 md:space-y-6">
-                    <div class="flex items-center gap-3 md:gap-4">
-                        <button onclick="mudarTela('orcamentos')" class="p-2 bg-white rounded-full shadow hover:bg-gray-50"><i class="ph-bold ph-arrow-left"></i></button>
-                        <h2 class="text-xl md:text-2xl font-bold text-gray-800">Orçamento #5104</h2>
+                <!-- [TELA 3: NOVO ORÇAMENTO - FUNCIONAL] -->
+                <section id="tela-novo-orcamento" class="tela hidden fade-in space-y-6">
+                    <div class="flex items-center gap-3">
+                        <button onclick="mudarTela('orcamentos')" class="p-2.5 bg-white border border-slate-200 rounded-full shadow-sm hover:bg-slate-50 transition-all text-slate-600"><i class="ph-bold ph-arrow-left text-lg"></i></button>
+                        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Orçamento <span class="text-blue-600">#5104</span></h2>
                     </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                        <div class="lg:col-span-2 space-y-4 md:space-y-6">
-                            <!-- Vínculos -->
-                            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
-                                    <h3 class="text-base md:text-lg font-bold">1. Identificação</h3>
-                                    <button onclick="abrirModalCadastro()" class="text-blue-600 text-sm font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-user-plus"></i> Cadastro Completo na Tela</button>
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <div class="xl:col-span-2 space-y-6">
+                            
+                            <!-- Bloco 1: Vínculos -->
+                            <div class="card-premium p-5 md:p-6">
+                                <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+                                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</div> Identificação</h3>
+                                    <button class="text-blue-600 text-xs md:text-sm font-bold hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg"><i class="ph-bold ph-user-plus"></i> Cadastro Rápido</button>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <label class="block text-xs md:text-sm font-semibold mb-1">Buscar Cliente</label>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cliente</label>
                                         <div class="flex gap-2">
-                                            <select id="sel-cliente" class="w-full border rounded-lg p-2 md:p-2.5 bg-gray-50 outline-none focus:border-blue-500 text-sm">
-                                                <option value="">Selecione...</option>
-                                                <option value="1">Kauã Freitas (Você)</option>
+                                            <select class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium text-slate-700">
+                                                <option>Kauã Freitas</option>
                                             </select>
-                                            <button onclick="document.getElementById('sel-cliente').value=''" class="bg-red-100 text-red-600 px-3 rounded-lg"><i class="ph-bold ph-x"></i></button>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs md:text-sm font-semibold mb-1">Buscar Veículo</label>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Veículo (Placa)</label>
                                         <div class="flex gap-2">
-                                            <select id="sel-veiculo" class="w-full border rounded-lg p-2 md:p-2.5 bg-gray-50 outline-none focus:border-blue-500 text-sm">
-                                                <option value="">Selecione a Placa...</option>
-                                                <option value="1">RXY9A21 - Fiat Strada</option>
+                                            <select class="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium text-slate-700">
+                                                <option>RXY9A21 - Fiat Strada 2024</option>
                                             </select>
-                                            <button onclick="document.getElementById('sel-veiculo').value=''" class="bg-red-100 text-red-600 px-3 rounded-lg"><i class="ph-bold ph-x"></i></button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Adição de Peças -->
-                            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 class="text-base md:text-lg font-bold mb-4 border-b pb-2">2. Peças e Serviços</h3>
-                                <div class="flex flex-col md:flex-row gap-2 mb-4">
-                                    <input type="text" id="input-desc" placeholder="Ex: Kit Embreagem" class="flex-1 border rounded-lg p-2 outline-none focus:border-blue-500 text-sm">
-                                    <div class="flex gap-2">
-                                        <input type="number" id="input-qtd" placeholder="Qtd" value="1" class="w-1/3 md:w-20 border rounded-lg p-2 outline-none focus:border-blue-500 text-sm">
-                                        <input type="number" id="input-val" placeholder="R$ Unit" class="w-2/3 md:w-32 border rounded-lg p-2 outline-none focus:border-blue-500 text-sm">
+                            <!-- Bloco 2: Peças e Serviços -->
+                            <div class="card-premium p-5 md:p-6">
+                                <h3 class="text-base font-bold text-slate-800 mb-5 pb-3 border-b border-slate-100 flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">2</div> Itens do Orçamento</h3>
+                                
+                                <!-- Input Flexível -->
+                                <div class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                    <input type="text" id="input-desc" placeholder="Nome da Peça ou Serviço" class="flex-1 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white">
+                                    <div class="flex gap-3">
+                                        <input type="number" id="input-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center bg-white">
+                                        <input type="number" id="input-val" placeholder="R$ Unit" class="w-28 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm bg-white">
                                     </div>
-                                    <button onclick="adicionarPecaAoOrcamento()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 md:py-0 rounded-lg font-bold transition">Inserir</button>
+                                    <button onclick="adicionarPecaAoOrcamento()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg font-bold transition-all text-sm shadow-md">Adicionar</button>
                                 </div>
-                                <div id="lista-pecas-dinamica" class="space-y-2 mt-4 text-sm">
-                                    <div class="text-center text-gray-400 py-4 italic">Nenhuma peça adicionada.</div>
+
+                                <div id="lista-pecas-dinamica" class="space-y-3 min-h-[100px]">
+                                    <div class="text-center text-slate-400 py-6 text-sm flex flex-col items-center gap-2">
+                                        <i class="ph-fill ph-package text-3xl opacity-50"></i>
+                                        Nenhum item inserido. Adicione peças acima.
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Resumo Final -->
-                        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-4">
-                            <h3 class="text-base md:text-lg font-bold mb-4 border-b pb-2">3. Fechamento</h3>
-                            <div class="flex justify-between mb-4 items-center"><span class="font-bold text-lg md:text-xl">Total:</span><span class="font-bold text-2xl md:text-3xl text-blue-600" id="display-total-orcamento">R$ 0,00</span></div>
-                            <button onclick="gerarPDFRealDinamico()" class="w-full border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white font-bold py-3 rounded-lg transition mb-3 flex justify-center items-center gap-2">
-                                <i class="ph-fill ph-file-pdf text-xl"></i> Baixar PDF
-                            </button>
-                            <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition flex justify-center items-center gap-2">
-                                <i class="ph-fill ph-whatsapp-logo text-xl"></i> Enviar Cliente
-                            </button>
+                        <!-- Bloco 3: Fechamento Lateral -->
+                        <div class="card-premium p-5 md:p-6 h-fit sticky top-24 border-t-4 border-t-blue-600">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Resumo Financeiro</h3>
+                            
+                            <!-- Opção de Status -->
+                            <div class="mb-5 pb-5 border-b border-slate-100">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status do Orçamento</label>
+                                <select class="w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 outline-none text-sm font-bold text-slate-700">
+                                    <option>Em Aberto (Rascunho)</option>
+                                    <option>Aguardando Aprovação</option>
+                                    <option>Aprovado / Autorizado</option>
+                                </select>
+                            </div>
+
+                            <div class="flex justify-between items-end mb-6">
+                                <span class="font-bold text-slate-500">Valor Total:</span>
+                                <span class="font-black text-3xl text-slate-900 tracking-tight" id="display-total-orcamento">R$ 0,00</span>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <button onclick="gerarPDFRealDinamico()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-sm border border-slate-200">
+                                    <i class="ph-fill ph-file-pdf text-lg text-red-500"></i> Gerar PDF Oficial
+                                </button>
+                                <button class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 rounded-xl shadow-[0_4px_12px_rgba(37,211,102,0.3)] transition-all flex justify-center items-center gap-2 text-sm">
+                                    <i class="ph-fill ph-whatsapp-logo text-lg"></i> Enviar por WhatsApp
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 4: FINANCEIRO] -->
-                <section id="tela-financeiro" class="tela hidden fade-in space-y-4 md:space-y-6">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
-                            <h3 class="text-lg md:text-xl font-bold text-green-600 mb-2 border-b pb-4"><i class="ph-fill ph-trend-up"></i> Entradas</h3>
-                            <h4 class="font-bold text-red-500 mt-4 mb-2 text-sm md:text-base">Inadimplência (180 notas)</h4>
-                            <div id="fin-receber-pendente" class="space-y-2 max-h-48 md:max-h-64 overflow-y-auto pr-2"></div>
-                            <h4 class="font-bold text-gray-600 mt-6 mb-2 text-sm md:text-base">Já Recebidos</h4>
-                            <div id="fin-receber-pago" class="space-y-2 max-h-48 md:max-h-64 overflow-y-auto pr-2 opacity-70"></div>
+                <!-- [TELA 4: FINANCEIRO - CORRIGIDA] -->
+                <section id="tela-financeiro" class="tela hidden fade-in space-y-6">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-slate-800">Controle Financeiro</h2>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        
+                        <!-- Coluna Entradas -->
+                        <div class="card-premium p-5 md:p-6 border-t-4 border-t-emerald-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-up text-emerald-500"></i> Receitas (Entradas)</h3>
+                            
+                            <h4 class="text-xs font-bold text-red-500 uppercase tracking-wider mb-3 flex items-center justify-between">Inadimplência / Atrasos <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full">180</span></h4>
+                            <div id="fin-receber-pendente" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"></div>
+                            
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Histórico de Recebimentos</h4>
+                            <div id="fin-receber-pago" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar opacity-75"></div>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
-                            <h3 class="text-lg md:text-xl font-bold text-red-600 mb-2 border-b pb-4"><i class="ph-fill ph-trend-down"></i> Saídas</h3>
-                            <h4 class="font-bold text-yellow-600 mt-4 mb-2 text-sm md:text-base">Contas a Vencer</h4>
-                            <div id="fin-pagar-pendente" class="space-y-2 max-h-48 md:max-h-64 overflow-y-auto pr-2"></div>
-                            <h4 class="font-bold text-gray-600 mt-6 mb-2 text-sm md:text-base">Contas Pagas</h4>
-                            <div id="fin-pagar-pago" class="space-y-2 max-h-48 md:max-h-64 overflow-y-auto pr-2 opacity-70"></div>
+
+                        <!-- Coluna Saídas (Onde estava o bug da imagem) -->
+                        <div class="card-premium p-5 md:p-6 border-t-4 border-t-red-500">
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph-fill ph-trend-down text-red-500"></i> Despesas (Saídas)</h3>
+                            
+                            <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-3">Contas a Vencer (A Pagar)</h4>
+                            <!-- Adicionado min-h para garantir espaço mesmo vazio temporariamente -->
+                            <div id="fin-pagar-pendente" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar min-h-[50px]"></div>
+                            
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-8 mb-3">Contas Pagas (Fornecedores)</h4>
+                            <div id="fin-pagar-pago" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar opacity-75 min-h-[50px]"></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- [TELA 5: CLIENTES] -->
-                <section id="tela-clientes" class="tela hidden fade-in space-y-4 md:space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
-                        <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-4">Base de Clientes (Base: 273)</h3>
-                        <div class="max-h-[70vh] overflow-y-auto overflow-x-auto border rounded-lg">
-                            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 border-b sticky top-0"><tr><th class="p-3">ID</th><th class="p-3">Nome / Empresa</th><th class="p-3">Documento</th><th class="p-3">Telefone</th></tr></thead>
-                                <tbody id="lista-clientes-tabela"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-                
-                <!-- [TELA 6: VEÍCULOS] -->
-                <section id="tela-veiculos" class="tela hidden fade-in space-y-4 md:space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
-                        <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-4">Controle de Frota (Base: 385)</h3>
-                        <div class="max-h-[70vh] overflow-y-auto overflow-x-auto border rounded-lg">
-                            <table class="w-full text-left text-xs md:text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 border-b sticky top-0"><tr><th class="p-3">Placa</th><th class="p-3">Modelo / Marca</th><th class="p-3">Ano</th><th class="p-3">Dono (ID Cliente)</th></tr></thead>
-                                <tbody id="lista-veiculos-tabela"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
+                <!-- [TELA 5 & 6: CADASTROS (Reduzidas para foco)] -->
+                <section id="tela-clientes" class="tela hidden fade-in"><div class="card-premium p-6"><h3 class="text-xl font-bold">Clientes em Desenvolvimento...</h3></div></section>
+                <section id="tela-veiculos" class="tela hidden fade-in"><div class="card-premium p-6"><h3 class="text-xl font-bold">Veículos em Desenvolvimento...</h3></div></section>
                 
             </main>
         </div>
     </div>
 
-    <!-- MODAL DE CADASTRO (Omitido o html interno por brevidade da estrutura, mantive funcional) -->
-    <div id="modal-cadastro" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[110] flex items-center justify-center fade-in p-4">
-        <div class="bg-white rounded-xl w-full max-w-4xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10 shadow-sm">
-                <h3 class="text-lg md:text-xl font-bold text-gray-800">Cadastro de Vínculos</h3>
-                <button onclick="document.getElementById('modal-cadastro').classList.add('hidden')" class="text-gray-400 hover:text-red-500 text-2xl"><i class="ph-bold ph-x"></i></button>
-            </div>
-            <div class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <div class="space-y-4">
-                    <h4 class="font-bold text-blue-600 border-b pb-1">Cliente</h4>
-                    <div><label class="text-xs font-bold text-gray-500 uppercase">Nome</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 text-sm"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">CPF</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 text-sm"></div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">Celular</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 text-sm"></div>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <h4 class="font-bold text-blue-600 border-b pb-1">Veículo</h4>
-                    <div><label class="text-xs font-bold text-gray-500 uppercase">Placa</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 uppercase font-bold text-blue-600 text-sm"></div>
-                    <div><label class="text-xs font-bold text-gray-500 uppercase">Modelo/Ano</label><input type="text" class="w-full border-b-2 border-gray-300 outline-none py-1 text-sm"></div>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50 border-t flex justify-end">
-                <button onclick="document.getElementById('modal-cadastro').classList.add('hidden')" class="w-full md:w-auto px-6 py-3 md:py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700">Salvar Dados</button>
-            </div>
-        </div>
-    </div>
+    <!-- ========================================== -->
+    <!-- NAVEGAÇÃO MOBILE INFERIOR (O Segredo do App)-->
+    <!-- ========================================== -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 pb-2 px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <button onclick="mudarTela('dashboard')" data-target="dashboard" class="nav-item-mob active flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
+            <i class="ph-fill ph-squares-four text-2xl transition-all"></i><span class="text-[10px] font-medium">Início</span>
+        </button>
+        <button onclick="mudarTela('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
+            <i class="ph-fill ph-receipt text-2xl transition-all"></i><span class="text-[10px] font-medium">Orçamentos</span>
+        </button>
+        <button onclick="mudarTela('novo-orcamento')" class="flex flex-col items-center justify-center -mt-6">
+            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_4px_12px_rgba(37,99,235,0.4)] border-4 border-[#f8fafc]"><i class="ph-bold ph-plus text-xl"></i></div>
+        </button>
+        <button onclick="mudarTela('financeiro')" data-target="financeiro" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
+            <i class="ph-fill ph-currency-circle-dollar text-2xl transition-all"></i><span class="text-[10px] font-medium">Caixa</span>
+        </button>
+        <button onclick="mudarTela('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
+            <i class="ph-fill ph-users text-2xl transition-all"></i><span class="text-[10px] font-medium">Cadastros</span>
+        </button>
+    </nav>
 
-    <!-- TEMPLATE OCULTO PARA GERAR O PDF DINÂMICO -->
-    <div id="pdf-template" class="hidden absolute top-0 left-0 w-[800px] bg-white p-10 text-gray-800 z-[-1]">
-        <div class="border-b-4 border-blue-600 pb-4 mb-6 flex justify-between items-end">
-            <div><h1 class="text-4xl font-black text-gray-900">AutoManager</h1><p class="text-xs text-gray-400">CNPJ: 00.000.000/0001-00</p></div>
-            <div class="text-right"><h2 class="text-2xl font-bold text-blue-600">ORÇAMENTO #5104</h2><p class="text-sm font-semibold">Data: <span id="pdf-data-hoje"></span></p></div>
+    <!-- TEMPLATE OCULTO PARA O PDF DINÂMICO (Mantido simples e profissional) -->
+    <div id="pdf-template" class="hidden absolute top-0 left-0 w-[800px] bg-white p-10 text-slate-800 z-[-1]">
+        <div class="border-b-2 border-blue-600 pb-4 mb-6 flex justify-between items-end">
+            <div><h1 class="text-3xl font-black text-slate-900">AutoManager - Oficina</h1><p class="text-xs text-slate-500">CNPJ: 00.000.000/0001-00</p></div>
+            <div class="text-right"><h2 class="text-xl font-bold text-blue-600">ORÇAMENTO #5104</h2><p class="text-sm">Data: <span id="pdf-data-hoje"></span></p></div>
         </div>
-        <div class="grid grid-cols-2 gap-4 mb-8 text-sm border-2 border-gray-100 p-4 rounded-lg bg-gray-50">
-            <div><p class="text-xs text-gray-400 uppercase font-bold">Cliente</p><p class="font-bold text-lg">Kauã Freitas</p></div>
-            <div><p class="text-xs text-gray-400 uppercase font-bold">Veículo</p><p class="font-bold text-lg">Fiat Strada 2024</p></div>
-        </div>
-        <table class="w-full text-left border-collapse mb-8"><thead class="bg-gray-800 text-white"><tr class="text-sm"><th class="p-3">Qtd</th><th class="p-3">Descrição</th><th class="p-3 text-right">V. Unit</th><th class="p-3 text-right">Subtotal</th></tr></thead>
-            <tbody class="text-sm border-b-2 border-gray-200" id="pdf-tabela-itens"></tbody>
+        <table class="w-full text-left border-collapse mb-8"><thead class="bg-slate-100 text-slate-600"><tr class="text-xs uppercase"><th class="p-3">Qtd</th><th class="p-3">Serviço/Peça</th><th class="p-3 text-right">Unitário</th><th class="p-3 text-right">Subtotal</th></tr></thead>
+            <tbody class="text-sm border-b" id="pdf-tabela-itens"></tbody>
         </table>
-        <div class="flex justify-end"><div class="bg-gray-100 p-4 rounded-lg w-1/2 text-right"><p class="text-sm text-gray-500 font-bold uppercase mb-1">Total</p><p class="text-3xl font-black text-blue-600" id="pdf-total-geral">R$ 0,00</p></div></div>
+        <div class="flex justify-end"><div class="w-1/2 text-right"><p class="text-xs text-slate-500 font-bold uppercase mb-1">Total</p><p class="text-3xl font-black text-slate-900" id="pdf-total-geral">R$ 0,00</p></div></div>
     </div>
 
     <script>
         const formatarDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-        // --- FAB MENU (MOBILE) ---
-        let fabAberto = false;
-        function toggleFab() {
-            fabAberto = !fabAberto;
-            const menu = document.getElementById('fab-menu');
-            const icon = document.getElementById('fab-icon');
-            if(fabAberto) {
-                menu.classList.remove('hidden');
-                menu.classList.add('flex');
-                icon.classList.replace('ph-list', 'ph-x');
-            } else {
-                menu.classList.add('hidden');
-                menu.classList.remove('flex');
-                icon.classList.replace('ph-x', 'ph-list');
-            }
-        }
 
         // --- NAVEGAÇÃO & ESTADO ATIVO ---
         function fazerLogin() {
@@ -385,47 +356,34 @@
                 gerarDadosEmMassa();
                 renderizarGraficos();
                 setTimeout(() => document.getElementById('toast-alerta').style.display = 'flex', 800);
-            }, 300);
+            }, 200);
         }
 
         function mudarTela(id) {
-            // Fecha telas
             document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
             document.getElementById('tela-' + id).classList.remove('hidden');
             
-            // Título
-            const titulos = { 'dashboard':'Dashboard', 'orcamentos':'Orçamentos', 'financeiro':'Financeiro', 'clientes':'Clientes (273)', 'veiculos':'Frota (385)' };
+            const titulos = { 'dashboard':'Visão Geral', 'orcamentos':'Controle de Orçamentos', 'financeiro':'Gestão Financeira', 'clientes':'Clientes', 'veiculos':'Frota', 'novo-orcamento':'Emitir Orçamento' };
             if(titulos[id]) document.getElementById('titulo-tela-atual').innerText = titulos[id];
 
-            // Atualiza Menu Desktop (Sidebar)
+            // Update Desktop Sidebar
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 if(btn.getAttribute('data-target') === id) {
-                    btn.classList.add('bg-blue-600', 'text-white');
-                    btn.classList.remove('text-gray-400', 'hover:bg-gray-800');
-                    btn.querySelector('i').classList.add('text-blue-200');
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.remove('text-slate-400', 'hover:bg-slate-800');
+                    btn.querySelector('i').classList.replace('ph', 'ph-fill');
                 } else {
-                    btn.classList.remove('bg-blue-600', 'text-white');
-                    btn.classList.add('text-gray-400', 'hover:bg-gray-800');
-                    btn.querySelector('i').classList.remove('text-blue-200');
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.add('text-slate-400', 'hover:bg-slate-800');
                 }
             });
 
-            // Atualiza Menu Mobile (FAB)
-            document.querySelectorAll('.nav-btn-mob').forEach(btn => {
-                if(btn.getAttribute('data-target') === id) {
-                    btn.classList.add('bg-blue-600', 'text-white');
-                    btn.classList.remove('bg-white', 'text-gray-700');
-                } else {
-                    btn.classList.remove('bg-blue-600', 'text-white');
-                    btn.classList.add('bg-white', 'text-gray-700');
-                }
+            // Update Mobile Bottom Nav
+            document.querySelectorAll('.nav-item-mob').forEach(btn => {
+                if(btn.getAttribute('data-target') === id) btn.classList.add('active');
+                else btn.classList.remove('active');
             });
-
-            // Fecha FAB se estiver aberto
-            if(fabAberto) toggleFab();
         }
-
-        function abrirModalCadastro() { document.getElementById('modal-cadastro').classList.remove('hidden'); }
 
         // --- ORÇAMENTO DINÂMICO ---
         let itensOrcamento = [];
@@ -433,63 +391,101 @@
             const desc = document.getElementById('input-desc').value;
             const qtd = parseFloat(document.getElementById('input-qtd').value);
             const val = parseFloat(document.getElementById('input-val').value);
-            if(!desc || !qtd || !val) { alert("Preencha todos os campos do item."); return; }
+            if(!desc || !qtd || !val) return;
             itensOrcamento.push({ id: Date.now(), desc, qtd, val, subtotal: qtd * val });
             document.getElementById('input-desc').value = ''; document.getElementById('input-val').value = '';
             atualizarListaOrcamento();
         }
-        function removerPeca(id) {
-            itensOrcamento = itensOrcamento.filter(i => i.id !== id);
-            atualizarListaOrcamento();
-        }
+        function removerPeca(id) { itensOrcamento = itensOrcamento.filter(i => i.id !== id); atualizarListaOrcamento(); }
+        
         function atualizarListaOrcamento() {
             const divLista = document.getElementById('lista-pecas-dinamica');
             let total = 0;
-            if (itensOrcamento.length === 0) { divLista.innerHTML = '<div class="text-center text-gray-400 py-4 italic text-sm">Nenhuma peça adicionada.</div>'; document.getElementById('display-total-orcamento').innerText = "R$ 0,00"; return; }
+            if (itensOrcamento.length === 0) { 
+                divLista.innerHTML = '<div class="text-center text-slate-400 py-6 text-sm flex flex-col items-center gap-2"><i class="ph-fill ph-package text-3xl opacity-50"></i>Nenhum item inserido.</div>'; 
+                document.getElementById('display-total-orcamento').innerText = "R$ 0,00"; 
+                return; 
+            }
             divLista.innerHTML = itensOrcamento.map(item => {
                 total += item.subtotal;
-                return `<div class="bg-gray-50 p-2 md:p-3 rounded-lg border flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                    <div class="text-sm"><span class="font-bold text-gray-700">${item.qtd}x</span> <span class="text-gray-600">${item.desc}</span> <span class="text-xs text-gray-400 ml-1">(${formatarDinheiro(item.val)})</span></div>
-                    <div class="flex items-center justify-between w-full md:w-auto gap-4"><span class="font-bold text-gray-800 text-sm">${formatarDinheiro(item.subtotal)}</span><button onclick="removerPeca(${item.id})" class="text-red-400"><i class="ph-bold ph-trash"></i></button></div>
+                return `<div class="bg-white p-3 md:p-4 rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
+                    <div class="text-sm"><span class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mr-2">${item.qtd}x</span><span class="text-slate-700 font-medium">${item.desc}</span> <span class="text-xs text-slate-400 ml-1">(${formatarDinheiro(item.val)})</span></div>
+                    <div class="flex items-center gap-4"><span class="font-bold text-slate-900">${formatarDinheiro(item.subtotal)}</span><button onclick="removerPeca(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1"><i class="ph-bold ph-trash text-lg"></i></button></div>
                 </div>`;
             }).join('');
             document.getElementById('display-total-orcamento').innerText = formatarDinheiro(total);
         }
 
-        // --- PDF ---
+        // --- PDF DINÂMICO ---
         function gerarPDFRealDinamico() {
-            if(itensOrcamento.length === 0) { alert("Adicione peças antes de gerar o PDF!"); return; }
+            if(itensOrcamento.length === 0) { alert("Adicione itens!"); return; }
             document.getElementById('pdf-data-hoje').innerText = new Date().toLocaleDateString('pt-BR');
-            let totalPDF = 0;
-            document.getElementById('pdf-tabela-itens').innerHTML = itensOrcamento.map(i => { totalPDF += i.subtotal; return `<tr class="bg-white"><td class="p-3 font-bold">${i.qtd}</td><td class="p-3">${i.desc}</td><td class="p-3 text-right">${formatarDinheiro(i.val)}</td><td class="p-3 text-right font-bold">${formatarDinheiro(i.subtotal)}</td></tr>`; }).join('');
-            document.getElementById('pdf-total-geral').innerText = formatarDinheiro(totalPDF);
-            
+            let total = 0;
+            document.getElementById('pdf-tabela-itens').innerHTML = itensOrcamento.map(i => { total+=i.subtotal; return `<tr><td class="p-3 border-b">${i.qtd}</td><td class="p-3 border-b">${i.desc}</td><td class="p-3 text-right border-b">${formatarDinheiro(i.val)}</td><td class="p-3 text-right font-bold border-b">${formatarDinheiro(i.subtotal)}</td></tr>`;}).join('');
+            document.getElementById('pdf-total-geral').innerText = formatarDinheiro(total);
             const el = document.getElementById('pdf-template');
             el.classList.remove('hidden');
-            html2pdf().set({ margin: 0, filename: 'Orcamento_5104.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(el).save().then(() => el.classList.add('hidden'));
+            html2pdf().set({ margin: 0.5, filename: 'Orcamento.pdf', jsPDF: { unit: 'in', format: 'letter' } }).from(el).save().then(() => el.classList.add('hidden'));
         }
 
-        // --- DADOS MASSIVOS (Resumido para otimização visual) ---
+        // --- CORREÇÃO DO BUG DO FINANCEIRO & STATUS AVANÇADOS ---
         function gerarDadosEmMassa() {
-            const linhaFin = (d, v, c) => `<div class="flex justify-between p-2 md:p-3 border-b hover:bg-gray-50"><span class="text-xs md:text-sm font-semibold">${d}</span><span class="text-xs md:text-sm font-bold ${c}">${formatarDinheiro(v)}</span></div>`;
-            document.getElementById('fin-receber-pendente').innerHTML = Array.from({length: 180}, (_,i) => linhaFin(`ORÇ #${4000+i}`, Math.random()*2000, 'text-red-600')).join('');
-            document.getElementById('fin-receber-pago').innerHTML = Array.from({length: 250}, (_,i) => linhaFin(`ORÇ #${3000+i}`, Math.random()*3000, 'text-green-600')).join('');
-            document.getElementById('dash-receita').innerText = "R$ 624.530";
-            document.getElementById('dash-a-receber').innerText = "R$ 145.200";
+            // 1. Orçamentos com Status Reais (Aguardando Peça, Pagamento, etc)
+            const statusConfig = [
+                { nome: 'Em Aberto', css: 'bg-slate-100 text-slate-700 border-slate-200' },
+                { nome: 'Autorizado', css: 'bg-blue-50 text-blue-700 border-blue-200' },
+                { nome: 'Aguardando Peça', css: 'bg-orange-50 text-orange-700 border-orange-200' },
+                { nome: 'Aguardando Pagamento', css: 'bg-yellow-50 text-yellow-700 border-yellow-300' },
+                { nome: 'Concluído', css: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+            ];
 
-            document.getElementById('lista-orcamentos-tabela').innerHTML = Array.from({length: 50}, (_,i) => `<tr class="border-b"><td class="p-3 md:p-4 font-bold text-gray-700">#${5100-i}</td><td class="p-3 md:p-4">Cliente ${i+1}</td><td class="p-3 md:p-4">24/08/26</td><td class="p-3 md:p-4 font-bold">${formatarDinheiro(Math.random()*4000)}</td><td class="p-3 md:p-4 text-center"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">Aprovado</span></td></tr>`).join('');
-            document.getElementById('lista-clientes-tabela').innerHTML = Array.from({length: 273}, (_,i) => `<tr class="border-b"><td class="p-3 text-gray-400 font-bold">#${i+1}</td><td class="p-3 font-semibold text-gray-700">Empresa ${i+1}</td><td class="p-3 text-gray-500">000.111.222-33</td><td class="p-3 text-gray-500">(34) 9999-0000</td></tr>`).join('');
-            document.getElementById('lista-veiculos-tabela').innerHTML = Array.from({length: 385}, (_,i) => `<tr class="border-b"><td class="p-3 font-bold text-blue-600">ABC-12${String(i).slice(-2)}</td><td class="p-3 font-semibold text-gray-700">Veículo ${i+1}</td><td class="p-3 text-gray-500">2023</td><td class="p-3 text-gray-500">Cli #${Math.floor(Math.random()*273)+1}</td></tr>`).join('');
+            document.getElementById('lista-orcamentos-tabela').innerHTML = Array.from({length: 25}, (_,i) => {
+                let st = statusConfig[Math.floor(Math.random() * statusConfig.length)];
+                return `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-bold text-slate-700 text-xs md:text-sm">#${5100-i}</td>
+                    <td class="p-4 text-xs md:text-sm"><p class="font-bold text-slate-800">Cliente ${i+1}</p><p class="text-slate-400 text-[10px] md:text-xs">Fiat Toro - ABC1234</p></td>
+                    <td class="p-4 text-xs md:text-sm text-slate-500">24/08/2026</td>
+                    <td class="p-4 font-black text-slate-800 text-xs md:text-sm">${formatarDinheiro(Math.random()*2500 + 300)}</td>
+                    <td class="p-4 text-center"><span class="${st.css} border px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold whitespace-nowrap">${st.nome}</span></td>
+                </tr>`;
+            }).join('');
+
+            // 2. Financeiro CORRIGIDO (Onde a imagem mostrava vazio)
+            const linhaFin = (d, v, c) => `<div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow"><span class="text-xs md:text-sm font-bold text-slate-700">${d}</span><span class="text-xs md:text-sm font-black ${c}">${formatarDinheiro(v)}</span></div>`;
+            
+            // Renderiza Entradas
+            document.getElementById('fin-receber-pendente').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`ORÇ #${4000+i}`, Math.random()*1500 + 200, 'text-red-600')).join('');
+            document.getElementById('fin-receber-pago').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`ORÇ #${3000+i}`, Math.random()*2000 + 400, 'text-emerald-600')).join('');
+            
+            // Renderiza Saídas (Consertando o erro visual reportado na imagem)
+            document.getElementById('fin-pagar-pendente').innerHTML = Array.from({length: 12}, (_,i) => linhaFin(`Fornecedor Peças 0${i+1}`, Math.random()*3000 + 500, 'text-amber-600')).join('');
+            document.getElementById('fin-pagar-pago').innerHTML = Array.from({length: 15}, (_,i) => linhaFin(`Despesa Operacional 0${i+1}`, Math.random()*800 + 150, 'text-slate-500')).join('');
+            
+            // Dashboard Totais
+            document.getElementById('dash-receita').innerText = "R$ 512.430";
+            document.getElementById('dash-a-receber').innerText = "R$ 145.200";
         }
 
-        // --- GRÁFICOS ---
+        // --- GRÁFICOS PREMIUM (Soft UI) ---
         function renderizarGraficos() {
+            Chart.defaults.font.family = 'Inter, sans-serif';
+            Chart.defaults.color = '#94a3b8';
+            
             const ctxL = document.getElementById('graficoFaturamento').getContext('2d');
             const grd = ctxL.createLinearGradient(0, 0, 0, 300);
-            grd.addColorStop(0, 'rgba(37, 99, 235, 0.4)'); grd.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
-            new Chart(ctxL, { type: 'line', data: { labels: ['Mar','Abr','Mai','Jun','Jul','Ago'], datasets: [{ data: [75,82,78,95,115,142], borderColor: '#2563eb', backgroundColor: grd, borderWidth: 3, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } } });
+            grd.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); grd.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
             
-            new Chart(document.getElementById('graficoFrota').getContext('2d'), { type: 'doughnut', data: { labels: ['Prontos','Aguardando','Manutenção'], datasets: [{ data: [210,85,90], backgroundColor: ['#22c55e','#f97316','#3b82f6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } } });
+            new Chart(ctxL, { 
+                type: 'line', 
+                data: { labels: ['Mar','Abr','Mai','Jun','Jul','Ago'], datasets: [{ data: [65,78,72,95,125,142], borderColor: '#2563eb', backgroundColor: grd, borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#ffffff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointRadius: 4 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, border: {display: false} }, y: { border: { display: false }, grid: { color: '#f1f5f9' } } } } 
+            });
+            
+            new Chart(document.getElementById('graficoFrota').getContext('2d'), { 
+                type: 'doughnut', 
+                data: { labels: ['Concluídos','Aguardando Peça','Em Manutenção'], datasets: [{ data: [210,85,90], backgroundColor: ['#10b981','#f59e0b','#3b82f6'], borderWidth: 0, hoverOffset: 5 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } } 
+            });
         }
     </script>
 </body>
