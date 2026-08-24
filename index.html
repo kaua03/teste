@@ -3,399 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoManager - Prototipagem Avançada</title>
-    <!-- Tailwind para o Visual -->
+    <title>AutoManager - Prototipagem de Elite (Stress Test)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Ícones -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Chart.js para Gráficos Animados -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- html2pdf para gerar PDF real -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
+        .fade-out { animation: fadeOut 0.3s ease-in-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        
         .sidebar-text { display: none; white-space: nowrap; }
         .sidebar-hover:hover .sidebar-text { display: inline-block; }
         .sidebar-hover { width: 80px; transition: width 0.3s ease; }
         .sidebar-hover:hover { width: 260px; }
+
+        /* Animação da Notificação (Toast) */
+        .toast-enter { animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-100 h-screen flex overflow-hidden font-sans">
+<body class="bg-gray-100 h-screen overflow-hidden font-sans text-gray-800">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar-hover bg-gray-900 text-white h-full hidden md:flex flex-col shadow-2xl relative z-20">
-        <div class="p-5 flex items-center gap-4 border-b border-gray-800">
-            <i class="ph-fill ph-car-profile text-3xl text-blue-500 min-w-[30px]"></i>
-            <h1 class="text-xl font-bold sidebar-text tracking-wider">Auto<span class="text-blue-500">Manager</span></h1>
+    <!-- ==================== TELA DE LOGIN ==================== -->
+    <div id="tela-login" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center fade-in">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+            <div class="text-center mb-8">
+                <i class="ph-fill ph-car-profile text-5xl text-blue-600 mb-2"></i>
+                <h1 class="text-3xl font-bold text-gray-900">Auto<span class="text-blue-600">Manager</span></h1>
+                <p class="text-gray-500 mt-2">Acesso ao Sistema</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">E-mail</label>
+                    <input type="email" value="admin@oficina.com.br" readonly class="w-full border-2 border-gray-200 rounded-lg p-3 bg-gray-50 outline-none text-gray-500 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+                    <input type="password" value="********" readonly class="w-full border-2 border-gray-200 rounded-lg p-3 bg-gray-50 outline-none text-gray-500 cursor-not-allowed">
+                </div>
+                <button onclick="fazerLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition mt-4 text-lg flex justify-center items-center gap-2">
+                    Acessar Sistema <i class="ph-bold ph-sign-in"></i>
+                </button>
+            </div>
         </div>
-        <nav class="flex-1 mt-6 space-y-2 px-3 overflow-y-auto">
-            <button onclick="mudarTela('dashboard')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
-                <i class="ph ph-squares-four text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Dashboard</span>
-            </button>
-            <button onclick="mudarTela('clientes')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
-                <i class="ph ph-users text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Clientes</span>
-            </button>
-            <button onclick="mudarTela('veiculos')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
-                <i class="ph ph-jeep text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Veículos</span>
-            </button>
-            <button onclick="mudarTela('orcamentos')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
-                <i class="ph ph-receipt text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Orçamentos</span>
-            </button>
-            <button onclick="mudarTela('financeiro')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
-                <i class="ph ph-currency-circle-dollar text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Financeiro</span>
-            </button>
-        </nav>
-    </aside>
+    </div>
 
-    <!-- MOBILE HEADER (Ignorado por brevidade, idêntico ao anterior) -->
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main class="flex-1 h-full overflow-y-auto p-4 md:p-8 mt-16 md:mt-0 bg-gray-50">
+    <!-- ==================== SISTEMA PRINCIPAL (Oculto no Início) ==================== -->
+    <div id="app-layout" class="hidden h-full flex">
         
-        <!-- DASHBOARD COM GRÁFICO -->
-        <section id="tela-dashboard" class="tela block fade-in">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Financeiro</h2>
+        <!-- SIDEBAR -->
+        <aside class="sidebar-hover bg-gray-900 text-white h-full flex flex-col shadow-2xl relative z-20">
+            <div class="p-5 flex items-center gap-4 border-b border-gray-800">
+                <i class="ph-fill ph-car-profile text-3xl text-blue-500 min-w-[30px]"></i>
+                <h1 class="text-xl font-bold sidebar-text tracking-wider">Auto<span class="text-blue-500">Manager</span></h1>
+            </div>
+            <nav class="flex-1 mt-6 space-y-2 px-3 overflow-y-auto">
+                <button onclick="mudarTela('dashboard')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
+                    <i class="ph ph-squares-four text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Dashboard</span>
+                </button>
+                <button onclick="mudarTela('clientes')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
+                    <i class="ph ph-users text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Clientes</span>
+                </button>
+                <button onclick="mudarTela('veiculos')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
+                    <i class="ph ph-jeep text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Veículos</span>
+                </button>
+                <button onclick="mudarTela('financeiro')" class="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800 transition text-left group">
+                    <i class="ph ph-currency-circle-dollar text-2xl text-gray-400 group-hover:text-blue-400"></i><span class="sidebar-text font-medium">Financeiro</span>
+                </button>
+            </nav>
+        </aside>
+
+        <div class="flex-1 flex flex-col h-full relative">
             
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <!-- Cards Omitidos (Mesma estrutura do anterior, focando no novo) -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-green-500"><p class="text-sm text-gray-500 uppercase">Receita Líquida</p><p class="text-3xl font-bold">R$ 58.230</p></div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-blue-500"><p class="text-sm text-gray-500 uppercase">Orçamentos Aprovados</p><p class="text-3xl font-bold">42</p></div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-yellow-500"><p class="text-sm text-gray-500 uppercase">A Receber</p><p class="text-3xl font-bold">R$ 12.150</p></div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-red-500"><p class="text-sm text-gray-500 uppercase">Inadimplência</p><p class="text-3xl font-bold">R$ 3.400</p></div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Gráfico Animado -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">Faturamento (Últimos 6 meses)</h3>
-                    <canvas id="graficoFaturamento" height="100"></canvas>
-                </div>
-                <!-- Alertas -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="ph-fill ph-warning-circle text-orange-500"></i> Cobranças Pendentes</h3>
-                    <div class="space-y-4" id="lista-alertas"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TELA: CLIENTES -->
-        <section id="tela-clientes" class="tela hidden fade-in">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Base de Clientes</h2>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <table class="w-full text-left">
-                    <thead class="border-b bg-gray-50"><tr class="text-gray-600"><th class="p-3">Nome / Empresa</th><th class="p-3">CPF/CNPJ</th><th class="p-3">Contato</th><th class="p-3">Cidade</th></tr></thead>
-                    <tbody id="lista-clientes-tabela"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- TELA: VEÍCULOS -->
-        <section id="tela-veiculos" class="tela hidden fade-in">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Frota Cadastrada</h2>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <table class="w-full text-left">
-                    <thead class="border-b bg-gray-50"><tr class="text-gray-600"><th class="p-3">Placa</th><th class="p-3">Modelo</th><th class="p-3">Proprietário</th><th class="p-3">KM Atual</th></tr></thead>
-                    <tbody id="lista-veiculos-tabela"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- TELA: ORÇAMENTOS LISTA (Similar ao anterior) -->
-        <section id="tela-orcamentos" class="tela hidden fade-in">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Orçamentos</h2>
-                <button onclick="mudarTela('novo-orcamento')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold shadow-lg"> + Novo Orçamento </button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
-                <table class="w-full text-left"><thead class="border-b bg-gray-50"><tr class="text-gray-600"><th class="p-3">N°</th><th class="p-3">Cliente</th><th class="p-3">Valor</th><th class="p-3">Status</th></tr></thead><tbody id="lista-orcamentos-tabela"></tbody></table>
-            </div>
-        </section>
-
-        <!-- TELA: NOVO ORÇAMENTO (Com botões de limpar) -->
-        <section id="tela-novo-orcamento" class="tela hidden fade-in">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-4">
-                    <button onclick="mudarTela('orcamentos')" class="p-2 bg-white rounded-full shadow hover:bg-gray-50"><i class="ph ph-arrow-left text-xl"></i></button>
-                    <h2 class="text-2xl font-bold text-gray-800">Novo Orçamento #5102</h2>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Cliente e Carro -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="text-lg font-bold text-gray-800">1. Vínculos</h3>
-                            <button onclick="abrirModalCadastro()" class="text-blue-600 text-sm font-bold hover:underline flex items-center gap-1"><i class="ph ph-plus-circle"></i> Cadastro Completo (S/ Sair)</button>
+            <!-- HEADER TOPO -->
+            <header class="bg-white shadow-sm border-b px-8 py-4 flex justify-between items-center z-10">
+                <h2 class="text-xl font-bold text-gray-800" id="titulo-tela-atual">Dashboard Financeiro</h2>
+                <div class="flex items-center gap-6">
+                    <div class="relative cursor-pointer">
+                        <i class="ph-fill ph-bell text-2xl text-gray-600 hover:text-blue-600 transition"></i>
+                        <span id="badge-notificacao" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">180</span>
+                    </div>
+                    <div class="flex items-center gap-3 border-l pl-6">
+                        <div class="text-right hidden md:block">
+                            <p class="text-sm font-bold">Admin Oficial</p>
+                            <p class="text-xs text-gray-500">Unidade Matriz</p>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-semibold mb-1">Cliente</label>
-                                <div class="flex gap-2">
-                                    <select id="select-cli" class="w-full border rounded-lg p-2.5 bg-gray-50">
-                                        <option value="">Selecione...</option>
-                                        <option value="1">Kauã Freitas (Você)</option>
-                                        <option value="2">Empresa Logística BR</option>
-                                    </select>
-                                    <button onclick="document.getElementById('select-cli').value=''" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="Limpar Cliente"><i class="ph-bold ph-x"></i></button>
-                                </div>
+                        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">AO</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TOAST DE NOTIFICAÇÃO (Fica flutuando) -->
+            <div id="toast-alerta" class="fixed top-20 right-8 bg-white border-l-4 border-red-500 shadow-2xl p-4 rounded-lg hidden z-50 flex items-start gap-4 max-w-sm">
+                <i class="ph-fill ph-warning-circle text-3xl text-red-500"></i>
+                <div>
+                    <h4 class="font-bold text-gray-900">Atenção Crítica!</h4>
+                    <p class="text-sm text-gray-600 mt-1">Existem <strong class="text-red-600">180 cobranças</strong> vencidas ou pendentes no sistema.</p>
+                </div>
+                <button onclick="document.getElementById('toast-alerta').style.display='none'" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+            </div>
+
+            <!-- ÁREA DAS TELAS -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
+                
+                <!-- TELA: DASHBOARD -->
+                <section id="tela-dashboard" class="tela block fade-in space-y-6">
+                    <!-- Cards Massivos -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-green-500"><p class="text-sm text-gray-500 uppercase font-bold">Receita (Últimos 12m)</p><p class="text-3xl font-bold" id="dash-receita-total">R$ 0,00</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-blue-500"><p class="text-sm text-gray-500 uppercase font-bold">Base de Clientes</p><p class="text-3xl font-bold" id="dash-qtd-clientes">0</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-yellow-500"><p class="text-sm text-gray-500 uppercase font-bold">A Receber (Total)</p><p class="text-3xl font-bold text-yellow-600" id="dash-a-receber">R$ 0,00</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-red-500">
+                            <div class="flex justify-between items-start">
+                                <p class="text-sm text-gray-500 uppercase font-bold">Cobranças Pendentes</p>
+                                <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full animate-pulse">Crítico</span>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold mb-1">Veículo</label>
-                                <div class="flex gap-2">
-                                    <select id="select-vei" class="w-full border rounded-lg p-2.5 bg-gray-50">
-                                        <option value="">Selecione a Placa...</option>
-                                        <option value="1">RXY9A21 - Fiat Strada</option>
-                                    </select>
-                                    <button onclick="document.getElementById('select-vei').value=''" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="Limpar Veículo"><i class="ph-bold ph-x"></i></button>
-                                </div>
+                            <p class="text-3xl font-bold text-red-600 mt-1">180</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm p-6 lg:col-span-2 border border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Fluxo de Caixa Mensal (R$)</h3>
+                            <canvas id="graficoFluxo" height="100"></canvas>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Status da Frota (385 Veículos)</h3>
+                            <div class="flex-1 flex items-center justify-center">
+                                <canvas id="graficoFrota" height="200"></canvas>
                             </div>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Itens (Simulação Simples) -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">2. Peças e Serviços</h3>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" placeholder="Correia Dentada" class="flex-1 border rounded-lg p-2">
-                            <input type="number" placeholder="R$ 150,00" class="w-32 border rounded-lg p-2">
-                            <button class="bg-blue-600 text-white px-4 rounded-lg">Add</button>
+                <!-- TELA: FINANCEIRO -->
+                <section id="tela-financeiro" class="tela hidden fade-in space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- RECEITAS -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h3 class="text-xl font-bold text-green-600 mb-2 border-b pb-4 flex justify-between">
+                                <span><i class="ph-fill ph-trend-up"></i> Entradas / Recebimentos</span>
+                                <span class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full" id="fin-total-recebido">Total: R$ --</span>
+                            </h3>
+                            <div class="mt-4">
+                                <h4 class="font-bold text-red-500 mb-3">Pendentes / Atrasadas (180 registros)</h4>
+                                <div id="fin-receber-pendente" class="space-y-2 max-h-64 overflow-y-auto pr-2"></div>
+                            </div>
+                            <div class="mt-6 pt-6 border-t">
+                                <h4 class="font-bold text-gray-600 mb-3">Recebidas (Histórico Recente)</h4>
+                                <div id="fin-receber-pago" class="space-y-2 max-h-64 overflow-y-auto pr-2 opacity-80"></div>
+                            </div>
                         </div>
-                        <div class="bg-gray-50 p-3 rounded border flex justify-between">
-                            <span>1x Troca de Óleo Motor</span>
-                            <span class="font-bold">R$ 250,00</span>
+
+                        <!-- DESPESAS -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h3 class="text-xl font-bold text-red-600 mb-2 border-b pb-4 flex justify-between">
+                                <span><i class="ph-fill ph-trend-down"></i> Saídas / Pagamentos</span>
+                                <span class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full" id="fin-total-pago">Total: R$ --</span>
+                            </h3>
+                            <div class="mt-4">
+                                <h4 class="font-bold text-yellow-600 mb-3">A Pagar (Próximos 15 dias)</h4>
+                                <div id="fin-pagar-pendente" class="space-y-2 max-h-64 overflow-y-auto pr-2"></div>
+                            </div>
+                            <div class="mt-6 pt-6 border-t">
+                                <h4 class="font-bold text-gray-600 mb-3">Contas Pagas (Histórico)</h4>
+                                <div id="fin-pagar-pago" class="space-y-2 max-h-64 overflow-y-auto pr-2 opacity-80"></div>
+                            </div>
                         </div>
-                        <div class="bg-gray-50 p-3 rounded border flex justify-between mt-2">
-                            <span>4x Pneu Aro 15</span>
-                            <span class="font-bold">R$ 1.600,00</span>
+                    </div>
+                </section>
+
+                <!-- TELA: CLIENTES E VEÍCULOS (Mesclados para demonstração de volume) -->
+                <section id="tela-clientes" class="tela hidden fade-in space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Base de Clientes (Top 50 de 273)</h3>
+                            <input type="text" placeholder="Buscar cliente..." class="border rounded-lg p-2 w-64 outline-none focus:border-blue-500 bg-gray-50">
+                        </div>
+                        <div class="overflow-y-auto max-h-[60vh] border rounded-lg">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-100 sticky top-0 shadow"><tr class="text-gray-600 text-sm"><th class="p-3">ID</th><th class="p-3">Nome / Empresa</th><th class="p-3">CPF/CNPJ</th><th class="p-3">Contato</th></tr></thead>
+                                <tbody id="tabela-clientes-massa" class="text-sm"></tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Resumo e Gerar PDF -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Fechamento</h3>
-                    <div class="flex justify-between mb-4"><span class="font-bold text-xl">Total:</span><span class="font-bold text-2xl text-blue-600">R$ 1.850,00</span></div>
-                    <!-- BOTÃO MÁGICO DO PDF -->
-                    <button onclick="gerarPDFReal()" class="w-full border-2 border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white font-bold py-3 rounded-lg transition mb-3 flex justify-center items-center gap-2">
-                        <i class="ph-fill ph-file-pdf text-xl"></i> Baixar PDF Real
-                    </button>
-                    <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition flex justify-center items-center gap-2">
-                        <i class="ph-fill ph-whatsapp-logo text-xl"></i> Enviar Cliente
-                    </button>
-                </div>
-            </div>
-        </section>
+                <section id="tela-veiculos" class="tela hidden fade-in space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Frota Cadastrada (Top 50 de 385)</h3>
+                        </div>
+                        <div class="overflow-y-auto max-h-[60vh] border rounded-lg">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-100 sticky top-0 shadow"><tr class="text-gray-600 text-sm"><th class="p-3">Placa</th><th class="p-3">Modelo</th><th class="p-3">Ano</th><th class="p-3">Cliente (ID)</th></tr></thead>
+                                <tbody id="tabela-veiculos-massa" class="text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
-        <!-- TELA: FINANCEIRO AVANÇADO -->
-        <section id="tela-financeiro" class="tela hidden fade-in">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Controle Financeiro</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- COLUNA RECEITAS -->
-                <div>
-                    <h3 class="text-xl font-bold text-green-600 mb-4 flex items-center gap-2"><i class="ph-fill ph-trend-up"></i> Entradas</h3>
-                    <!-- A Receber -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                        <h4 class="font-bold text-gray-500 mb-3 border-b pb-2">A Receber (Pendentes)</h4>
-                        <div id="fin-receber-pendente" class="space-y-2"></div>
-                    </div>
-                    <!-- Recebidos -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 opacity-75">
-                        <h4 class="font-bold text-gray-500 mb-3 border-b pb-2">Já Recebidos (Histórico)</h4>
-                        <div id="fin-receber-pago" class="space-y-2"></div>
-                    </div>
-                </div>
-
-                <!-- COLUNA DESPESAS -->
-                <div>
-                    <h3 class="text-xl font-bold text-red-600 mb-4 flex items-center gap-2"><i class="ph-fill ph-trend-down"></i> Saídas</h3>
-                    <!-- A Pagar -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                        <h4 class="font-bold text-gray-500 mb-3 border-b pb-2">A Pagar (Vencimentos)</h4>
-                        <div id="fin-pagar-pendente" class="space-y-2"></div>
-                    </div>
-                    <!-- Pagos -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 opacity-75">
-                        <h4 class="font-bold text-gray-500 mb-3 border-b pb-2">Contas Pagas (Histórico)</h4>
-                        <div id="fin-pagar-pago" class="space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- MODAL CADASTRO COMPLETO (Mas Rápido por não sair da tela) -->
-    <div id="modal-cadastro" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center fade-in p-4">
-        <div class="bg-white rounded-xl w-full max-w-4xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center z-10">
-                <h3 class="text-xl font-bold text-gray-800">Novo Cadastro Completo</h3>
-                <button onclick="fecharModalCadastro()" class="text-gray-400 hover:text-red-500 text-2xl"><i class="ph-bold ph-x"></i></button>
-            </div>
-            
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Bloco Cliente -->
-                <div class="space-y-4">
-                    <h4 class="font-bold text-blue-600 border-b pb-1"><i class="ph-fill ph-user"></i> Dados do Cliente</h4>
-                    <div><label class="text-xs font-semibold text-gray-500 uppercase">Nome / Razão Social *</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">CPF / CNPJ *</label><input type="text" placeholder="Busca automática..." class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1"></div>
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">WhatsApp</label><input type="text" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1"></div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-1"><label class="text-xs font-semibold text-gray-500 uppercase">CEP</label><input type="text" class="w-full border-b-2 border-gray-300 outline-none py-1"></div>
-                        <div class="col-span-2"><label class="text-xs font-semibold text-gray-500 uppercase">Endereço</label><input type="text" class="w-full border-b-2 border-gray-300 outline-none py-1" placeholder="Rua, Bairro..."></div>
-                    </div>
-                    <!-- LGPD -->
-                    <div class="bg-gray-50 p-3 rounded border text-sm flex items-start gap-2 mt-4">
-                        <input type="checkbox" checked class="mt-1">
-                        <span class="text-gray-600">O cliente autoriza o armazenamento destes dados conforme a <b>LGPD</b> para fins de contato e histórico de manutenção.</span>
-                    </div>
-                </div>
-
-                <!-- Bloco Veículo -->
-                <div class="space-y-4">
-                    <h4 class="font-bold text-blue-600 border-b pb-1"><i class="ph-fill ph-jeep"></i> Dados do Veículo</h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">Placa *</label><input type="text" placeholder="Mercosul ou Antiga" class="w-full border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 uppercase"></div>
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">KM Atual</label><input type="number" class="w-full border-b-2 border-gray-300 outline-none py-1"></div>
-                    </div>
-                    <div><label class="text-xs font-semibold text-gray-500 uppercase">Marca / Modelo / Ano</label><input type="text" placeholder="Ex: Honda Civic Touring 2022" class="w-full border-b-2 border-gray-300 outline-none py-1"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">Cor</label><input type="text" class="w-full border-b-2 border-gray-300 outline-none py-1"></div>
-                        <div><label class="text-xs font-semibold text-gray-500 uppercase">Chassi (Opcional)</label><input type="text" class="w-full border-b-2 border-gray-300 outline-none py-1"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50 border-t flex justify-end gap-4 rounded-b-xl">
-                <button onclick="fecharModalCadastro()" class="px-6 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded">Cancelar</button>
-                <button onclick="fecharModalCadastro()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700">Salvar Tudo e Usar no Orçamento</button>
-            </div>
+            </main>
         </div>
     </div>
 
-    <!-- TEMPLATE OCULTO PARA O PDF (O Segredo do PDF Profissional) -->
-    <div id="pdf-template" class="hidden absolute top-0 left-0 w-[800px] bg-white p-10 text-gray-800">
-        <div class="border-b-2 border-gray-800 pb-4 mb-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold">AutoManager Oficina</h1>
-                <p class="text-sm">CNPJ: 00.000.000/0001-00 | Av. Rondon Pacheco, Uberlândia - MG</p>
-            </div>
-            <div class="text-right">
-                <h2 class="text-xl font-bold text-blue-600">ORÇAMENTO #5102</h2>
-                <p class="text-sm">Data: 24/08/2026</p>
-            </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4 mb-8 text-sm border p-4 rounded">
-            <div><p><b>Cliente:</b> Kauã Freitas</p><p><b>CPF/CNPJ:</b> 123.456.789-00</p><p><b>Telefone:</b> (34) 99999-9999</p></div>
-            <div><p><b>Veículo:</b> Fiat Strada 2024</p><p><b>Placa:</b> RXY9A21</p><p><b>KM:</b> 15.430</p></div>
-        </div>
-        <table class="w-full text-left mb-8 border-collapse">
-            <thead class="bg-gray-100 border-y"><tr class="text-sm uppercase"><th class="p-2">Qtd</th><th class="p-2">Descrição</th><th class="p-2 text-right">V. Unit</th><th class="p-2 text-right">Subtotal</th></tr></thead>
-            <tbody class="text-sm">
-                <tr class="border-b"><td class="p-2">1</td><td class="p-2">Troca de Óleo Motor 5W30</td><td class="p-2 text-right">R$ 250,00</td><td class="p-2 text-right">R$ 250,00</td></tr>
-                <tr class="border-b"><td class="p-2">4</td><td class="p-2">Pneu Aro 15 Michelin</td><td class="p-2 text-right">R$ 400,00</td><td class="p-2 text-right">R$ 1.600,00</td></tr>
-            </tbody>
-        </table>
-        <div class="text-right"><p class="text-lg">Subtotal: R$ 1.850,00</p><p class="text-xl font-bold mt-2">TOTAL GERAL: R$ 1.850,00</p></div>
-        <div class="mt-12 text-center text-xs text-gray-500 border-t pt-4">Orçamento válido por 15 dias. Assinatura do Cliente: _________________________</div>
-    </div>
-
-    <!-- O CÉREBRO: JAVASCRIPT -->
+    <!-- O MOTOR (JavaScript) -->
     <script>
-        // 1. Controle de Telas (SPA)
+        // ==========================================
+        // 1. GERADORES DE DADOS EM MASSA (MOCKING)
+        // ==========================================
+        function gerarValor(min, max) { return Math.random() * (max - min) + min; }
+        const formataMoeda = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        // Gerar 273 Clientes
+        const nomes = ["Kauã Freitas", "Larissa Silva", "João Transportes", "Carlos Mecânica", "Empresa Alfa", "Logística Sul", "Marcos Paulo", "Ana Beatriz", "Oficina Central", "Fernando Pneus"];
+        const clientesMock = Array.from({ length: 273 }, (_, i) => ({
+            id: i + 1,
+            nome: nomes[i % nomes.length] + (i > 9 ? ` ${i}` : ''),
+            doc: `000.111.222-${String(i).padStart(2, '0')}`,
+            fone: `(34) 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`
+        }));
+
+        // Gerar 385 Veículos
+        const modelos = ["Fiat Strada", "Honda Civic", "Toyota Hilux", "VW Gol", "Chevrolet Onix", "MB Sprinter", "Ford Ranger"];
+        const veiculosMock = Array.from({ length: 385 }, (_, i) => ({
+            placa: `ABC${Math.floor(Math.random()*9)}D${Math.floor(Math.random()*99)}`,
+            mod: modelos[Math.floor(Math.random() * modelos.length)],
+            ano: Math.floor(gerarValor(2010, 2026)),
+            cliId: Math.floor(gerarValor(1, 273))
+        }));
+
+        // Gerar Financeiro
+        let totalReceita = 0;
+        let totalReceber = 0;
+        let totalDespesas = 0;
+
+        // 180 Cobranças Pendentes exatas
+        const contasReceberPendente = Array.from({ length: 180 }, (_, i) => {
+            let val = gerarValor(300, 4500);
+            totalReceber += val;
+            return { desc: `Orçamento #${4000 + i}`, val: val, status: 'Vencido' };
+        });
+
+        // Contas Recebidas (Histórico para inflar faturamento para ~R$ 650k)
+        const contasRecebidas = Array.from({ length: 200 }, (_, i) => {
+            let val = gerarValor(1500, 5000);
+            totalReceita += val;
+            return { desc: `Orçamento #${3000 + i}`, val: val, status: 'Pago' };
+        });
+
+        // Contas a Pagar / Pagas
+        const contasPagar = Array.from({ length: 45 }, () => ({ desc: `Fornecedor Peças`, val: gerarValor(800, 3000), status: 'A Pagar' }));
+        const contasPagas = Array.from({ length: 120 }, () => {
+            let val = gerarValor(500, 2000);
+            totalDespesas += val;
+            return { desc: `Despesa/Peças`, val: val, status: 'Pago' };
+        });
+
+
+        // ==========================================
+        // 2. FUNÇÕES DE NAVEGAÇÃO E LOGIN
+        // ==========================================
+        function fazerLogin() {
+            // Efeito visual de entrada
+            document.getElementById('tela-login').classList.remove('fade-in');
+            document.getElementById('tela-login').classList.add('fade-out');
+            
+            setTimeout(() => {
+                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('app-layout').classList.remove('hidden');
+                
+                renderizarDados(); // Carrega os milhares de dados
+                inicializarGraficos(); // Desenha os gráficos
+                
+                // Dispara o alerta crítico simulando o aviso ao entrar
+                setTimeout(() => {
+                    const toast = document.getElementById('toast-alerta');
+                    toast.style.display = 'flex';
+                    toast.classList.add('toast-enter');
+                }, 800);
+
+            }, 300);
+        }
+
         function mudarTela(idTela) {
             document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
             document.getElementById('tela-' + idTela).classList.remove('hidden');
-        }
-        function abrirModalCadastro() { document.getElementById('modal-cadastro').classList.remove('hidden'); }
-        function fecharModalCadastro() { document.getElementById('modal-cadastro').classList.add('hidden'); }
-
-        // 2. Gráfico Animado (Chart.js)
-        const ctx = document.getElementById('graficoFaturamento').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
-                datasets: [{
-                    label: 'Faturamento (R$)',
-                    data: [42000, 48000, 45000, 51000, 54000, 58230],
-                    borderColor: '#2563eb', // Blue-600 Tailwind
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4 // Deixa a linha suave/curvada
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-
-        // 3. Mágica do PDF (html2pdf)
-        function gerarPDFReal() {
-            // Pegamos a Div oculta que está perfeitamente diagramada
-            const element = document.getElementById('pdf-template');
-            element.classList.remove('hidden'); // Mostra rápido pro gerador ler
             
-            const opt = {
-                margin:       10,
-                filename:     'Orcamento_5102_Kaua.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            const titulos = {
+                'dashboard': 'Dashboard Financeiro',
+                'clientes': 'Base de Clientes (273 Registros)',
+                'veiculos': 'Frota Cadastrada (385 Registros)',
+                'financeiro': 'Movimentação Financeira'
             };
-
-            // O motor converte o HTML em PDF e faz o download
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.classList.add('hidden'); // Esconde de novo
-            });
+            document.getElementById('titulo-tela-atual').innerText = titulos[idTela];
         }
 
-        // 4. Mock Data Expandido
-        const mockFin = {
-            recPendente: [{desc: "Kauã Freitas - Pneus", val: 1850.00, data: "Vence Hoje"}],
-            recPago: [{desc: "João Logística - Frota", val: 4500.00, data: "Pago 20/08"}],
-            pagPendente: [{desc: "AutoPeças Atacadão", val: 3400.00, data: "Vence 28/08"}],
-            pagPago: [{desc: "Energia Cemig", val: 850.00, data: "Pago 15/08"}]
-        };
 
-        const mockCli = [
-            {nome: "Kauã Freitas", doc: "123.456.789-00", fone: "(34) 99999-9999", cid: "Uberlândia"},
-            {nome: "Empresa Logística", doc: "00.111.222/0001-33", fone: "(34) 3232-0000", cid: "Uberlândia"}
-        ];
+        // ==========================================
+        // 3. RENDERIZAÇÃO MASSIVA (DOM)
+        // ==========================================
+        function renderizarDados() {
+            // Atualiza Top Dashboard (Soma dos arrays para mostrar números colossais)
+            document.getElementById('dash-receita-total').innerText = formataMoeda(totalReceita);
+            document.getElementById('dash-a-receber').innerText = formataMoeda(totalReceber);
+            document.getElementById('dash-qtd-clientes').innerText = "273";
+            
+            document.getElementById('fin-total-recebido').innerText = `Total Pago: ${formataMoeda(totalReceita)}`;
+            document.getElementById('fin-total-pago').innerText = `Total Gasto: ${formataMoeda(totalDespesas)}`;
 
-        const mockVei = [
-            {placa: "RXY9A21", mod: "Fiat Strada 2024", prop: "Kauã Freitas", km: "15.430"},
-            {placa: "QWE-1234", mod: "Honda Civic 2022", prop: "Kauã Freitas", km: "42.000"}
-        ];
-
-        // 5. Renderização (Ao abrir a página)
-        window.onload = () => {
-            // Render Financeiro Duplo
-            const rFin = (arr, id, cor) => {
-                document.getElementById(id).innerHTML = arr.map(i => `
-                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded border">
-                        <div><p class="font-semibold text-sm">${i.desc}</p><p class="text-xs text-gray-500">${i.data}</p></div>
-                        <p class="font-bold ${cor}">R$ ${i.val.toFixed(2)}</p>
+            // Renderizador genérico de listas financeiras
+            const renderLista = (arr, id, corTexto) => {
+                const html = arr.slice(0, 50).map(item => `
+                    <div class="flex justify-between p-3 bg-gray-50 border rounded-lg hover:bg-gray-100 transition">
+                        <span class="font-semibold text-gray-700 text-sm">${item.desc}</span>
+                        <span class="font-bold ${corTexto} text-sm">${formataMoeda(item.val)}</span>
                     </div>
                 `).join('');
+                document.getElementById(id).innerHTML = html + (arr.length > 50 ? `<div class="text-center text-xs text-gray-400 mt-2">... mais ${arr.length - 50} ocultos</div>` : '');
             };
-            rFin(mockFin.recPendente, 'fin-receber-pendente', 'text-yellow-600');
-            rFin(mockFin.recPago, 'fin-receber-pago', 'text-green-600');
-            rFin(mockFin.pagPendente, 'fin-pagar-pendente', 'text-red-600');
-            rFin(mockFin.pagPago, 'fin-pagar-pago', 'text-gray-600');
 
-            // Render Clientes e Veículos
-            document.getElementById('lista-clientes-tabela').innerHTML = mockCli.map(c => `
-                <tr class="border-b hover:bg-gray-50 text-sm"><td class="p-3 font-semibold">${c.nome}</td><td class="p-3">${c.doc}</td><td class="p-3">${c.fone}</td><td class="p-3">${c.cid}</td></tr>
+            renderLista(contasReceberPendente, 'fin-receber-pendente', 'text-red-600'); // 180 Pendentes
+            renderLista(contasRecebidas, 'fin-receber-pago', 'text-green-600');
+            renderLista(contasPagar, 'fin-pagar-pendente', 'text-yellow-600');
+            renderLista(contasPagas, 'fin-pagar-pago', 'text-gray-600');
+
+            // Renderizar Tabelas Massivas (limitado visualmente a 50 p/ não travar navegador antigo, mas os dados existem)
+            document.getElementById('tabela-clientes-massa').innerHTML = clientesMock.slice(0, 50).map(c => `
+                <tr class="border-b hover:bg-blue-50"><td class="p-3 font-bold text-gray-400">#${c.id}</td><td class="p-3 font-semibold text-gray-700">${c.nome}</td><td class="p-3 text-gray-600">${c.doc}</td><td class="p-3 text-gray-600">${c.fone}</td></tr>
             `).join('');
 
-            document.getElementById('lista-veiculos-tabela').innerHTML = mockVei.map(v => `
-                <tr class="border-b hover:bg-gray-50 text-sm"><td class="p-3 font-semibold uppercase">${v.placa}</td><td class="p-3">${v.mod}</td><td class="p-3">${v.prop}</td><td class="p-3">${v.km}</td></tr>
+            document.getElementById('tabela-veiculos-massa').innerHTML = veiculosMock.slice(0, 50).map(v => `
+                <tr class="border-b hover:bg-blue-50"><td class="p-3 font-bold text-blue-600 uppercase">${v.placa}</td><td class="p-3 font-semibold text-gray-700">${v.mod}</td><td class="p-3 text-gray-600">${v.ano}</td><td class="p-3 text-gray-500">Cli #${v.cliId}</td></tr>
             `).join('');
-        };
+        }
+
+
+        // ==========================================
+        // 4. GRÁFICOS (CHART.JS)
+        // ==========================================
+        function inicializarGraficos() {
+            // Gráfico de Barras: Entradas vs Saídas
+            new Chart(document.getElementById('graficoFluxo').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
+                    datasets: [
+                        { label: 'Entradas (R$)', data: [85000, 92000, 88000, 110000, 130000, 145000], backgroundColor: '#16a34a', borderRadius: 4 },
+                        { label: 'Saídas (R$)', data: [42000, 48000, 45000, 60000, 75000, 82000], backgroundColor: '#dc2626', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'top' } } }
+            });
+
+            // Gráfico de Rosca: Status da Frota
+            new Chart(document.getElementById('graficoFrota').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Em Manutenção', 'Aguardando Peça', 'Concluídos', 'Orçamento Pendente'],
+                    datasets: [{
+                        data: [45, 12, 280, 48],
+                        backgroundColor: ['#eab308', '#f97316', '#22c55e', '#3b82f6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right' } } }
+            });
+        }
     </script>
 </body>
 </html>
