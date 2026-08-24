@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentos - Esboço</title>
+    <!-- O Superpoder do Tailwind puxado direto da nuvem -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones do Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col md:flex-row">
+
+    <!-- BARRA LATERAL (Escondida no mobile, fixa no desktop) -->
+    <aside class="bg-gray-900 text-white w-full md:w-64 p-4 flex flex-col justify-between hidden md:flex">
+        <div>
+            <h1 class="text-2xl font-bold mb-8 text-blue-400">Auto<span class="text-white">Manager</span></h1>
+            <nav class="space-y-4">
+                <a href="#" class="flex items-center gap-2 p-2 hover:bg-gray-800 rounded transition"><i class="ph ph-squares-four text-xl"></i> Dashboard</a>
+                <a href="#" class="flex items-center gap-2 p-2 hover:bg-gray-800 rounded transition"><i class="ph ph-users text-xl"></i> Clientes</a>
+                <a href="#" class="flex items-center gap-2 p-2 bg-blue-600 rounded shadow"><i class="ph ph-receipt text-xl"></i> Orçamentos</a>
+            </nav>
+        </div>
+        <div class="text-sm text-gray-500">Esboço v1.0</div>
+    </aside>
+
+    <!-- MENU MOBILE (Visível apenas no celular) -->
+    <div class="bg-gray-900 text-white p-4 flex justify-between items-center md:hidden shadow-lg">
+        <h1 class="text-xl font-bold text-blue-400">Auto<span class="text-white">Manager</span></h1>
+        <button class="p-2 bg-gray-800 rounded"><i class="ph ph-list text-2xl"></i></button>
+    </div>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        
+        <header class="mb-8 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-800">Novo Orçamento</h2>
+            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">Em Rascunho</span>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- COLUNA ESQUERDA: DADOS E ITENS (Ocupa 2/3 da tela no desktop) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Bloco de Cliente -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">1. Dados do Cliente</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Buscar Cliente</label>
+                            <select id="cliente-select" class="w-full border rounded p-2 bg-gray-50 outline-none focus:border-blue-500">
+                                <option value="">Selecione ou digite...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Veículo</label>
+                            <input type="text" id="veiculo-input" readonly class="w-full border rounded p-2 bg-gray-100 cursor-not-allowed" placeholder="Puxa automático">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloco de Itens (Onde a mágica acontece) -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">2. Peças e Serviços</h3>
+                    
+                    <!-- Adicionar novo item -->
+                    <div class="flex flex-col md:flex-row gap-2 mb-4">
+                        <input type="text" id="desc-item" placeholder="Ex: Pastilha de Freio" class="flex-1 border rounded p-2 outline-none focus:border-blue-500">
+                        <input type="number" id="qtd-item" placeholder="Qtd" value="1" class="w-full md:w-20 border rounded p-2 outline-none focus:border-blue-500">
+                        <input type="number" id="valor-item" placeholder="R$ Unit." class="w-full md:w-32 border rounded p-2 outline-none focus:border-blue-500">
+                        <button onclick="adicionarItem()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"><i class="ph ph-plus font-bold"></i></button>
+                    </div>
+
+                    <!-- Lista de itens dinâmica -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-600 text-sm">
+                                    <th class="p-2 border-b">Descrição</th>
+                                    <th class="p-2 border-b">Qtd</th>
+                                    <th class="p-2 border-b">V. Unit</th>
+                                    <th class="p-2 border-b">Subtotal</th>
+                                    <th class="p-2 border-b text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-itens" class="text-sm">
+                                <!-- Os itens vão aparecer aqui via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA: TOTAL E AÇÕES (Ocupa 1/3 da tela) -->
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-4">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">Resumo Financeiro</h3>
+                    
+                    <div class="flex justify-between mb-2 text-gray-600">
+                        <span>Subtotal:</span>
+                        <span id="display-subtotal">R$ 0,00</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4 text-gray-600">
+                        <span>Desconto (R$):</span>
+                        <input type="number" id="valor-desconto" value="0" oninput="calcularTotal()" class="w-24 border rounded p-1 text-right outline-none">
+                    </div>
+
+                    <div class="flex justify-between items-center mb-6 pt-4 border-t border-dashed">
+                        <span class="text-xl font-bold text-gray-800">Total:</span>
+                        <span id="display-total" class="text-2xl font-bold text-blue-600">R$ 0,00</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition flex justify-center items-center gap-2">
+                            <i class="ph ph-whatsapp-logo text-xl"></i> Enviar WhatsApp
+                        </button>
+                        <button class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 rounded transition flex justify-center items-center gap-2">
+                            <i class="ph ph-file-pdf text-xl"></i> Gerar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- O CÉREBRO: Lógica em JavaScript -->
+    <script>
+        // 1. O nosso 'Banco de Dados Falso' (Mock)
+        const clientesMock = [
+            { id: 1, nome: "João Silva", veiculo: "Honda Civic 2021 - ABC1234" },
+            { id: 2, nome: "Maria Oliveira", veiculo: "Fiat Toro 2023 - XYZ9876" },
+            { id: 3, nome: "Empresa Logística SA", veiculo: "Sprinter 2019 - DEF5678" }
+        ];
+
+        // Memória da tela
+        let itensOrcamento = [];
+
+        // Inicia a tela preenchendo os clientes
+        window.onload = () => {
+            const select = document.getElementById('cliente-select');
+            clientesMock.forEach(cliente => {
+                let opt = document.createElement('option');
+                opt.value = cliente.id;
+                opt.textContent = cliente.nome;
+                select.appendChild(opt);
+            });
+        };
+
+        // Simula o vínculo do carro quando escolhe o cliente
+        document.getElementById('cliente-select').addEventListener('change', (e) => {
+            const cliente = clientesMock.find(c => c.id == e.target.value);
+            document.getElementById('veiculo-input').value = cliente ? cliente.veiculo : "";
+        });
+
+        // 2. A Matemática: Adicionar Item
+        function adicionarItem() {
+            const desc = document.getElementById('desc-item').value;
+            const qtd = parseFloat(document.getElementById('qtd-item').value);
+            const valor = parseFloat(document.getElementById('valor-item').value);
+
+            if(!desc || !qtd || !valor) {
+                alert("Preencha todos os campos do item!");
+                return;
+            }
+
+            // Cria o objeto e guarda na memória
+            const novoItem = {
+                id: Date.now(),
+                descricao: desc,
+                quantidade: qtd,
+                valorUnitario: valor,
+                subtotal: qtd * valor
+            };
+            
+            itensOrcamento.push(novoItem);
+            
+            // Limpa os campos para o próximo item
+            document.getElementById('desc-item').value = '';
+            document.getElementById('qtd-item').value = '1';
+            document.getElementById('valor-item').value = '';
+
+            atualizarTela();
+        }
+
+        // Remover item da lista
+        function removerItem(id) {
+            itensOrcamento = itensOrcamento.filter(item => item.id !== id);
+            atualizarTela();
+        }
+
+        // 3. Atualizar o Visual e Calcular Dinheiro
+        function atualizarTela() {
+            const lista = document.getElementById('lista-itens');
+            lista.innerHTML = ''; // Limpa a tabela antes de redesenhar
+
+            let somaSubtotal = 0;
+
+            // Desenha linha por linha
+            itensOrcamento.forEach(item => {
+                somaSubtotal += item.subtotal;
+                
+                lista.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2">${item.descricao}</td>
+                        <td class="p-2">${item.quantidade}</td>
+                        <td class="p-2">R$ ${item.valorUnitario.toFixed(2)}</td>
+                        <td class="p-2 font-semibold">R$ ${item.subtotal.toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="removerItem(${item.id})" class="text-red-500 hover:text-red-700">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Atualiza os valores financeiros
+            document.getElementById('display-subtotal').innerText = `R$ ${somaSubtotal.toFixed(2)}`;
+            calcularTotal(somaSubtotal);
+        }
+
+        function calcularTotal(subtotalPassado) {
+            // Pega o subtotal recalculando a lista inteira se não for passado
+            let subtotal = subtotalPassado || itensOrcamento.reduce((acc, item) => acc + item.subtotal, 0);
+            let desconto = parseFloat(document.getElementById('valor-desconto').value) || 0;
+            
+            let totalFinal = subtotal - desconto;
+            
+            document.getElementById('display-total').innerText = `R$ ${totalFinal.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
