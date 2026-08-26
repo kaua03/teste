@@ -20,15 +20,14 @@
                 <table class="w-full text-left whitespace-nowrap">
                     <thead class="bg-slate-50/80 border-b border-slate-100">
                         <tr class="text-slate-500 text-[10px] md:text-xs uppercase tracking-wider font-bold">
-                            <th class="p-4 md:p-5">Data / Cadastro</th>
                             <th class="p-4 md:p-5">Placa</th>
-                            <th class="p-4 md:p-5">Modelo</th>
-                            <th class="p-4 md:p-5">Detalhes</th>
+                            <th class="p-4 md:p-5">Proprietário</th>
+                            <th class="p-4 md:p-5">Modelo / Detalhes</th>
                             <th class="p-4 md:p-5 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-veiculos-real" class="text-xs md:text-sm divide-y divide-slate-100">
-                        <tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium"><i class="ph-bold ph-spinner animate-spin text-2xl mb-2 text-blue-600"></i><br>Buscando veículos...</td></tr>
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400 font-medium"><i class="ph-bold ph-spinner animate-spin text-2xl mb-2 text-blue-600"></i><br>Buscando veículos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -51,6 +50,15 @@
 
         <div class="bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-slate-100 max-w-4xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                
+                <!-- O CAMPO DO PROPRIETÁRIO AQUI -->
+                <div class="md:col-span-2 border-b border-slate-100 pb-5 mb-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
+                    <select id="vei-dono" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
+                        <option value="">Sem vínculo / Selecione o Proprietário...</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500">*</span></label>
                     <input type="text" id="vei-placa" onkeyup="mascaraPlacaVeiculo(this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
