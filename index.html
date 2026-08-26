@@ -9,77 +9,131 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- A IMPRESSORA PDF: -->
+    
+    <!-- A IMPRESSORA PDF (Carregada no Core do Sistema) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+        }
+        
+        /* Scrollbar Premium */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
+        /* Animações e Estilos do Menu */
         .sidebar-text { display: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; }
         .group:hover .sidebar-text { display: inline-block; opacity: 1; }
+        
+        /* Respiro de Segurança para o Mobile (Evita o corte pelo Bottom Nav) */
         .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
         
+        /* Animação de Entrada Suave */
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden text-slate-800">
 
-    <!-- SIDEBAR DESKTOP -->
+    <!-- ========================================== -->
+    <!-- MENU LATERAL (DESKTOP)                     -->
+    <!-- ========================================== -->
     <aside class="group fixed top-0 left-0 h-full w-20 hover:w-64 bg-slate-900 text-white transition-all duration-300 z-50 hidden md:flex flex-col shadow-2xl overflow-hidden">
         <div class="h-16 flex items-center px-5 border-b border-slate-800 w-64">
             <i class="ph-fill ph-car-profile text-3xl text-blue-500 shrink-0"></i>
             <h1 class="text-xl font-black ml-4 tracking-tight sidebar-text text-white">Auto<span class="text-blue-500">Manager</span></h1>
         </div>
+        
         <nav class="flex-1 mt-6 flex flex-col gap-2 px-3 w-64">
-            <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full bg-blue-600 text-white">
+            <!-- Botão Dashboard -->
+            <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full bg-blue-600 text-white shadow-md">
                 <i class="ph-fill ph-squares-four text-2xl shrink-0"></i><span class="font-bold sidebar-text">Dashboard</span>
             </button>
+            
+            <!-- Botão Orçamentos -->
             <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
                 <i class="ph-fill ph-receipt text-2xl shrink-0"></i><span class="font-bold sidebar-text">Orçamentos</span>
+            </button>
+
+            <!-- Botão Clientes (O NOVO MÓDULO) -->
+            <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
+                <i class="ph-fill ph-users text-2xl shrink-0"></i><span class="font-bold sidebar-text">Clientes</span>
             </button>
         </nav>
     </aside>
 
-    <!-- ÁREA PRINCIPAL -->
+    <!-- ========================================== -->
+    <!-- ÁREA PRINCIPAL E VISOR DA TV               -->
+    <!-- ========================================== -->
     <div class="flex-1 flex flex-col h-full w-full md:ml-20 relative">
+        
+        <!-- Cabeçalho (Header) -->
         <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
             <div class="flex items-center gap-3">
-                <div class="md:hidden bg-blue-600 p-2 rounded-lg text-white shadow-sm"><i class="ph-bold ph-car-profile text-xl"></i></div>
-                <h2 class="text-lg md:text-xl font-black text-slate-800">AutoManager</h2>
+                <div class="md:hidden bg-blue-600 p-2 rounded-lg text-white shadow-sm">
+                    <i class="ph-bold ph-car-profile text-xl"></i>
+                </div>
+                <h2 class="text-lg md:text-xl font-black text-slate-800 tracking-tight">AutoManager</h2>
             </div>
             <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md cursor-pointer hover:bg-blue-700 transition">KF</div>
             </div>
         </header>
 
-        <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in">
-            <!-- Conteúdo Injetado -->
+        <!-- A TELA ONDE OS HTMLS SÃO INJETADOS -->
+        <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in bg-slate-50/50">
+            <!-- O router.js vai injetar o dashboard.html, orcamentos.html ou clientes.html aqui -->
         </main>
     </div>
 
-    <!-- MOBILE NAV -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-2xl pb-2">
+    <!-- ========================================== -->
+    <!-- MENU INFERIOR (MOBILE)                     -->
+    <!-- ========================================== -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-2">
+        
         <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-blue-600 active transition-colors">
             <i class="ph-fill ph-squares-four text-2xl"></i><span class="text-[10px] font-bold">Início</span>
         </button>
-        <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors">
-            <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px] font-bold">Orçamento</span>
+        
+        <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px] font-bold">O.S.</span>
         </button>
+
+        <!-- Botão Mobile de Clientes -->
+        <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-users text-2xl"></i><span class="text-[10px] font-bold">Clientes</span>
+        </button>
+
     </nav>
 
-    <!-- MOTORES JS -->
+    <!-- ========================================== -->
+    <!-- MOTORES JAVASCRIPT DO SISTEMA              -->
+    <!-- ========================================== -->
+    <!-- 1. Supabase (Banco de Dados) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
+    
+    <!-- 2. Roteador de Telas -->
     <script src="router.js"></script>
+    
+    <!-- 3. Módulos Independentes -->
     <script src="dashboard.js"></script>
     <script src="orcamentos.js"></script>
+    <script src="clientes.js"></script>
 
+    <!-- INICIALIZAÇÃO -->
     <script>
-        window.onload = () => { navegarPara('dashboard'); };
+        // Quando a página termina de carregar, ele abre o Dashboard automaticamente
+        window.onload = () => { 
+            navegarPara('dashboard'); 
+        };
     </script>
 </body>
 </html>
