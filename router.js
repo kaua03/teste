@@ -1,51 +1,53 @@
-// router.js
+// ========================================================
+// AutoManager - Roteador Master (SPA)
+// ========================================================
 
-async function navegarPara(nomeDaTela) {
-    const visor = document.getElementById('visor-da-tv');
-    
-    // Efeito de carregamento
-    visor.innerHTML = '<div class="flex justify-center p-10"><div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>';
-    
+async function navegarPara(tela) {
     try {
-        // Busca o arquivo HTML da tela solicitada
-        const resposta = await fetch(`${nomeDaTela}.html`);
-        
-        if (!resposta.ok) throw new Error("Tela não encontrada");
-        
-        const html = await resposta.text();
-        visor.innerHTML = html;
-        
-        // ========================================================
-        // O CÉREBRO DO ROTEADOR (A MÁGICA ACONTECE AQUI)
-        // ========================================================
-        if (nomeDaTela === 'dashboard' && typeof initDashboard === 'function') {
-            initDashboard();
-        } 
-        else if (nomeDaTela === 'orcamentos' && typeof initOrcamentos === 'function') {
-            initOrcamentos(); // <--- ERA ISSO QUE ESTAVA FALTANDO!
-        }
-        
-        atualizarMenuAtivo(nomeDaTela);
-        
-    } catch (erro) {
-        console.error("Erro ao carregar a tela:", erro);
-        visor.innerHTML = `
-            <div class="p-8 text-center bg-red-50 rounded-xl border border-red-100 m-6">
-                <i class="ph-fill ph-warning-circle text-4xl text-red-500 mb-2"></i>
-                <h3 class="text-lg font-bold text-red-700">Erro de Carregamento</h3>
-                <p class="text-sm text-red-600 mt-2">Verifique se você está rodando no GitHub Pages.</p>
-            </div>`;
-    }
-}
+        // 1. Atualiza o visual dos botões no Menu Desktop (Lateral)
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            if(btn.dataset.target === tela) {
+                btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                btn.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                btn.classList.add('text-slate-400', 'hover:bg-slate-800');
+            }
+        });
 
-function atualizarMenuAtivo(tela) {
-    document.querySelectorAll('.nav-btn, .nav-item-mob').forEach(btn => {
-        if (btn.getAttribute('data-target') === tela) {
-            btn.classList.add('text-blue-600', 'active');
-            btn.classList.remove('text-slate-400');
-        } else {
-            btn.classList.remove('text-blue-600', 'active');
-            btn.classList.add('text-slate-400');
-        }
-    });
+        // 2. Atualiza o visual dos botões no Menu Mobile (Inferior)
+        document.querySelectorAll('.nav-item-mob').forEach(btn => {
+            if(btn.dataset.target === tela) {
+                btn.classList.add('text-blue-600');
+                btn.classList.remove('text-slate-400', 'hover:text-slate-600');
+            } else {
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-slate-400', 'hover:text-slate-600');
+            }
+        });
+
+        // 3. Busca o arquivo HTML correspondente
+        const response = await fetch(tela + '.html');
+        if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
+        const html = await response.text();
+        
+        // 4. Injeta o HTML no meio da tela (Visor da TV)
+        document.getElementById('visor-da-tv').innerHTML = html;
+
+        // 5. A MÁGICA: Liga o motor do módulo que acabou de ser carregado
+        if (tela === 'dashboard' && typeof initDashboard === 'function') initDashboard();
+        if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
+        if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
+        if (tela === 'veiculos' && typeof initVeiculos === 'function') initVeiculos();
+
+    } catch (erro) {
+        console.error("Erro no Roteador:", erro);
+        document.getElementById('visor-da-tv').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="ph-bold ph-warning-circle text-5xl mb-4 text-red-400"></i>
+                <h2 class="text-xl font-bold text-slate-700">Erro 404</h2>
+                <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
+            </div>
+        `;
+    }
 }
