@@ -48,16 +48,15 @@ function alternarSubTelaClientes(modo) {
     }
 }
 
-// ---- MÁSCARAS ----
+// ---- MÁSCARAS ESTABELECIDAS PARA PESSOA FÍSICA ----
 function mascaraGeralCliente(tipo, campo) {
     let v = campo.value;
     if (tipo === 'cpf') {
+        // Máscara Estrita de CPF (000.000.000-00)
         v = v.replace(/\D/g, "");
-        if (v.length <= 11) {
-            v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-        } else {
-            v = v.replace(/^(\d{2})(\d)/, "$1.$2"); v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3"); v = v.replace(/\.(\d{3})(\d)/, ".$1/$2"); v = v.replace(/(\d{4})(\d)/, "$1-$2");
-        }
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
         campo.value = v;
     } else if (tipo === 'cep') {
         v = v.replace(/\D/g, ""); v = v.replace(/^(\d{5})(\d)/, "$1-$2"); campo.value = v;
