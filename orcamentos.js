@@ -217,3 +217,46 @@ function gerarPDFSupabase(dadosCodificados) {
     const el = document.getElementById('pdf-template-real');
     html2pdf().set({ margin: 0, filename: `Orcamento_${orc.id}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(el).save();
 }
+
+/**
+ * ========================================================
+ * CONTROLE DA JANELA DE CADASTRO RÁPIDO (MODAL)
+ * ========================================================
+ */
+function abrirModalCadastro(tipo) {
+    const modal = document.getElementById('modal-cadastro-rapido');
+    const titulo = document.getElementById('modal-titulo');
+    const conteudo = document.getElementById('modal-conteudo');
+
+    if (tipo === 'cliente') {
+        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
+        conteudo.innerHTML = `
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label>
+                <input type="text" placeholder="Ex: Maria Souza" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 outline-none focus:border-blue-500 font-medium">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Telefone (WhatsApp)</label>
+                <input type="text" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 outline-none focus:border-blue-500 font-medium">
+            </div>
+        `;
+    } else {
+        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
+        conteudo.innerHTML = `
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Normal ou Mercosul)</label>
+                <input type="text" placeholder="Ex: ABC-1234" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 outline-none focus:border-blue-500 font-bold uppercase">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Marca / Modelo / Ano</label>
+                <input type="text" placeholder="Ex: Fiat Toro 2024" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 outline-none focus:border-blue-500 font-medium">
+            </div>
+        `;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function fecharModalCadastro() {
+    document.getElementById('modal-cadastro-rapido').classList.add('hidden');
+}
