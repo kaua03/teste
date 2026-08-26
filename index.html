@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AutoManager - Master</title>
     
-    <!-- Bibliotecas Oficiais -->
+    <!-- CSS e Visual -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -70,27 +69,23 @@
         </button>
     </nav>
 
-    <!-- CARREGAMENTO DOS MOTORES JS (A ordem importa!) -->
-    <script src="supabase.js"></script>
-    <script src="router.js"></script>
-    <!-- Carregamos a lógica das telas aqui para estarem prontas quando o HTML chegar -->
-    <script src="dashboard.js"></script>
-
-    <script>
-        // Quando abrir o sistema, carrega o Dashboard por padrão
-        window.onload = () => { navegarPara('dashboard'); };
-    </script>
+    <!-- ========================================================= -->
+    <!-- CARREGAMENTO DOS MOTORES JS (A ORDEM É A LEI)             -->
+    <!-- ========================================================= -->
     
-<!-- 1. O CDN Oficial do Supabase (Tem que vir primeiro) -->
+    <!-- 1. A Fundação: Motor Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- 2. Os seus arquivos locais (Sem a pasta 'js/', já que está tudo solto) -->
+    <!-- 2. As Paredes e o Teto: Seus códigos locais -->
     <script src="supabase.js"></script>
     <script src="router.js"></script>
     <script src="dashboard.js"></script>
+    
+    <!-- (Deixe esta linha pronta para quando conectarmos os orçamentos) -->
+    <!-- <script src="orcamentos.js"></script> -->
 
+    <!-- 3. O Gatilho: Dá a partida no sistema -->
     <script>
-        // Quando abrir o sistema, carrega o Dashboard por padrão
         window.onload = () => { navegarPara('dashboard'); };
     </script>
 </body>
