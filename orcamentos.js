@@ -335,7 +335,7 @@ function renderizarTabelaReal(dados) {
                 <span class="${corBg} border px-2 md:px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status}</span>
             </td>
             <td class="p-4 md:p-5 text-center">
-                <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-white text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 border border-slate-200 p-2 rounded-lg transition-colors shadow-sm" title="Baixar PDF">
+                <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-white text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 border border-slate-200 p-2 rounded-lg transition-colors shadow-sm" title="Abrir PDF">
                     <i class="ph-bold ph-file-pdf text-lg"></i>
                 </button>
             </td>
@@ -345,7 +345,7 @@ function renderizarTabelaReal(dados) {
 
 /**
  * ========================================================
- * MODAL DE CADASTRO RÁPIDO (DESIGN COMPACTO MOBILE)
+ * MODAL DE CADASTRO RÁPIDO (DESIGN COMPACTO E LIMPO)
  * ========================================================
  */
 function abrirModalCadastro(tipo) {
@@ -360,7 +360,7 @@ function abrirModalCadastro(tipo) {
 
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        // Padding reduzido (p-2 em vez de p-2.5/p-3) para caber perfeitamente na tela
+        // HTML: E-mail movido para cima, texto do CEP limpo
         conteudo.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div class="md:col-span-2">
@@ -375,16 +375,18 @@ function abrirModalCadastro(tipo) {
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label>
                     <input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                 </div>
-                <div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
+                    <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+
+                <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
                     <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        <span>CEP (Busca Automática)</span>
+                        <span>CEP</span>
                         <span id="cep-status" class="hidden text-[9px]"></span>
                     </label>
                     <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
-                    <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                 </div>
                 <div class="md:col-span-2 flex gap-2">
                     <div class="flex-1">
@@ -503,7 +505,7 @@ function processarSalvamentoModal() {
 
 /**
  * ========================================================
- * GERAÇÃO DE PDF
+ * GERAÇÃO DE PDF (Abre em Nova Aba para Visualização/Impressão)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -533,13 +535,15 @@ function gerarPDFSupabase(dadosCodificados) {
     el.style.top = '0';
     el.style.zIndex = '9999';
 
+    // A mágica acontece aqui: outputPdf('bloburl') cria o arquivo no navegador e window.open exibe.
     html2pdf().set({ 
         margin: 0.5, 
-        filename: `OS_${orc.numero_os}_AutoManager.pdf`, 
+        filename: `OS_${orc.numero_os}.pdf`, 
         image: { type: 'jpeg', quality: 1 }, 
         html2canvas: { scale: 2 }, 
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
-    }).from(el).save().then(() => {
+    }).from(el).outputPdf('bloburl').then((pdfUrl) => {
+        window.open(pdfUrl, '_blank');
         el.style.left = '-9999px';
         el.style.top = '-9999px';
     });
