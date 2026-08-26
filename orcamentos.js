@@ -9,14 +9,60 @@ let imagensUploadArray = [];
 let osEmEdicaoId = null; 
 let idParaExcluir = null;
 
-function initOrcamentos() {
+// Memória viva dos clientes e veículos
+let globalClientes = [];
+let globalVeiculos = [];
+
+// AGORA É ASYNC PARA GARANTIR QUE AS LISTAS CARREGUEM PRIMEIRO
+async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
+    await carregarListasBD();
     buscarOrcamentosSupabase();
 }
 
 /**
- * SISTEMA DE ALERTAS (TOAST FLUTUANTE)
+ * BUSCA OS DADOS REAIS DO BANCO PARA OS DROPDOWNS
  */
+async function carregarListasBD() {
+    const { data: cli } = await window.banco.from('clientes').select('nome, telefone').order('nome');
+    const { data: vei } = await window.banco.from('veiculos').select('placa, modelo, dono_nome').order('placa');
+    
+    globalClientes = cli || [];
+    globalVeiculos = vei || [];
+
+    const selCli = document.getElementById('db-cliente-nome');
+    const selVei = document.getElementById('db-veiculo-placa');
+    
+    selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
+    selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
+
+    globalClientes.forEach(c => {
+        selCli.innerHTML += `<option value="${c.nome}">${c.nome} (${c.telefone || 'Sem número'})</option>`;
+    });
+
+    globalVeiculos.forEach(v => {
+        selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}</option>`;
+    });
+}
+
+/**
+ * A MÁGICA DO "VICE E VERSA"
+ */
+function vincularClienteViceVersa(gatilho) {
+    const selCli = document.getElementById('db-cliente-nome');
+    const selVei = document.getElementById('db-veiculo-placa');
+
+    if (gatilho === 'cliente' && selCli.value) {
+        // Encontra o carro que pertence ao cliente escolhido
+        const veiEncontrado = globalVeiculos.find(v => v.dono_nome === selCli.value);
+        if (veiEncontrado) selVei.value = veiEncontrado.placa;
+    } else if (gatilho === 'veiculo' && selVei.value) {
+        // Encontra o dono do carro escolhido
+        const veiEncontrado = globalVeiculos.find(v => v.placa === selVei.value);
+        if (veiEncontrado && veiEncontrado.dono_nome) selCli.value = veiEncontrado.dono_nome;
+    }
+}
+
 function dispararAlerta(msg, tipo = 'erro') {
     const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
     const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
@@ -62,9 +108,6 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
-/**
- * MÁSCARAS DE DADOS REGEX
- */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function mascaraMoeda(campo) {
@@ -94,9 +137,6 @@ function mascaraGeral(tipo, campo) {
     }
 }
 
-/**
- * LÓGICA DE ITENS E DESCONTOS
- */
 function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
     const nome = document.getElementById('item-nome').value;
@@ -216,7 +256,7 @@ function atualizarInterfaceItensETotais() {
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
 }
 
-/** UPLOAD DE FOTOS (Mantém no sistema, não vai pro PDF) */
+/** UPLOAD DE FOTOS */
 function processarImagens(event) {
     const files = event.target.files;
     if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
@@ -337,7 +377,7 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-// LÓGICA DO MODAL DE EXCLUSÃO
+// LÓGICA DO MODAL DE EXCLUSÃO (Seguro)
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
     const spanNum = document.getElementById('exc-os-num');
@@ -395,7 +435,9 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** CADASTRO RAPIDO VIA CEP */
+/** 
+ * CADASTRO RÁPIDO DENTRO DA O.S 
+ */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
@@ -411,12 +453,102 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); document.getElementById('modal-cadastro-rapido').classList.add('hidden'); }
-async function buscarCEP(cepInput) { /* Mantido */ }
-function processarSalvamentoModal() { /* Mantido */ fecharModalCadastro(); }
+
+async function buscarCEP(cepInput) {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const statusSpan = document.getElementById('cep-status');
+    if(statusSpan) {
+        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
+    }
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await response.json();
+        
+        if (!dados.erro) {
+            document.getElementById('cad-rua').value = dados.logradouro;
+            document.getElementById('cad-bairro').value = dados.bairro;
+            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
+            document.getElementById('cad-num').focus();
+            
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
+                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
+            }
+        } else {
+            dispararAlerta("CEP não encontrado.");
+            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
+        }
+    } catch (e) { 
+        dispararAlerta("Falha ao buscar CEP.");
+        if(statusSpan) statusSpan.classList.add('hidden');
+    }
+}
+
+/**
+ * A MÁGICA DE GRAVAR NO BANCO OFICIAL DIRETO DO ORÇAMENTO
+ */
+async function processarSalvamentoModal() {
+    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
+    btnSalvar.disabled = true;
+
+    try {
+        if (modalTipoAberto === 'cliente') {
+            const nome = document.getElementById('cad-nome').value;
+            const doc = document.getElementById('cad-doc').value;
+            const tel = document.getElementById('cad-tel').value;
+            const email = document.getElementById('cad-email').value;
+            const cep = document.getElementById('cad-cep').value;
+            const rua = document.getElementById('cad-rua').value;
+            const num = document.getElementById('cad-num').value;
+            const bairro = document.getElementById('cad-bairro').value;
+            const cidade = document.getElementById('cad-cidade').value;
+
+            if(!nome || !tel) { dispararAlerta("Nome e Celular são obrigatórios."); return; }
+            
+            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
+            if (error) throw error;
+            
+            await carregarListasBD(); // Recarrega os dropdowns
+            document.getElementById('db-cliente-nome').value = nome; // Seleciona o cliente que acabou de criar
+            dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
+        } else {
+            const placa = document.getElementById('cad-placa').value;
+            const modelo = document.getElementById('cad-modelo').value;
+            const cor = document.getElementById('cad-cor').value;
+            const ano = document.getElementById('cad-ano').value;
+            
+            if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
+            
+            const dono = document.getElementById('db-cliente-nome').value || '';
+            
+            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
+            if (error) throw error;
+            
+            await carregarListasBD(); // Recarrega os dropdowns
+            document.getElementById('db-veiculo-placa').value = placa; // Seleciona o carro que acabou de criar
+            if(dono) document.getElementById('db-cliente-nome').value = dono; // Reaplica o dono
+            
+            dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
+        }
+        fecharModalCadastro();
+    } catch (erro) {
+        if(erro.code === '23505') dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
+        else dispararAlerta("Falha ao salvar no banco de dados.");
+    } finally {
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Oficial';
+        btnSalvar.disabled = false;
+    }
+}
 
 /**
  * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (100% P&B E ALTO CONTRASTE)
+ * MOTOR DE IMPRESSÃO DE PDF (ESTRITAMENTE PRETO, BRANCO E TONS DE CINZA)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -425,7 +557,6 @@ function gerarPDFSupabase(dadosCodificados) {
 
     document.getElementById('pdf-id').innerText = orc.numero_os;
     
-    // A MÁGICA DA AUDITORIA
     const dataAtual = new Date();
     const dataFormatada = dataAtual.toLocaleDateString('pt-BR');
     const horaFormatada = dataAtual.toLocaleTimeString('pt-BR');
@@ -441,7 +572,6 @@ function gerarPDFSupabase(dadosCodificados) {
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
     
     let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">`;
-    // Fundo PRETO ABSOLUTO, texto branco.
     htmlTabela += `<thead style="background-color: #000000; color: white;">
         <tr>
             <th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th>
