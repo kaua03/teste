@@ -1,24 +1,54 @@
-// orcamentos.js
+// ========================================================
+// AutoManager - Módulo de Orçamentos e O.S.
+// ========================================================
 
+// Memória de Estado da Tela
 let itensTemporarios = [];
 let valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
 let modalTipoAberto = '';
 
+/**
+ * Iniciado pelo Roteador (router.js) quando a tela carrega
+ */
 function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     buscarOrcamentosSupabase();
 }
 
+/**
+ * SISTEMA DE ALERTAS (TOAST) DE ALTA PERFORMANCE
+ */
+function dispararAlerta(msg, tipo = 'erro') {
+    const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
+    const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
+    
+    // Remove alertas antigos se existirem
+    const alertaAntigo = document.getElementById('alerta-toast-flutuante');
+    if (alertaAntigo) alertaAntigo.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'alerta-toast-flutuante';
+    toast.className = `fixed top-20 right-4 md:right-8 z-[300] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
+    toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast) toast.remove(); }, 4000);
+}
+
+/**
+ * ALTERNAR ENTRE TELAS E RESETAR DADOS
+ */
 function alternarSubTelaOrcamento(modo) {
     const viewLista = document.getElementById('view-lista-orcamentos');
     const viewNovo = document.getElementById('view-novo-orcamento');
 
     if (modo === 'novo') {
-        // Reseta tudo
+        // Reseta os campos para o padrão exigido
         document.getElementById('db-cliente-nome').value = '';
         document.getElementById('db-veiculo-placa').value = '';
-        document.getElementById('db-status').value = 'Orçamento';
+        document.getElementById('db-status').value = 'Em Aberto'; // Default obrigatório
         document.getElementById('desc-val').value = '';
+        
         itensTemporarios = [];
         calcularTotais();
         
@@ -33,17 +63,15 @@ function alternarSubTelaOrcamento(modo) {
 
 /**
  * ========================================================
- * MÁSCARAS E FUNÇÕES AUXILIARES
+ * MÁSCARAS DE PREENCHIMENTO E FORMATAÇÃO (REGEX)
  * ========================================================
  */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-function mascaraMoeda(campo, evento) {
-    let valor = campo.value.replace(/\D/g, ''); // Remove tudo que não for número
+function mascaraMoeda(campo) {
+    let valor = campo.value.replace(/\D/g, ''); 
     if (valor === '') { campo.value = ''; return; }
-    
-    valor = (parseInt(valor, 10) / 100).toFixed(2); // Divide por 100 para ter os centavos
-    // Formata o número de volta para string brasileira: 1.000,00
+    valor = (parseInt(valor, 10) / 100).toFixed(2);
     campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
 }
 
@@ -54,11 +82,18 @@ function reverterMoeda(texto) {
 
 function mascaraGeral(tipo, campo) {
     let v = campo.value;
-    if (tipo === 'cpf') {
+    if (tipo === 'cpf_cnpj') {
         v = v.replace(/\D/g, "");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        if (v.length <= 11) {
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        } else {
+            v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+            v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+            v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+            v = v.replace(/(\d{4})(\d)/, "$1-$2");
+        }
         campo.value = v;
     } else if (tipo === 'cep') {
         v = v.replace(/\D/g, "");
@@ -70,7 +105,7 @@ function mascaraGeral(tipo, campo) {
         v = v.replace(/(\d)(\d{4})$/, "$1-$2");
         campo.value = v;
     } else if (tipo === 'placa') {
-        // Aceita placa antiga (ABC-1234) e Mercosul (ABC1D23)
+        // Aceita placa Padrão e Mercosul e força maiúsculo
         v = v.toUpperCase().replace(/[^A-Z0-9]/g, "");
         if (v.length > 3) v = v.replace(/^([A-Z]{3})([0-9A-Z]{0,4})/, "$1-$2");
         campo.value = v;
@@ -79,7 +114,7 @@ function mascaraGeral(tipo, campo) {
 
 /**
  * ========================================================
- * MOTOR DE ITENS E CÁLCULO DE DESCONTOS (O NÚCLEO)
+ * MOTOR DE ITENS, EDIÇÃO E DESCONTOS
  * ========================================================
  */
 function adicionarOuEditarItem() {
@@ -89,25 +124,30 @@ function adicionarOuEditarItem() {
     const valString = document.getElementById('item-val').value;
     const idEdit = document.getElementById('item-id-edit').value;
 
-    if(!desc || !qtd || !valString) return;
+    // VALIDAÇÕES DE SEGURANÇA EXIGIDAS
+    if(!desc) { dispararAlerta("A descrição da Peça/Serviço é obrigatória."); return; }
+    if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     
     const valFloat = reverterMoeda(valString);
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
+
     const sub = qtd * valFloat;
 
     if (idEdit) {
-        // Modo Edição
+        // MODO EDIÇÃO
         const index = itensTemporarios.findIndex(i => i.id_temp == idEdit);
         if (index > -1) {
             itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
         }
         document.getElementById('item-id-edit').value = '';
         document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add';
-        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-800');
+        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
     } else {
-        // Modo Novo
+        // MODO INSERÇÃO
         itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
     }
 
+    // Limpa campos
     document.getElementById('item-desc').value = '';
     document.getElementById('item-val').value = '';
     document.getElementById('item-qtd').value = '1';
@@ -125,27 +165,27 @@ function editarItem(id) {
     const item = itensTemporarios.find(i => i.id_temp === id);
     if (!item) return;
 
+    // Joga os dados de volta para os inputs
     document.getElementById('item-tipo').value = item.tipo;
     document.getElementById('item-desc').value = item.descricao;
     document.getElementById('item-qtd').value = item.quantidade;
     
-    // Alimenta e simula a digitação para a máscara funcionar
     const inputVal = document.getElementById('item-val');
     inputVal.value = (item.valor_unitario * 100).toString(); 
-    mascaraMoeda(inputVal);
+    mascaraMoeda(inputVal); // Aplica a máscara no valor resgatado
 
     document.getElementById('item-id-edit').value = item.id_temp;
     
+    // Transforma o botão Add em Salvar
     const btn = document.getElementById('btn-add-item');
-    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar';
-    btn.classList.replace('bg-slate-800', 'bg-emerald-600');
+    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
+    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
 }
 
 function calcularTotais() {
     let sumPecas = 0;
     let sumServicos = 0;
 
-    // 1. Somatória base
     itensTemporarios.forEach(item => {
         if (item.tipo === 'Peça') sumPecas += item.subtotal;
         else sumServicos += item.subtotal;
@@ -154,11 +194,9 @@ function calcularTotais() {
     let totalBruto = sumPecas + sumServicos;
     let descValor = 0;
 
-    // 2. Lógica de Desconto
-    const descTipo = document.getElementById('desc-tipo').value; // 'perc' ou 'val'
-    const descAlvo = document.getElementById('desc-alvo').value; // 'total', 'pecas', 'servicos'
-    let inputDesc = document.getElementById('desc-val').value.replace(',', '.'); // Converte , para . para cálculo
-    let descFator = parseFloat(inputDesc) || 0;
+    const descTipo = document.getElementById('desc-tipo').value; 
+    const descAlvo = document.getElementById('desc-alvo').value; 
+    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
 
     if (descFator > 0) {
         let baseDeCalculo = 0;
@@ -169,7 +207,6 @@ function calcularTotais() {
         if (descTipo === 'perc') {
             descValor = baseDeCalculo * (descFator / 100);
         } else {
-            // Se for valor fixo, não pode ser maior que a base
             descValor = descFator > baseDeCalculo ? baseDeCalculo : descFator; 
         }
     }
@@ -186,18 +223,22 @@ function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
 
     if (itensTemporarios.length === 0) {
-        divLista.innerHTML = '<div class="text-center text-slate-400 py-6 text-[10px] md:text-xs uppercase font-bold tracking-wider bg-slate-50 rounded-xl border border-dashed border-slate-200">Nenhum item adicionado.</div>';
+        divLista.innerHTML = `
+        <div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i>
+            <p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p>
+        </div>`;
     } else {
         divLista.innerHTML = itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             return `
-            <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm">
+            <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
-                    <span class="border ${badgeClass} px-2 py-0.5 rounded text-[10px] font-black uppercase mr-2">${item.tipo}</span>
+                    <span class="border ${badgeClass} px-2 py-0.5 rounded text-[10px] font-black uppercase mr-2 shadow-sm">${item.tipo}</span>
                     <span class="font-bold text-slate-800 text-sm">${item.quantidade}x ${item.descricao}</span> 
                     <span class="text-xs text-slate-400 ml-1">(${formataDinheiro(item.valor_unitario)})</span>
                 </div>
-                <div class="flex items-center gap-3 w-full lg:w-auto justify-between border-t lg:border-t-0 border-slate-100 pt-2 lg:pt-0">
+                <div class="flex items-center gap-3 w-full lg:w-auto justify-between border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
                     <span class="font-black text-slate-900 text-sm md:text-base">${formataDinheiro(item.subtotal)}</span>
                     <div class="flex gap-1">
                         <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
@@ -208,13 +249,11 @@ function atualizarInterfaceItensETotais() {
         }).join('');
     }
 
-    // Atualiza Painel Escuro
     document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
     document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
 }
-
 
 /**
  * ========================================================
@@ -228,6 +267,8 @@ async function buscarOrcamentosSupabase() {
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
         console.error("Erro na listagem:", erro);
+        document.getElementById('tabela-orcamentos-real').innerHTML = `
+            <tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao conectar no banco de dados.</td></tr>`;
     }
 }
 
@@ -236,36 +277,37 @@ async function salvarOrcamentoReal() {
     const placa = document.getElementById('db-veiculo-placa').value;
     const status = document.getElementById('db-status').value;
 
-    if (!nome || !placa) { alert("Vincule um Cliente e uma Placa."); return; }
-    if (itensTemporarios.length === 0) { alert("A O.S precisa de peças ou serviços."); return; }
+    // VALIDAÇÕES CRÍTICAS
+    if (!nome) { dispararAlerta("Selecione ou cadastre um Cliente primeiro."); return; }
+    if (!placa) { dispararAlerta("Vincule a Placa do veículo."); return; }
+    if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços para ser gravada."); return; }
 
     const btnSalvar = document.getElementById('btn-salvar-db');
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO O.S...';
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO...';
     btnSalvar.disabled = true;
 
     try {
-        // Empacotamos TUDO (Itens e Resumo Financeiro) no JSONB do banco
         const payloadJSONB = {
             lista_itens: itensTemporarios,
             resumo: valoresFinais
         };
 
-        const { error } = await window.banco.from('orcamentos').insert([
-            {
-                cliente_nome: nome,
-                veiculo_placa: placa,
-                valor_total: valoresFinais.total, // Salva o valor final real
-                status: status,
-                itens: payloadJSONB // Suporta objetos complexos naturalmente!
-            }
-        ]);
+        const { error } = await window.banco.from('orcamentos').insert([{
+            cliente_nome: nome,
+            veiculo_placa: placa,
+            valor_total: valoresFinais.total,
+            status: status,
+            itens: payloadJSONB
+        }]);
 
         if (error) throw error;
+        
+        dispararAlerta("Ordem de Serviço salva com sucesso!", "sucesso");
         alternarSubTelaOrcamento('lista');
         
     } catch (erro) {
-        console.error(erro);
-        alert("Falha ao salvar a O.S.");
+        console.error("Erro ao gravar:", erro);
+        dispararAlerta("Falha de comunicação com o servidor.");
     } finally {
         btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
         btnSalvar.disabled = false;
@@ -274,47 +316,56 @@ async function salvarOrcamentoReal() {
 
 function obterCorStatus(status) {
     const cores = {
-        'Orçamento': 'bg-slate-100 text-slate-600 border-slate-200',
-        'Em Aberto': 'bg-slate-100 text-slate-600 border-slate-200',
-        'Aguardando Aprovação': 'bg-amber-50 text-amber-600 border-amber-200',
-        'Aguardando Pagamento': 'bg-amber-50 text-amber-600 border-amber-200',
-        'Aguardando Peça': 'bg-orange-50 text-orange-600 border-orange-200',
-        'Aprovado': 'bg-blue-50 text-blue-600 border-blue-200',
-        'Em Execução': 'bg-blue-50 text-blue-600 border-blue-200',
+        'Em Aberto': 'bg-slate-100 text-slate-700 border-slate-200',
+        'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'Aguardando Peça': 'bg-orange-50 text-orange-700 border-orange-200',
+        'Aguardando Pagamento': 'bg-amber-50 text-amber-700 border-amber-200',
+        'Aprovado': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Em Execução': 'bg-indigo-50 text-indigo-700 border-indigo-200',
         'Finalizado': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'Não Usar': 'bg-red-50 text-red-600 border-red-200'
+        'Não Usar': 'bg-red-50 text-red-700 border-red-200',
+        'Orçamento': 'bg-slate-50 text-slate-500 border-slate-200'
     };
-    return cores[status] || cores['Orçamento'];
+    return cores[status] || cores['Em Aberto'];
 }
 
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
+    
     if (dados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">Nenhuma O.S registrada.</td></tr>';
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="p-10 text-center">
+                <i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i>
+                <p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada no sistema.</p>
+            </td>
+        </tr>`;
         return;
     }
 
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
+        const orcJSON = encodeURIComponent(JSON.stringify(orc));
 
         return `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 md:p-5">
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${dataStr}</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p>
                 <p class="font-black text-slate-800 text-xs md:text-sm">O.S #${String(orc.id).padStart(4,'0')}</p>
             </td>
             <td class="p-4 md:p-5">
                 <p class="font-bold text-slate-700 text-xs md:text-sm">${orc.cliente_nome}</p>
-                <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">${orc.veiculo_placa}</p>
+                <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p>
             </td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-xs md:text-sm">${formataDinheiro(orc.valor_total)}</td>
             <td class="p-4 md:p-5 text-center">
-                <span class="${corBg} border px-3 py-1 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status}</span>
+                <span class="${corBg} border px-2 md:px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status}</span>
             </td>
             <td class="p-4 md:p-5 text-center">
-                <!-- Ações vazias por enquanto, preparadas para PDF -->
-                <button class="bg-white text-slate-400 hover:text-blue-600 border border-slate-200 p-2 rounded-lg transition-colors"><i class="ph-bold ph-printer text-lg"></i></button>
+                <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-white text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 border border-slate-200 p-2 rounded-lg transition-colors shadow-sm" title="Baixar PDF">
+                    <i class="ph-bold ph-file-pdf text-lg"></i>
+                </button>
             </td>
         </tr>`;
     }).join('');
@@ -322,7 +373,7 @@ function renderizarTabelaReal(dados) {
 
 /**
  * ========================================================
- * MODAL CADASTRO RÁPIDO & INTEGRAÇÃO VIA CEP
+ * MODAL CADASTRO RÁPIDO & INTEGRAÇÃO API VIA CEP
  * ========================================================
  */
 function abrirModalCadastro(tipo) {
@@ -337,11 +388,11 @@ function abrirModalCadastro(tipo) {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo / Razão Social</label>
-                    <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
+                    <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF / CNPJ</label>
-                    <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                    <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf_cnpj', this)" maxlength="18" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label>
@@ -349,7 +400,11 @@ function abrirModalCadastro(tipo) {
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CEP (Busca Automática)</label>
-                    <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-blue-600">
+                    <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-blue-600">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
+                    <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                 </div>
                 <div class="md:col-span-2 flex gap-3">
                     <div class="flex-1">
@@ -375,31 +430,24 @@ function abrirModalCadastro(tipo) {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
         conteudo.innerHTML = `
             <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa do Veículo</label>
-                    <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
-                </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Antiga ou Mercosul)</label>
+                        <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label>
                         <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                     </div>
-                    <div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="col-span-2">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
                         <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
                         <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vincular a Cliente</label>
-                        <select id="cad-vinculo" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                            <option value="">Selecione...</option>
-                            <option value="1">Kauã Freitas</option>
-                        </select>
                     </div>
                 </div>
             </div>
@@ -413,6 +461,7 @@ function fecharModalCadastro() {
     document.getElementById('modal-cadastro-rapido').classList.add('hidden');
 }
 
+// Bate nos Correios e preenche automático
 async function buscarCEP(cepInput) {
     const cep = cepInput.replace(/\D/g, '');
     if (cep.length !== 8) return;
@@ -425,13 +474,83 @@ async function buscarCEP(cepInput) {
             document.getElementById('cad-rua').value = dados.logradouro;
             document.getElementById('cad-bairro').value = dados.bairro;
             document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
-            document.getElementById('cad-num').focus(); // Joga o cursor para o número
+            document.getElementById('cad-num').focus();
+        } else {
+            dispararAlerta("CEP não encontrado.");
         }
-    } catch (e) { console.error("Erro no CEP", e); }
+    } catch (e) { 
+        console.error("Erro no CEP", e); 
+        dispararAlerta("Falha ao buscar CEP.");
+    }
 }
 
+// Futuramente vai gravar no Supabase, por enquanto só mocka visualmente
 function processarSalvamentoModal() {
-    // Aqui no futuro faremos um supabase.from('clientes').insert(...)
-    alert("Simulação: " + (modalTipoAberto === 'cliente' ? "Cliente" : "Veículo") + " salvo com sucesso! No próximo passo ligamos as tabelas reais.");
+    if (modalTipoAberto === 'cliente') {
+        const nome = document.getElementById('cad-nome').value;
+        if(!nome) { dispararAlerta("O nome é obrigatório."); return; }
+        
+        // Injeta a opção no select principal
+        const selectCliente = document.getElementById('db-cliente-nome');
+        selectCliente.innerHTML += `<option value="${nome}" selected>${nome}</option>`;
+        
+        dispararAlerta("Cliente cadastrado e vinculado!", "sucesso");
+    } else {
+        const placa = document.getElementById('cad-placa').value;
+        const modelo = document.getElementById('cad-modelo').value;
+        if(!placa) { dispararAlerta("A placa é obrigatória."); return; }
+        
+        const selectVeiculo = document.getElementById('db-veiculo-placa');
+        selectVeiculo.innerHTML += `<option value="${placa}" selected>${placa} - ${modelo}</option>`;
+        
+        dispararAlerta("Veículo cadastrado e vinculado!", "sucesso");
+    }
     fecharModalCadastro();
+}
+
+/**
+ * ========================================================
+ * GERAÇÃO DE PDF OFICIAL (VIA HTML2PDF)
+ * ========================================================
+ */
+function gerarPDFSupabase(dadosCodificados) {
+    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
+    const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    document.getElementById('pdf-id').innerText = String(orc.id).padStart(4, '0');
+    document.getElementById('pdf-data').innerText = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
+    document.getElementById('pdf-cli').innerText = orc.cliente_nome;
+    document.getElementById('pdf-vei').innerText = orc.veiculo_placa;
+    document.getElementById('pdf-tot').innerText = format(orc.valor_total);
+
+    // O pulo do gato: Acessando o JSONB que gravamos lá dentro
+    const itensReais = orc.itens.lista_itens || [];
+    
+    document.getElementById('pdf-itens').innerHTML = itensReais.map(i => `
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-transform: uppercase;">${i.tipo}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${i.quantidade}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${i.descricao}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${format(i.valor_unitario)}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${format(i.subtotal)}</td>
+        </tr>
+    `).join('');
+
+    const el = document.getElementById('pdf-template-real');
+    
+    // Mostra pra tirar foto, depois esconde
+    el.style.left = '0';
+    el.style.top = '0';
+    el.style.zIndex = '9999';
+
+    html2pdf().set({ 
+        margin: 0.5, 
+        filename: `OS_${String(orc.id).padStart(4, '0')}_AutoManager.pdf`, 
+        image: { type: 'jpeg', quality: 1 }, 
+        html2canvas: { scale: 2 }, 
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+    }).from(el).save().then(() => {
+        el.style.left = '-9999px';
+        el.style.top = '-9999px';
+    });
 }
