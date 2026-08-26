@@ -19,7 +19,6 @@ async function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
-/** BUSCA O NOME DOS CLIENTES SEM O NUMERO DE TELEFONE NO DROPDOWN **/
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
@@ -138,7 +137,7 @@ function adicionarOuEditarItem() {
     if(!nome) { dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     const valFloat = reverterMoeda(valString);
-    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
 
     const sub = qtd * valFloat;
 
@@ -260,7 +259,6 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-/** TIRA A "FOTOGRAFIA" DOS DADOS NO MOMENTO DO SALVAMENTO **/
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -275,7 +273,6 @@ async function salvarOrcamentoReal() {
     btnSalvar.disabled = true;
 
     try {
-        // Encontra todos os detalhes atuais do cliente e do veículo
         const clienteObj = globalClientes.find(c => c.nome === nome) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
 
@@ -385,6 +382,7 @@ function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     const modal = document.getElementById('modal-cadastro-rapido'); const titulo = document.getElementById('modal-titulo'); const conteudo = document.getElementById('modal-conteudo');
+    
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
@@ -432,9 +430,6 @@ async function buscarCEP(cepInput) {
     }
 }
 
-/**
- * A MÁGICA DE GRAVAR NO BANCO OFICIAL DIRETO DO ORÇAMENTO
- */
 async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
@@ -490,7 +485,7 @@ async function processarSalvamentoModal() {
 }
 
 /**
- * PDF COM FOTOGRAFIA DE DADOS (LINHAS NOVAS DE ENDEREÇO SEGURO)
+ * PDF COM FOTOGRAFIA DE DADOS (LISTA ORGANIZADA)
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
@@ -504,26 +499,40 @@ function gerarPDFSupabase(dadosCodificados) {
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
     let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
 
-    let cliTelefone = cliDados.telefone ? ` - ${cliDados.telefone}` : '';
-    
-    // Assegura que o elemento existe antes de tentar preencher (Evita aquele erro)
-    const pdfCliEl = document.getElementById('pdf-cli');
-    if(pdfCliEl) pdfCliEl.innerHTML = `<b>${orc.cliente_nome}</b>${cliTelefone}`;
-    
+    const pdfCliNomeEl = document.getElementById('pdf-cli-nome');
+    if(pdfCliNomeEl) pdfCliNomeEl.innerText = orc.cliente_nome || '---';
+
+    const pdfCliDocEl = document.getElementById('pdf-cli-doc');
+    if(pdfCliDocEl) pdfCliDocEl.innerText = cliDados.documento || '---';
+
+    const pdfCliTelEl = document.getElementById('pdf-cli-tel');
+    if(pdfCliTelEl) pdfCliTelEl.innerText = cliDados.telefone || '---';
+
+    const pdfCliEmailEl = document.getElementById('pdf-cli-email');
+    if(pdfCliEmailEl) pdfCliEmailEl.innerText = cliDados.email || '---';
+
     const pdfCliEndEl = document.getElementById('pdf-cli-end');
     if(pdfCliEndEl) {
-        let endereco = cliDados.endereco ? `${cliDados.endereco}, ${cliDados.numero || 'S/N'} - ${cliDados.bairro || ''} ${cliDados.cidade ? '(' + cliDados.cidade + ')' : ''}` : 'Endereço não cadastrado';
-        pdfCliEndEl.innerText = endereco;
+        let enderecoArr = [];
+        if(cliDados.endereco) enderecoArr.push(cliDados.endereco);
+        if(cliDados.numero) enderecoArr.push(cliDados.numero);
+        if(cliDados.bairro) enderecoArr.push(`- ${cliDados.bairro}`);
+        if(cliDados.cidade) enderecoArr.push(`(${cliDados.cidade})`);
+        if(cliDados.cep) enderecoArr.push(`- CEP: ${cliDados.cep}`);
+        pdfCliEndEl.innerText = enderecoArr.length > 0 ? enderecoArr.join(' ') : 'Endereço não cadastrado';
     }
 
-    const pdfVeiEl = document.getElementById('pdf-vei');
-    if(pdfVeiEl) pdfVeiEl.innerHTML = `<b>${orc.veiculo_placa}</b> - ${veiDados.modelo || ''}`;
-    
-    const pdfVeiDetEl = document.getElementById('pdf-vei-det');
-    if(pdfVeiDetEl) {
-        let veiAnoCor = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
-        pdfVeiDetEl.innerText = veiAnoCor;
-    }
+    const pdfVeiModEl = document.getElementById('pdf-vei-mod');
+    if(pdfVeiModEl) pdfVeiModEl.innerText = veiDados.modelo || '---';
+
+    const pdfVeiPlacaEl = document.getElementById('pdf-vei-placa');
+    if(pdfVeiPlacaEl) pdfVeiPlacaEl.innerText = orc.veiculo_placa || '---';
+
+    const pdfVeiCorEl = document.getElementById('pdf-vei-cor');
+    if(pdfVeiCorEl) pdfVeiCorEl.innerText = veiDados.cor || '---';
+
+    const pdfVeiAnoEl = document.getElementById('pdf-vei-ano');
+    if(pdfVeiAnoEl) pdfVeiAnoEl.innerText = veiDados.ano || '---';
 
     const itensReais = orc.itens.lista_itens || [];
     const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
