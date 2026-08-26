@@ -30,16 +30,16 @@ async function carregarListasBD() {
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
     
-    selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
-    selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
+    if (selCli) selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
+    if (selVei) selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
 
     globalClientes.forEach(c => {
-        selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+        if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
     });
 
     globalVeiculos.forEach(v => {
         const textoCor = v.cor ? ` - ${v.cor}` : '';
-        selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${textoCor}</option>`;
+        if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${textoCor}</option>`;
     });
 }
 
@@ -47,12 +47,12 @@ function vincularClienteViceVersa(gatilho) {
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
 
-    if (gatilho === 'cliente' && selCli.value) {
+    if (gatilho === 'cliente' && selCli && selCli.value) {
         const veiEncontrado = globalVeiculos.find(v => v.dono_nome === selCli.value);
-        if (veiEncontrado) selVei.value = veiEncontrado.placa;
-    } else if (gatilho === 'veiculo' && selVei.value) {
+        if (veiEncontrado && selVei) selVei.value = veiEncontrado.placa;
+    } else if (gatilho === 'veiculo' && selVei && selVei.value) {
         const veiEncontrado = globalVeiculos.find(v => v.placa === selVei.value);
-        if (veiEncontrado && veiEncontrado.dono_nome) selCli.value = veiEncontrado.dono_nome;
+        if (veiEncontrado && veiEncontrado.dono_nome && selCli) selCli.value = veiEncontrado.dono_nome;
     }
 }
 
@@ -135,7 +135,7 @@ function adicionarOuEditarItem() {
     const valString = document.getElementById('item-val').value;
     const idEdit = document.getElementById('item-id-edit').value;
 
-    if(!nome) { dispararAlerta("O nome do Item é obrigatório."); return; }
+    if(!nome) { dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     const valFloat = reverterMoeda(valString);
     if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
@@ -396,8 +396,45 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); document.getElementById('modal-cadastro-rapido').classList.add('hidden'); }
-async function buscarCEP(cepInput) { /* Mantido */ }
 
+async function buscarCEP(cepInput) {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const statusSpan = document.getElementById('cep-status');
+    if(statusSpan) {
+        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
+    }
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await response.json();
+        
+        if (!dados.erro) {
+            document.getElementById('cad-rua').value = dados.logradouro;
+            document.getElementById('cad-bairro').value = dados.bairro;
+            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
+            document.getElementById('cad-num').focus();
+            
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
+                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
+            }
+        } else {
+            dispararAlerta("CEP não encontrado.");
+            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
+        }
+    } catch (e) { 
+        dispararAlerta("Falha ao buscar CEP.");
+        if(statusSpan) statusSpan.classList.add('hidden');
+    }
+}
+
+/**
+ * A MÁGICA DE GRAVAR NO BANCO OFICIAL DIRETO DO ORÇAMENTO
+ */
 async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
@@ -420,8 +457,8 @@ async function processarSalvamentoModal() {
             const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
             if (error) throw error;
             
-            await carregarListasBD();
-            document.getElementById('db-cliente-nome').value = nome;
+            await carregarListasBD(); 
+            document.getElementById('db-cliente-nome').value = nome; 
             dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
         } else {
             const placa = document.getElementById('cad-placa').value;
@@ -430,13 +467,16 @@ async function processarSalvamentoModal() {
             const ano = document.getElementById('cad-ano').value;
             
             if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
+            
             const dono = document.getElementById('db-cliente-nome').value || '';
+            
             const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
             if (error) throw error;
             
-            await carregarListasBD();
-            document.getElementById('db-veiculo-placa').value = placa;
+            await carregarListasBD(); 
+            document.getElementById('db-veiculo-placa').value = placa; 
             if(dono) document.getElementById('db-cliente-nome').value = dono; 
+            
             dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
         }
         fecharModalCadastro();
@@ -450,7 +490,7 @@ async function processarSalvamentoModal() {
 }
 
 /**
- * PDF COM FOTOGRAFIA DE DADOS (LINHAS NOVAS DE ENDEREÇO)
+ * PDF COM FOTOGRAFIA DE DADOS (LINHAS NOVAS DE ENDEREÇO SEGURO)
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
@@ -461,20 +501,29 @@ function gerarPDFSupabase(dadosCodificados) {
     document.getElementById('pdf-data').innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
     document.getElementById('pdf-status').innerText = orc.status;
 
-    // Resgata o snapshot (se for O.S antiga, tenta buscar o atual no globalClientes)
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
     let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
 
     let cliTelefone = cliDados.telefone ? ` - ${cliDados.telefone}` : '';
-    document.getElementById('pdf-cli').innerHTML = `<b>${orc.cliente_nome}</b>${cliTelefone}`;
     
-    let endereco = cliDados.endereco ? `${cliDados.endereco}, ${cliDados.numero || 'S/N'} - ${cliDados.bairro || ''} ${cliDados.cidade ? '(' + cliDados.cidade + ')' : ''}` : 'Endereço não cadastrado';
-    document.getElementById('pdf-cli-end').innerText = endereco;
+    // Assegura que o elemento existe antes de tentar preencher (Evita aquele erro)
+    const pdfCliEl = document.getElementById('pdf-cli');
+    if(pdfCliEl) pdfCliEl.innerHTML = `<b>${orc.cliente_nome}</b>${cliTelefone}`;
+    
+    const pdfCliEndEl = document.getElementById('pdf-cli-end');
+    if(pdfCliEndEl) {
+        let endereco = cliDados.endereco ? `${cliDados.endereco}, ${cliDados.numero || 'S/N'} - ${cliDados.bairro || ''} ${cliDados.cidade ? '(' + cliDados.cidade + ')' : ''}` : 'Endereço não cadastrado';
+        pdfCliEndEl.innerText = endereco;
+    }
 
-    document.getElementById('pdf-vei').innerHTML = `<b>${orc.veiculo_placa}</b> - ${veiDados.modelo || ''}`;
-    let veiAnoCor = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
-    document.getElementById('pdf-vei-det').innerText = veiAnoCor;
-
+    const pdfVeiEl = document.getElementById('pdf-vei');
+    if(pdfVeiEl) pdfVeiEl.innerHTML = `<b>${orc.veiculo_placa}</b> - ${veiDados.modelo || ''}`;
+    
+    const pdfVeiDetEl = document.getElementById('pdf-vei-det');
+    if(pdfVeiDetEl) {
+        let veiAnoCor = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
+        pdfVeiDetEl.innerText = veiAnoCor;
+    }
 
     const itensReais = orc.itens.lista_itens || [];
     const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
