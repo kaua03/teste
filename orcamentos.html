@@ -175,70 +175,84 @@
 </div>
 
 <!-- ====================================================================== -->
-<!-- MOTOR DE IMPRESSÃO DE PDF (ESTRITAMENTE PRETO, BRANCO E TONS DE CINZA) -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (LINHA CONTÍNUA E MÁSCARA GEOMÉTRICA)        -->
 <!-- ====================================================================== -->
 <div style="position: absolute; left: -9999px; top: -9999px; width: 800px; background-color: white; z-index: -1;">
-    <div id="pdf-template-real" style="padding: 30px 40px; color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+    <div id="pdf-template-real" style="padding: 30px 40px; color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
         
         <!-- CABEÇALHO B&W -->
         <div style="border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
-                <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #000000; text-transform: uppercase; letter-spacing: -0.5px;">AUTOMANAGER OFICINA</h1>
+                <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase; letter-spacing: -0.5px;">AUTOMANAGER OFICINA</h1>
                 <p style="font-size: 9px; color: #475569; margin: 2px 0 0 0; font-weight: bold; text-transform: uppercase;">Serviços Automotivos Avançados</p>
                 <p style="font-size: 9px; color: #64748b; margin: 1px 0 0 0;">CNPJ: 00.000.000/0001-00 | Rua Fictícia, 123 - Centro</p>
             </div>
             <div style="text-align: right;">
-                <h2 style="font-size: 18px; font-weight: 900; color: #000000; margin: 0; letter-spacing: -0.5px;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
-                <p style="font-size: 10px; font-weight: bold; margin: 4px 0 0 0; color: #000000;">Emissão: <span id="pdf-data"></span></p>
-                <p style="font-size: 10px; margin: 1px 0 0 0; color: #475569;">Status: <span id="pdf-status" style="font-weight: bold; color: #000000;"></span></p>
+                <h2 style="font-size: 18px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -0.5px;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
+                <p style="font-size: 10px; font-weight: bold; margin: 4px 0 0 0; color: #0f172a;">Emissão: <span id="pdf-data"></span></p>
+                <p style="font-size: 10px; margin: 1px 0 0 0; color: #475569;">Status: <span id="pdf-status" style="font-weight: bold; color: #0f172a;"></span></p>
             </div>
         </div>
 
         <!-- DADOS CLIENTE E VEÍCULO (P&B) -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
             <tr>
-                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f8fafc; width: 15%; font-weight: bold; color: #475569; text-transform: uppercase;">CLIENTE</td>
-                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; width: 45%; font-weight: bold; color: #000000; text-transform: uppercase;" id="pdf-cli">---</td>
-                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f8fafc; width: 15%; font-weight: bold; color: #475569; text-transform: uppercase;">VEÍCULO</td>
-                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; width: 25%; font-weight: bold; color: #000000; text-transform: uppercase;" id="pdf-vei">---</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f1f5f9; width: 15%; font-weight: bold; color: #475569; text-transform: uppercase;">CLIENTE</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; width: 45%; font-weight: bold; color: #0f172a; text-transform: uppercase;" id="pdf-cli">---</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; background-color: #f1f5f9; width: 15%; font-weight: bold; color: #475569; text-transform: uppercase;">VEÍCULO</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 10px; width: 25%; font-weight: bold; color: #0f172a; text-transform: uppercase;" id="pdf-vei">---</td>
             </tr>
         </table>
 
         <!-- ITENS DA O.S -->
         <div id="pdf-container-itens"></div>
 
-        <!-- RESUMO FINANCEIRO E OBSERVAÇÕES (Sem Vermelho e sem Azul) -->
+        <!-- RESUMO FINANCEIRO E OBSERVAÇÕES -->
         <div style="display: flex; gap: 20px; margin-top: 15px;">
             <div style="flex: 2;">
                 <div id="pdf-container-obs" style="display: none; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; background-color: #f8fafc; height: 100%;">
                     <h3 style="font-size: 9px; color: #475569; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; font-weight: bold;">Observações da O.S.</h3>
-                    <p id="pdf-obs-texto" style="font-size: 10px; color: #000000; margin: 0; line-height: 1.4;"></p>
+                    <p id="pdf-obs-texto" style="font-size: 10px; color: #0f172a; margin: 0; line-height: 1.4;"></p>
                 </div>
             </div>
             <div style="flex: 1;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #cbd5e1;">
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">Total Peças</td><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-pecas">R$ 0,00</td></tr>
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">Total Serviços</td><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-servicos">R$ 0,00</td></tr>
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #000000; color: #000000; font-weight: bold;">Desconto</td><td style="padding: 6px 10px; border-bottom: 1px solid #000000; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-desc">- R$ 0,00</td></tr>
-                    <tr style="background-color: #f1f5f9;"><td style="padding: 8px 10px; font-weight: 900; font-size: 11px; color: #000000;">VALOR TOTAL</td><td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 14px; color: #000000;" id="pdf-tot-final">R$ 0,00</td></tr>
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">Total Peças</td><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0f172a;" id="pdf-tot-pecas">R$ 0,00</td></tr>
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">Total Serviços</td><td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0f172a;" id="pdf-tot-servicos">R$ 0,00</td></tr>
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; color: #0f172a; font-weight: bold;">Desconto</td><td style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #0f172a;" id="pdf-tot-desc">- R$ 0,00</td></tr>
+                    <tr style="background-color: #f1f5f9;"><td style="padding: 8px 10px; font-weight: 900; font-size: 11px; color: #0f172a;">VALOR TOTAL</td><td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 14px; color: #0f172a;" id="pdf-tot-final">R$ 0,00</td></tr>
                 </table>
             </div>
         </div>
 
-        <!-- ASSINATURAS COMPACTAS COM LINHA DE DATA (CORRIGIDO) -->
-        <div style="margin-top: 50px; display: flex; justify-content: center; gap: 50px; padding: 0 30px;">
-            <div style="flex: 2; text-align: center; border-top: 1px solid #000000; padding-top: 6px;">
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">ASSINATURA DO CLIENTE</p>
-                <p style="font-size: 8px; color: #475569; margin: 2px 0 0 0;">Declaro estar de acordo com os serviços e valores detalhados nesta Ordem de Serviço.</p>
+        <!-- ASSINATURAS E DATA COM GEOMETRIA CSS PURA -->
+        <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
+            
+            <!-- Bloco de Assinatura -->
+            <div style="width: 300px; text-align: center;">
+                <!-- Linha contínua desenhada por CSS (não é texto) -->
+                <div style="border-bottom: 1px solid #0f172a; height: 30px; margin-bottom: 8px;"></div>
+                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
+                <p style="font-size: 8px; color: #475569; margin: 4px 0 0 0;">Declaro estar de acordo com os serviços e valores detalhados nesta Ordem de Serviço.</p>
             </div>
-            <div style="flex: 1; text-align: center; border-top: 1px solid #000000; padding-top: 6px;">
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">DATA</p>
-                <p style="font-size: 12px; color: #000000; margin: 6px 0 0 0; letter-spacing: 1.5px;">____ / ____ / ________</p>
+            
+            <!-- Bloco de Data -->
+            <div style="width: 150px; text-align: center;">
+                <!-- Máscara de data construída com caixas e bordas CSS -->
+                <div style="display: flex; align-items: flex-end; justify-content: center; height: 30px; margin-bottom: 8px;">
+                    <div style="width: 35px; border-bottom: 1px solid #0f172a;"></div>
+                    <div style="font-size: 16px; margin: 0 6px; color: #0f172a; font-weight: 300; transform: rotate(10deg);">/</div>
+                    <div style="width: 35px; border-bottom: 1px solid #0f172a;"></div>
+                    <div style="font-size: 16px; margin: 0 6px; color: #0f172a; font-weight: 300; transform: rotate(10deg);">/</div>
+                    <div style="width: 45px; border-bottom: 1px solid #0f172a;"></div>
+                </div>
+                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Data</p>
             </div>
+
         </div>
         
-        <!-- RODAPÉ DE PÁGINA -->
-        <div style="margin-top: 20px; text-align: center; font-size: 8px; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+        <!-- RODAPÉ DE PÁGINA COM LINHA CONTÍNUA -->
+        <div style="margin-top: 30px; text-align: center; font-size: 8px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 10px;">
             Documento gerado eletronicamente pelo sistema AutoManager Oficina. Este documento tem validade para fins de orçamento e controle interno.
         </div>
     </div>
