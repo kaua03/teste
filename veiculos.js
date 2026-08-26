@@ -5,9 +5,25 @@
 let veiculoEmEdicaoId = null;
 let idVeiculoParaExcluir = null;
 
-function initVeiculos() {
+async function initVeiculos() {
     console.log("🟢 Módulo Veículos Inicializado.");
+    await carregarClientesParaVeiculos();
     buscarVeiculosSupabase();
+}
+
+/** PUXA OS CLIENTES PARA O DROPDOWN DE DONO **/
+async function carregarClientesParaVeiculos() {
+    const { data: cli } = await window.banco.from('clientes').select('nome').order('nome');
+    const selectDono = document.getElementById('vei-dono');
+    
+    if(selectDono) {
+        selectDono.innerHTML = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
+        if(cli) {
+            cli.forEach(c => {
+                selectDono.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+            });
+        }
+    }
 }
 
 function dispararAlertaVeiculo(msg, tipo = 'erro') {
@@ -33,8 +49,9 @@ function alternarSubTelaVeiculos(modo) {
         veiculoEmEdicaoId = null; 
         document.getElementById('titulo-tela-veiculo').innerText = 'Novo Veículo';
         
-        ['vei-placa', 'vei-modelo', 'vei-cor', 'vei-ano'].forEach(id => {
-            document.getElementById(id).value = '';
+        ['vei-placa', 'vei-modelo', 'vei-cor', 'vei-ano', 'vei-dono'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = '';
         });
         
         viewLista.classList.add('hidden');
@@ -47,7 +64,6 @@ function alternarSubTelaVeiculos(modo) {
     }
 }
 
-// ---- MÁSCARA INTELIGENTE DA PLACA ----
 function mascaraPlacaVeiculo(campo) {
     let v = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
     if (v.length > 4) {
@@ -58,14 +74,13 @@ function mascaraPlacaVeiculo(campo) {
     campo.value = v;
 }
 
-// ---- SUPABASE CRUD ----
 async function buscarVeiculosSupabase() {
     try {
         const { data: veiculos, error } = await window.banco.from('veiculos').select('*').order('id', { ascending: false });
         if (error) throw error;
         renderizarTabelaVeiculos(veiculos);
     } catch (erro) {
-        document.getElementById('tabela-veiculos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        document.getElementById('tabela-veiculos-real').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
     }
 }
 
@@ -74,6 +89,7 @@ async function salvarVeiculoBD() {
     const modelo = document.getElementById('vei-modelo').value;
     const cor = document.getElementById('vei-cor').value;
     const ano = document.getElementById('vei-ano').value;
+    const dono = document.getElementById('vei-dono').value;
 
     if (!placa || !modelo) { dispararAlertaVeiculo("Placa e Modelo são obrigatórios."); return; }
 
@@ -82,7 +98,7 @@ async function salvarVeiculoBD() {
     btnSalvar.disabled = true;
 
     try {
-        const payload = { placa, modelo, cor, ano };
+        const payload = { placa, modelo, cor, ano, dono_nome: dono };
         
         if (veiculoEmEdicaoId) {
             const { error } = await window.banco.from('veiculos').update(payload).eq('id', veiculoEmEdicaoId);
@@ -95,7 +111,7 @@ async function salvarVeiculoBD() {
         }
         alternarSubTelaVeiculos('lista');
     } catch (erro) {
-        if(erro.code === '23505') { // Erro de duplicidade no PostgreSQL
+        if(erro.code === '23505') { 
             dispararAlertaVeiculo("Esta placa já está cadastrada no sistema.");
         } else {
             dispararAlertaVeiculo("Falha ao salvar veículo.");
@@ -116,6 +132,9 @@ function abrirEdicaoVeiculo(dadosCodificados) {
     document.getElementById('vei-modelo').value = vei.modelo || '';
     document.getElementById('vei-cor').value = vei.cor || '';
     document.getElementById('vei-ano').value = vei.ano || '';
+    
+    const selDono = document.getElementById('vei-dono');
+    if(selDono) selDono.value = vei.dono_nome || '';
 
     document.getElementById('view-lista-veiculos').classList.add('hidden');
     document.getElementById('view-form-veiculo').classList.remove('hidden');
@@ -150,30 +169,29 @@ async function confirmarExclusaoVei() {
 function renderizarTabelaVeiculos(dados) {
     const tbody = document.getElementById('tabela-veiculos-real');
     if (dados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-car text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; return;
+        tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center"><i class="ph-fill ph-car text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; return;
     }
     
     tbody.innerHTML = dados.map(vei => {
-        const dataStr = new Date(vei.data_criacao).toLocaleDateString('pt-BR');
         const veiJSON = encodeURIComponent(JSON.stringify(vei));
+        
+        // Emblema do Dono
+        const badgeDono = vei.dono_nome 
+            ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold shadow-sm uppercase"><i class="ph-bold ph-user mr-1"></i>${vei.dono_nome}</span>` 
+            : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Sem vínculo</span>`;
 
         return `
         <tr class="hover:bg-slate-50 transition-colors">
-            <td class="p-4 md:p-5">
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p>
-                <p class="font-black text-slate-800 text-xs md:text-sm">VEI #${String(vei.id).padStart(4,'0')}</p>
-            </td>
             <td class="p-4 md:p-5">
                 <div class="inline-block bg-white border-2 border-slate-800 rounded px-2 py-0.5 shadow-sm text-center">
                     <span class="text-[10px] text-blue-700 font-black tracking-widest block leading-none pt-0.5 uppercase">Brasil</span>
                     <span class="font-black text-slate-800 text-sm tracking-widest uppercase">${vei.placa}</span>
                 </div>
             </td>
+            <td class="p-4 md:p-5">${badgeDono}</td>
             <td class="p-4 md:p-5">
                 <p class="font-bold text-slate-700 text-sm">${vei.modelo}</p>
-            </td>
-            <td class="p-4 md:p-5">
-                <p class="font-bold text-slate-600 text-xs">${vei.cor || '--'} <span class="text-slate-400 font-medium ml-1">/ ${vei.ano || '--'}</span></p>
+                <p class="font-bold text-slate-500 text-[10px] uppercase tracking-wider mt-0.5">${vei.cor || '--'} / ${vei.ano || '--'}</p>
             </td>
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
