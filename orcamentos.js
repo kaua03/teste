@@ -12,15 +12,22 @@ function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
+/**
+ * ========================================================
+ * SISTEMA DE ALERTAS (TOAST FLUTUANTE)
+ * ========================================================
+ */
 function dispararAlerta(msg, tipo = 'erro') {
     const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
     const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
     const alertaAntigo = document.getElementById('alerta-toast-flutuante');
     if (alertaAntigo) alertaAntigo.remove();
+    
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
     toast.className = `fixed top-20 right-4 md:right-8 z-[1000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
+    
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
@@ -38,8 +45,12 @@ function alternarSubTelaOrcamento(modo) {
         
         itensTemporarios = [];
         imagensUploadArray = [];
-        document.getElementById('preview-anexos').innerHTML = '';
-        document.getElementById('preview-anexos').classList.add('hidden');
+        
+        const preview = document.getElementById('preview-anexos');
+        if (preview) {
+            preview.innerHTML = '';
+            preview.classList.add('hidden');
+        }
         
         calcularTotais();
         viewLista.classList.add('hidden');
@@ -51,6 +62,11 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
+/**
+ * ========================================================
+ * MÁSCARAS DE DADOS REGEX
+ * ========================================================
+ */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function mascaraMoeda(campo) {
@@ -65,6 +81,34 @@ function reverterMoeda(texto) {
     return parseFloat(texto.replace(/\./g, '').replace(',', '.'));
 }
 
+function mascaraGeral(tipo, campo) {
+    let v = campo.value;
+    if (tipo === 'cpf') {
+        v = v.replace(/\D/g, "");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        campo.value = v;
+    } else if (tipo === 'cep') {
+        v = v.replace(/\D/g, "");
+        v = v.replace(/^(\d{5})(\d)/, "$1-$2");
+        campo.value = v;
+    } else if (tipo === 'tel') {
+        v = v.replace(/\D/g, "");
+        v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+        v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+        campo.value = v;
+    } else if (tipo === 'placa') {
+        v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
+        if (v.length > 4) {
+            if (/[0-9]/.test(v[4])) {
+                v = v.substring(0, 3) + '-' + v.substring(3);
+            }
+        }
+        campo.value = v;
+    }
+}
+
 /**
  * ========================================================
  * MOTOR DE ITENS AVANÇADO (COM DETALHES DA PEÇA)
@@ -73,7 +117,7 @@ function reverterMoeda(texto) {
 function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
     const nome = document.getElementById('item-nome').value;
-    const desc = document.getElementById('item-desc').value; // Observação específica do item
+    const desc = document.getElementById('item-desc').value; // Observação do item
     const qtd = parseFloat(document.getElementById('item-qtd').value);
     const valString = document.getElementById('item-val').value;
     const idEdit = document.getElementById('item-id-edit').value;
@@ -82,7 +126,7 @@ function adicionarOuEditarItem() {
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     
     const valFloat = reverterMoeda(valString);
-    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
 
     const sub = qtd * valFloat;
 
@@ -169,7 +213,6 @@ function atualizarInterfaceItensETotais() {
     } else {
         divLista.innerHTML = itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
-            // Renderiza o detalhe (observação) apenas se existir
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
 
             return `
@@ -214,10 +257,8 @@ function processarImagens(event) {
         const reader = new FileReader();
         reader.onload = (e) => {
             const base64Str = e.target.result;
-            // Salva na memória
             imagensUploadArray.push(base64Str);
             
-            // Desenha na tela (Preview)
             const imgBox = document.createElement('div');
             imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
             imgBox.innerHTML = `
@@ -241,7 +282,164 @@ function removerImagemArray(strToRem) {
 
 /**
  * ========================================================
- * SUPABASE (AGORA SALVANDO OBSERVAÇÕES E FOTOS)
+ * MODAL DE CADASTRO RÁPIDO & VIA CEP
+ * ========================================================
+ */
+function abrirModalCadastro(tipo) {
+    modalTipoAberto = tipo;
+    
+    document.getElementById('visor-da-tv').classList.add('overflow-y-hidden');
+    document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
+
+    const modal = document.getElementById('modal-cadastro-rapido');
+    const titulo = document.getElementById('modal-titulo');
+    const conteudo = document.getElementById('modal-conteudo');
+
+    if (tipo === 'cliente') {
+        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
+        conteudo.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label>
+                    <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
+                    <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label>
+                    <input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
+                    <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+                <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
+                    <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        <span>CEP</span>
+                        <span id="cep-status" class="hidden text-[9px]"></span>
+                    </label>
+                    <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
+                </div>
+                <div class="md:col-span-2 flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label>
+                        <input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+                    </div>
+                    <div class="w-20">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label>
+                        <input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                    <input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label>
+                    <input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+                </div>
+            </div>
+        `;
+    } else {
+        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
+        conteudo.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label>
+                        <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label>
+                        <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
+                        <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
+                        <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function fecharModalCadastro() {
+    document.getElementById('visor-da-tv').classList.add('overflow-y-auto');
+    document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden');
+    document.getElementById('modal-cadastro-rapido').classList.add('hidden');
+}
+
+async function buscarCEP(cepInput) {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const statusSpan = document.getElementById('cep-status');
+    if(statusSpan) {
+        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
+    }
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await response.json();
+        
+        if (!dados.erro) {
+            document.getElementById('cad-rua').value = dados.logradouro;
+            document.getElementById('cad-bairro').value = dados.bairro;
+            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
+            document.getElementById('cad-num').focus();
+            
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado!';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
+                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
+            }
+        } else {
+            dispararAlerta("CEP não encontrado.");
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido';
+                statusSpan.className = 'text-[9px] text-red-500 uppercase';
+            }
+        }
+    } catch (e) { 
+        dispararAlerta("Falha de conexão ao buscar o CEP.");
+        if(statusSpan) statusSpan.classList.add('hidden');
+    }
+}
+
+function processarSalvamentoModal() {
+    if (modalTipoAberto === 'cliente') {
+        const nome = document.getElementById('cad-nome').value;
+        if(!nome) { dispararAlerta("O nome é obrigatório para vincular."); return; }
+        
+        const selectCliente = document.getElementById('db-cliente-nome');
+        selectCliente.innerHTML += `<option value="${nome}" selected>${nome}</option>`;
+        dispararAlerta("Cliente vinculado na O.S!", "sucesso");
+    } else {
+        const placa = document.getElementById('cad-placa').value;
+        const modelo = document.getElementById('cad-modelo').value;
+        if(!placa) { dispararAlerta("A placa é obrigatória."); return; }
+        
+        const selectVeiculo = document.getElementById('db-veiculo-placa');
+        selectVeiculo.innerHTML += `<option value="${placa}" selected>${placa} - ${modelo}</option>`;
+        dispararAlerta("Veículo vinculado à O.S!", "sucesso");
+    }
+    fecharModalCadastro();
+}
+
+/**
+ * ========================================================
+ * SUPABASE E LISTAGEM
  * ========================================================
  */
 async function buscarOrcamentosSupabase() {
@@ -268,7 +466,6 @@ async function salvarOrcamentoReal() {
     btnSalvar.disabled = true;
 
     try {
-        // Empacota toda a inteligência no JSONB
         const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais };
         
         const { error } = await window.banco.from('orcamentos').insert([{
@@ -276,8 +473,8 @@ async function salvarOrcamentoReal() {
             veiculo_placa: placa, 
             valor_total: valoresFinais.total, 
             status: status, 
-            observacao: obs,       // Coluna nova
-            anexos: imagensUploadArray, // Coluna nova (JSONB Array)
+            observacao: obs,
+            anexos: imagensUploadArray,
             itens: payloadJSONB
         }]);
 
@@ -301,14 +498,20 @@ function renderizarTabelaReal(dados) {
     }
 
     const coresStatus = {
-        'Em Aberto': 'bg-slate-100 text-slate-700', 'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700', 
-        'Aguardando Peça': 'bg-orange-50 text-orange-700', 'Aprovado': 'bg-blue-50 text-blue-700', 
-        'Finalizado': 'bg-emerald-50 text-emerald-700', 'Não Usar': 'bg-red-50 text-red-700'
+        'Em Aberto': 'bg-slate-100 text-slate-700 border-slate-200',
+        'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'Aguardando Peça': 'bg-orange-50 text-orange-700 border-orange-200',
+        'Aguardando Pagamento': 'bg-amber-50 text-amber-700 border-amber-200',
+        'Aprovado': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Em Execução': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'Finalizado': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'Não Usar': 'bg-red-50 text-red-700 border-red-200',
+        'Orçamento': 'bg-slate-50 text-slate-500 border-slate-200'
     };
 
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
-        const corBg = coresStatus[orc.status] || 'bg-slate-50 text-slate-500';
+        const corBg = coresStatus[orc.status] || 'bg-slate-50 text-slate-500 border-slate-200';
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
 
         return `
@@ -317,14 +520,14 @@ function renderizarTabelaReal(dados) {
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
             <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status}</span></td>
-            <td class="p-4 md:p-5 text-center"><button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-white text-slate-500 hover:text-red-600 border border-slate-200 p-2 rounded-lg transition-colors shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button></td>
+            <td class="p-4 md:p-5 text-center"><button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-white text-slate-400 hover:text-red-600 border border-slate-200 p-2 rounded-lg transition-colors shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button></td>
         </tr>`;
     }).join('');
 }
 
 /**
  * ========================================================
- * MOTOR DE PDF INTELIGENTE (RENDERIZAÇÃO DE CONCESSIONÁRIA)
+ * MOTOR DE PDF INTELIGENTE (RECONSTRUIDO)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -342,11 +545,20 @@ function gerarPDFSupabase(dadosCodificados) {
     const itensReais = orc.itens.lista_itens || [];
     const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
 
-    // Filtra e Desenha a Tabela separando Peças de Serviços
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
     
-    let htmlTabela = '';
+    // A MÁGICA DA TABELA AQUI: Criamos a Tabela inteira dentro da div
+    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 30px;">`;
+    htmlTabela += `<thead style="background-color: #1e293b; color: white;">
+        <tr>
+            <th style="padding: 12px; font-size: 14px;">Tipo</th>
+            <th style="padding: 12px; font-size: 14px;">Qtd</th>
+            <th style="padding: 12px; font-size: 14px;">Descrição Serviço / Peça</th>
+            <th style="padding: 12px; text-align: right; font-size: 14px;">V. Unitário</th>
+            <th style="padding: 12px; text-align: right; font-size: 14px;">Subtotal</th>
+        </tr>
+    </thead><tbody style="border-bottom: 2px solid #e2e8f0;">`;
     
     if(pecas.length > 0) {
         htmlTabela += `<tr><td colspan="5" style="background-color: #f1f5f9; font-weight: bold; font-size: 11px; padding: 8px 12px; color: #475569; text-transform: uppercase;">1. Peças e Componentes</td></tr>`;
@@ -380,7 +592,10 @@ function gerarPDFSupabase(dadosCodificados) {
         `).join('');
     }
 
-    document.getElementById('pdf-itens').innerHTML = htmlTabela;
+    htmlTabela += `</tbody></table>`;
+    
+    // Injeta a tabela blindada
+    document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
 
     // Preenche o Resumo Financeiro
     document.getElementById('pdf-tot-pecas').innerText = format(resumo.pecas || 0);
