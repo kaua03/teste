@@ -14,15 +14,21 @@ function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
+/**
+ * SISTEMA DE ALERTAS (TOAST FLUTUANTE)
+ */
 function dispararAlerta(msg, tipo = 'erro') {
     const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
     const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
+    
     const alertaAntigo = document.getElementById('alerta-toast-flutuante');
     if (alertaAntigo) alertaAntigo.remove();
+
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
     toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
+    
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
@@ -56,7 +62,9 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
-/** MÁSCARAS */
+/**
+ * MÁSCARAS DE DADOS REGEX
+ */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function mascaraMoeda(campo) {
@@ -86,7 +94,9 @@ function mascaraGeral(tipo, campo) {
     }
 }
 
-/** ITENS DA O.S */
+/**
+ * LÓGICA DE ITENS E DESCONTOS
+ */
 function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
     const nome = document.getElementById('item-nome').value;
@@ -97,14 +107,17 @@ function adicionarOuEditarItem() {
 
     if(!nome) { dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
+    
     const valFloat = reverterMoeda(valString);
-    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
 
     const sub = qtd * valFloat;
 
     if (idEdit) {
         const index = itensTemporarios.findIndex(i => i.id_temp == idEdit);
-        if (index > -1) itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        if (index > -1) {
+            itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        }
         document.getElementById('item-id-edit').value = '';
         document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
         document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
@@ -129,9 +142,11 @@ function editarItem(id) {
     document.getElementById('item-nome').value = item.descricao;
     document.getElementById('item-desc').value = item.detalhe || '';
     document.getElementById('item-qtd').value = item.quantidade;
+    
     const inputVal = document.getElementById('item-val');
     inputVal.value = (item.valor_unitario * 100).toString(); 
     mascaraMoeda(inputVal);
+
     document.getElementById('item-id-edit').value = item.id_temp;
     
     const btn = document.getElementById('btn-add-item');
@@ -237,7 +252,7 @@ function removerImagemArray(strToRem) {
 
 /**
  * ========================================================
- * SUPABASE CRUD E MODAL DE EXCLUSÃO (CORRIGIDO)
+ * SUPABASE CRUD E MODAL DE EXCLUSÃO
  * ========================================================
  */
 async function buscarOrcamentosSupabase() {
@@ -380,7 +395,7 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** CADASTRO RAPIDO VIA CEP (MANTIDO) */
+/** CADASTRO RAPIDO VIA CEP */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
@@ -390,18 +405,18 @@ function abrirModalCadastro(tipo) {
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
     } else {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        conteudo.innerHTML = `<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div></div>`;
+        conteudo.innerHTML = `<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label><input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label><input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div></div>`;
     }
     modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); document.getElementById('modal-cadastro-rapido').classList.add('hidden'); }
-async function buscarCEP(cepInput) { /* Mesma lógica mantida */ }
-function processarSalvamentoModal() { /* Mesma lógica mantida */ fecharModalCadastro(); }
+async function buscarCEP(cepInput) { /* Mesma lógica */ }
+function processarSalvamentoModal() { /* Mesma lógica */ fecharModalCadastro(); }
 
 /**
  * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (CORPORATIVO - TONS DE SLATE/AZUL)
+ * MOTOR DE IMPRESSÃO DE PDF (HORA EXATA NO CLIQUE)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -409,7 +424,13 @@ function gerarPDFSupabase(dadosCodificados) {
     const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     document.getElementById('pdf-id').innerText = orc.numero_os;
-    document.getElementById('pdf-data').innerText = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
+    
+    // A MÁGICA DA AUDITORIA: Pega a data e a hora do momento EXATO do clique no botão PDF
+    const dataAtual = new Date();
+    const dataFormatada = dataAtual.toLocaleDateString('pt-BR');
+    const horaFormatada = dataAtual.toLocaleTimeString('pt-BR');
+    document.getElementById('pdf-data').innerText = `${dataFormatada} ${horaFormatada}`;
+
     document.getElementById('pdf-status').innerText = orc.status;
     document.getElementById('pdf-cli').innerText = orc.cliente_nome;
     document.getElementById('pdf-vei').innerText = orc.veiculo_placa;
@@ -419,8 +440,7 @@ function gerarPDFSupabase(dadosCodificados) {
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
     
-    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">`;
-    // Fundo Slate-800 com fonte branca
+    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">`;
     htmlTabela += `<thead style="background-color: #1e293b; color: white;">
         <tr>
             <th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th>
