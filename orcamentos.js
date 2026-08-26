@@ -9,16 +9,20 @@ let imagensUploadArray = [];
 let osEmEdicaoId = null; 
 let idParaExcluir = null;
 
-// Memória viva
+// Memória viva dos clientes e veículos
 let globalClientes = [];
 let globalVeiculos = [];
 
+// AGORA É ASYNC PARA GARANTIR QUE AS LISTAS CARREGUEM PRIMEIRO
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
     buscarOrcamentosSupabase();
 }
 
+/**
+ * BUSCA OS DADOS REAIS DO BANCO PARA OS DROPDOWNS
+ */
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
@@ -259,6 +263,7 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
+/** TIRA A "FOTOGRAFIA" DOS DADOS NO MOMENTO DO SALVAMENTO **/
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -382,7 +387,6 @@ function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     const modal = document.getElementById('modal-cadastro-rapido'); const titulo = document.getElementById('modal-titulo'); const conteudo = document.getElementById('modal-conteudo');
-    
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
@@ -485,17 +489,29 @@ async function processarSalvamentoModal() {
 }
 
 /**
- * PDF COM FOTOGRAFIA DE DADOS (LISTA ORGANIZADA)
+ * ========================================================
+ * MOTOR DE IMPRESSÃO DE PDF (BLOCOS LIMPOS)
+ * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     document.getElementById('pdf-id').innerText = orc.numero_os;
-    const dataAtual = new Date();
-    document.getElementById('pdf-data').innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
-    document.getElementById('pdf-status').innerText = orc.status;
+    
+    // DATAS
+    const dataAbertura = new Date(orc.data_criacao);
+    const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
+    if(pdfDataAberturaEl) pdfDataAberturaEl.innerText = dataAbertura.toLocaleDateString('pt-BR');
 
+    const dataAtual = new Date();
+    const pdfDataEmissaoEl = document.getElementById('pdf-data-emissao');
+    if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
+
+    const pdfStatusEl = document.getElementById('pdf-status');
+    if(pdfStatusEl) pdfStatusEl.innerText = orc.status;
+
+    // DADOS CLIENTE E VEÍCULO
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
     let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
 
@@ -508,18 +524,15 @@ function gerarPDFSupabase(dadosCodificados) {
     const pdfCliTelEl = document.getElementById('pdf-cli-tel');
     if(pdfCliTelEl) pdfCliTelEl.innerText = cliDados.telefone || '---';
 
-    const pdfCliEmailEl = document.getElementById('pdf-cli-email');
-    if(pdfCliEmailEl) pdfCliEmailEl.innerText = cliDados.email || '---';
-
     const pdfCliEndEl = document.getElementById('pdf-cli-end');
     if(pdfCliEndEl) {
         let enderecoArr = [];
         if(cliDados.endereco) enderecoArr.push(cliDados.endereco);
-        if(cliDados.numero) enderecoArr.push(cliDados.numero);
-        if(cliDados.bairro) enderecoArr.push(`- ${cliDados.bairro}`);
-        if(cliDados.cidade) enderecoArr.push(`(${cliDados.cidade})`);
-        if(cliDados.cep) enderecoArr.push(`- CEP: ${cliDados.cep}`);
-        pdfCliEndEl.innerText = enderecoArr.length > 0 ? enderecoArr.join(' ') : 'Endereço não cadastrado';
+        if(cliDados.numero) enderecoArr.push(`, ${cliDados.numero}`);
+        if(cliDados.bairro) enderecoArr.push(` - ${cliDados.bairro}`);
+        if(cliDados.cidade) enderecoArr.push(` (${cliDados.cidade})`);
+        if(cliDados.cep) enderecoArr.push(` - CEP: ${cliDados.cep}`);
+        pdfCliEndEl.innerText = enderecoArr.length > 0 ? enderecoArr.join('') : 'Endereço não informado';
     }
 
     const pdfVeiModEl = document.getElementById('pdf-vei-mod');
@@ -528,12 +541,10 @@ function gerarPDFSupabase(dadosCodificados) {
     const pdfVeiPlacaEl = document.getElementById('pdf-vei-placa');
     if(pdfVeiPlacaEl) pdfVeiPlacaEl.innerText = orc.veiculo_placa || '---';
 
-    const pdfVeiCorEl = document.getElementById('pdf-vei-cor');
-    if(pdfVeiCorEl) pdfVeiCorEl.innerText = veiDados.cor || '---';
+    const pdfVeiDetEl = document.getElementById('pdf-vei-det');
+    if(pdfVeiDetEl) pdfVeiDetEl.innerText = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
 
-    const pdfVeiAnoEl = document.getElementById('pdf-vei-ano');
-    if(pdfVeiAnoEl) pdfVeiAnoEl.innerText = veiDados.ano || '---';
-
+    // ITENS DA TABELA
     const itensReais = orc.itens.lista_itens || [];
     const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
@@ -559,7 +570,13 @@ function gerarPDFSupabase(dadosCodificados) {
     document.getElementById('pdf-tot-final').innerText = format(resumo.total || orc.valor_total);
 
     const boxObs = document.getElementById('pdf-container-obs');
-    if(orc.observacao && orc.observacao.trim() !== '') { document.getElementById('pdf-obs-texto').innerText = orc.observacao; boxObs.style.display = 'block'; } else { boxObs.style.display = 'none'; }
+    const pdfObsTextoEl = document.getElementById('pdf-obs-texto');
+    if(orc.observacao && orc.observacao.trim() !== '') { 
+        if(pdfObsTextoEl) pdfObsTextoEl.innerText = orc.observacao; 
+        if(boxObs) boxObs.style.display = 'block'; 
+    } else { 
+        if(boxObs) boxObs.style.display = 'none'; 
+    }
 
     const el = document.getElementById('pdf-template-real');
     el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '9999';
