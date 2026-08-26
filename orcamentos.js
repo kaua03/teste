@@ -53,9 +53,7 @@ function alternarSubTelaOrcamento(modo) {
 }
 
 /**
- * ========================================================
  * MÁSCARAS DE DADOS REGEX
- * ========================================================
  */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -89,24 +87,18 @@ function mascaraGeral(tipo, campo) {
         v = v.replace(/(\d)(\d{4})$/, "$1-$2");
         campo.value = v;
     } else if (tipo === 'placa') {
-        // Remove tudo que não for letra ou número e força maiúsculo
         v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
-        // Se a placa tiver 5 caracteres ou mais
         if (v.length > 4) {
-            // Verifica o 5º caractere (índice 4). Se for NÚMERO, é placa antiga e ganha hífen.
             if (/[0-9]/.test(v[4])) {
                 v = v.substring(0, 3) + '-' + v.substring(3);
             }
-            // Se for LETRA (Mercosul), passa reto e não ganha hífen.
         }
         campo.value = v;
     }
 }
 
 /**
- * ========================================================
- * LÓGICA DE ITENS (ADICIONAR, EDITAR, REMOVER E DESCONTOS)
- * ========================================================
+ * LÓGICA DE ITENS E DESCONTOS
  */
 function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
@@ -119,7 +111,7 @@ function adicionarOuEditarItem() {
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     
     const valFloat = reverterMoeda(valString);
-    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser zero."); return; }
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
 
     const sub = qtd * valFloat;
 
@@ -168,9 +160,7 @@ function editarItem(id) {
 }
 
 function calcularTotais() {
-    let sumPecas = 0;
-    let sumServicos = 0;
-
+    let sumPecas = 0; let sumServicos = 0;
     itensTemporarios.forEach(item => {
         if (item.tipo === 'Peça') sumPecas += item.subtotal;
         else sumServicos += item.subtotal;
@@ -178,7 +168,6 @@ function calcularTotais() {
 
     let totalBruto = sumPecas + sumServicos;
     let descValor = 0;
-
     const descTipo = document.getElementById('desc-tipo').value; 
     const descAlvo = document.getElementById('desc-alvo').value; 
     let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
@@ -206,7 +195,6 @@ function calcularTotais() {
 
 function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
-
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `
         <div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -240,21 +228,24 @@ function atualizarInterfaceItensETotais() {
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
 }
 
-
 /**
  * ========================================================
- * SUPABASE (GRAVAR E LER ORÇAMENTOS/O.S.)
+ * BANCO DE DADOS (AGORA LENDO O NUMERO_OS)
  * ========================================================
  */
 async function buscarOrcamentosSupabase() {
     try {
-        const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
+        const { data: orcamentos, error } = await window.banco
+            .from('orcamentos')
+            .select('*')
+            .order('id', { ascending: false });
+            
         if (error) throw error;
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
         console.error("Erro na listagem:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `
-            <tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao conectar no banco de dados.</td></tr>`;
+            <tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão. Recarregue a página.</td></tr>`;
     }
 }
 
@@ -272,21 +263,17 @@ async function salvarOrcamentoReal() {
     btnSalvar.disabled = true;
 
     try {
-        const payloadJSONB = {
-            lista_itens: itensTemporarios,
-            resumo: valoresFinais
-        };
-
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais };
+        
         const { error } = await window.banco.from('orcamentos').insert([{
-            cliente_nome: nome,
-            veiculo_placa: placa,
-            valor_total: valoresFinais.total,
-            status: status,
+            cliente_nome: nome, 
+            veiculo_placa: placa, 
+            valor_total: valoresFinais.total, 
+            status: status, 
             itens: payloadJSONB
         }]);
 
         if (error) throw error;
-        
         dispararAlerta("Ordem de Serviço salva com sucesso!", "sucesso");
         alternarSubTelaOrcamento('lista');
         
@@ -337,7 +324,7 @@ function renderizarTabelaReal(dados) {
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 md:p-5">
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p>
-                <p class="font-black text-slate-800 text-xs md:text-sm">O.S #${String(orc.id).padStart(4,'0')}</p>
+                <p class="font-black text-slate-800 text-xs md:text-sm">O.S #${orc.numero_os}</p>
             </td>
             <td class="p-4 md:p-5">
                 <p class="font-bold text-slate-700 text-xs md:text-sm">${orc.cliente_nome}</p>
@@ -358,13 +345,12 @@ function renderizarTabelaReal(dados) {
 
 /**
  * ========================================================
- * MODAL DE CADASTRO RÁPIDO & INTEGRAÇÃO VIA CEP
+ * MODAL DE CADASTRO RÁPIDO E VIACEP
  * ========================================================
  */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     
-    // Trava a rolagem do fundo
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden');
     document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
 
@@ -374,7 +360,6 @@ function abrirModalCadastro(tipo) {
 
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        // HTML Injetado: E-mail em cima e CEP embaixo
         conteudo.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
@@ -478,19 +463,16 @@ async function buscarCEP(cepInput) {
             document.getElementById('cad-num').focus();
             
             if(statusSpan) {
-                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado!';
                 statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
                 setTimeout(() => statusSpan.classList.add('hidden'), 2500);
             }
         } else {
-            dispararAlerta("CEP não encontrado na base dos Correios.");
+            dispararAlerta("CEP não encontrado.");
             if(statusSpan) {
                 statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido';
                 statusSpan.className = 'text-[9px] text-red-500 uppercase';
             }
-            document.getElementById('cad-rua').value = '';
-            document.getElementById('cad-bairro').value = '';
-            document.getElementById('cad-cidade').value = '';
         }
     } catch (e) { 
         dispararAlerta("Falha de conexão ao buscar o CEP.");
@@ -505,7 +487,7 @@ function processarSalvamentoModal() {
         
         const selectCliente = document.getElementById('db-cliente-nome');
         selectCliente.innerHTML += `<option value="${nome}" selected>${nome}</option>`;
-        dispararAlerta("Cliente cadastrado temporariamente na O.S!", "sucesso");
+        dispararAlerta("Cliente vinculado na O.S!", "sucesso");
     } else {
         const placa = document.getElementById('cad-placa').value;
         const modelo = document.getElementById('cad-modelo').value;
@@ -527,7 +509,7 @@ function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    document.getElementById('pdf-id').innerText = String(orc.id).padStart(4, '0');
+    document.getElementById('pdf-id').innerText = orc.numero_os;
     document.getElementById('pdf-data').innerText = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
     document.getElementById('pdf-cli').innerText = orc.cliente_nome;
     document.getElementById('pdf-vei').innerText = orc.veiculo_placa;
@@ -552,7 +534,7 @@ function gerarPDFSupabase(dadosCodificados) {
 
     html2pdf().set({ 
         margin: 0.5, 
-        filename: `OS_${String(orc.id).padStart(4, '0')}.pdf`, 
+        filename: `OS_${orc.numero_os}_AutoManager.pdf`, 
         image: { type: 'jpeg', quality: 1 }, 
         html2canvas: { scale: 2 }, 
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
