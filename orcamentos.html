@@ -175,7 +175,7 @@
 </div>
 
 <!-- ====================================================================== -->
-<!-- MOTOR DE IMPRESSÃO DE PDF (LINHA CONTÍNUA E MÁSCARA GEOMÉTRICA)        -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (LINHAS SÓLIDAS E GEOMETRIA CSS PURA)        -->
 <!-- ====================================================================== -->
 <div style="position: absolute; left: -9999px; top: -9999px; width: 800px; background-color: white; z-index: -1;">
     <div id="pdf-template-real" style="padding: 30px 40px; color: #0f172a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
@@ -225,33 +225,31 @@
             </div>
         </div>
 
-        <!-- ASSINATURAS E DATA COM GEOMETRIA CSS PURA -->
+        <!-- ASSINATURAS E DATA (USANDO GEOMETRIA PURA CSS SEM DUPLICAR LINHAS) -->
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
             
             <!-- Bloco de Assinatura -->
-            <div style="width: 300px; text-align: center;">
-                <!-- Linha contínua desenhada por CSS (não é texto) -->
-                <div style="border-bottom: 1px solid #0f172a; height: 30px; margin-bottom: 8px;"></div>
-                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
+            <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #000000; height: 40px; margin-bottom: 5px;"></div>
+                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
                 <p style="font-size: 8px; color: #475569; margin: 4px 0 0 0;">Declaro estar de acordo com os serviços e valores detalhados nesta Ordem de Serviço.</p>
             </div>
             
             <!-- Bloco de Data -->
-            <div style="width: 150px; text-align: center;">
-                <!-- Máscara de data construída com caixas e bordas CSS -->
-                <div style="display: flex; align-items: flex-end; justify-content: center; height: 30px; margin-bottom: 8px;">
-                    <div style="width: 35px; border-bottom: 1px solid #0f172a;"></div>
-                    <div style="font-size: 16px; margin: 0 6px; color: #0f172a; font-weight: 300; transform: rotate(10deg);">/</div>
-                    <div style="width: 35px; border-bottom: 1px solid #0f172a;"></div>
-                    <div style="font-size: 16px; margin: 0 6px; color: #0f172a; font-weight: 300; transform: rotate(10deg);">/</div>
-                    <div style="width: 45px; border-bottom: 1px solid #0f172a;"></div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; align-items: flex-end; justify-content: center; height: 40px; margin-bottom: 5px; gap: 6px;">
+                    <div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div>
+                    <div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div>
+                    <div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div>
+                    <div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div>
+                    <div style="width: 45px; border-bottom: 1px solid #000000; height: 1px;"></div>
                 </div>
-                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Data</p>
+                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
             </div>
 
         </div>
         
-        <!-- RODAPÉ DE PÁGINA COM LINHA CONTÍNUA -->
+        <!-- RODAPÉ DE PÁGINA (LINHA SÓLIDA) -->
         <div style="margin-top: 30px; text-align: center; font-size: 8px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 10px;">
             Documento gerado eletronicamente pelo sistema AutoManager Oficina. Este documento tem validade para fins de orçamento e controle interno.
         </div>
