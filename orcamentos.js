@@ -1,4 +1,6 @@
-// orcamentos.js
+// ========================================================
+// AutoManager - Módulo de Orçamentos e O.S.
+// ========================================================
 
 let itensTemporarios = [];
 let valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
@@ -9,6 +11,9 @@ function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
+/**
+ * SISTEMA DE ALERTAS (TOAST FLUTUANTE)
+ */
 function dispararAlerta(msg, tipo = 'erro') {
     const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
     const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
@@ -18,7 +23,7 @@ function dispararAlerta(msg, tipo = 'erro') {
 
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
-    toast.className = `fixed top-20 right-4 md:right-8 z-[500] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
+    toast.className = `fixed top-20 right-4 md:right-8 z-[600] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
     
     document.body.appendChild(toast);
@@ -34,8 +39,10 @@ function alternarSubTelaOrcamento(modo) {
         document.getElementById('db-veiculo-placa').value = '';
         document.getElementById('db-status').value = 'Em Aberto';
         document.getElementById('desc-val').value = '';
+        
         itensTemporarios = [];
         calcularTotais();
+        
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
     } else {
@@ -45,7 +52,11 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
-// ---- MÁSCARAS INTELIGENTES ----
+/**
+ * ========================================================
+ * MÁSCARAS DE DADOS REGEX
+ * ========================================================
+ */
 const formataDinheiro = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function mascaraMoeda(campo) {
@@ -78,20 +89,25 @@ function mascaraGeral(tipo, campo) {
         v = v.replace(/(\d)(\d{4})$/, "$1-$2");
         campo.value = v;
     } else if (tipo === 'placa') {
-        // Lógica de Sênior: Retira tudo que não é letra/numero. Trava em 7 dígitos.
+        // Remove tudo que não for letra ou número e força maiúsculo
         v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
-        // Se já digitou 5 caracteres e o 5º é uma LETRA, é Mercosul. Não formata com hífen.
-        if (v.length > 4 && /[A-Z]/.test(v[4])) {
-            // Mercosul -> ABC1D23 (Fica liso)
-        } else if (v.length > 3) {
-            // Antiga -> Coloca hífen (ABC-1234)
-            v = v.substring(0, 3) + '-' + v.substring(3);
+        // Se a placa tiver 5 caracteres ou mais
+        if (v.length > 4) {
+            // Verifica o 5º caractere (índice 4). Se for NÚMERO, é placa antiga e ganha hífen.
+            if (/[0-9]/.test(v[4])) {
+                v = v.substring(0, 3) + '-' + v.substring(3);
+            }
+            // Se for LETRA (Mercosul), passa reto e não ganha hífen.
         }
         campo.value = v;
     }
 }
 
-// ---- REGRAS DE NEGÓCIO DE ITENS ----
+/**
+ * ========================================================
+ * LÓGICA DE ITENS (ADICIONAR, EDITAR, REMOVER E DESCONTOS)
+ * ========================================================
+ */
 function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
     const desc = document.getElementById('item-desc').value;
@@ -103,7 +119,7 @@ function adicionarOuEditarItem() {
     if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
     
     const valFloat = reverterMoeda(valString);
-    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio."); return; }
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser zero."); return; }
 
     const sub = qtd * valFloat;
 
@@ -123,6 +139,7 @@ function adicionarOuEditarItem() {
     document.getElementById('item-val').value = '';
     document.getElementById('item-qtd').value = '1';
     document.getElementById('item-desc').focus();
+    
     calcularTotais();
 }
 
@@ -151,7 +168,9 @@ function editarItem(id) {
 }
 
 function calcularTotais() {
-    let sumPecas = 0; let sumServicos = 0;
+    let sumPecas = 0;
+    let sumServicos = 0;
+
     itensTemporarios.forEach(item => {
         if (item.tipo === 'Peça') sumPecas += item.subtotal;
         else sumServicos += item.subtotal;
@@ -159,6 +178,7 @@ function calcularTotais() {
 
     let totalBruto = sumPecas + sumServicos;
     let descValor = 0;
+
     const descTipo = document.getElementById('desc-tipo').value; 
     const descAlvo = document.getElementById('desc-alvo').value; 
     let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
@@ -180,11 +200,13 @@ function calcularTotais() {
     valoresFinais.servicos = sumServicos;
     valoresFinais.desconto = descValor;
     valoresFinais.total = totalBruto - descValor;
+
     atualizarInterfaceItensETotais();
 }
 
 function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
+
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `
         <div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -218,7 +240,12 @@ function atualizarInterfaceItensETotais() {
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
 }
 
-// ---- SUPABASE ----
+
+/**
+ * ========================================================
+ * SUPABASE (GRAVAR E LER ORÇAMENTOS/O.S.)
+ * ========================================================
+ */
 async function buscarOrcamentosSupabase() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
@@ -227,7 +254,7 @@ async function buscarOrcamentosSupabase() {
     } catch (erro) {
         console.error("Erro na listagem:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `
-            <tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão. Recarregue a página.</td></tr>`;
+            <tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao conectar no banco de dados.</td></tr>`;
     }
 }
 
@@ -245,12 +272,21 @@ async function salvarOrcamentoReal() {
     btnSalvar.disabled = true;
 
     try {
-        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais };
+        const payloadJSONB = {
+            lista_itens: itensTemporarios,
+            resumo: valoresFinais
+        };
+
         const { error } = await window.banco.from('orcamentos').insert([{
-            cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, itens: payloadJSONB
+            cliente_nome: nome,
+            veiculo_placa: placa,
+            valor_total: valoresFinais.total,
+            status: status,
+            itens: payloadJSONB
         }]);
 
         if (error) throw error;
+        
         dispararAlerta("Ordem de Serviço salva com sucesso!", "sucesso");
         alternarSubTelaOrcamento('lista');
         
@@ -283,7 +319,12 @@ function renderizarTabelaReal(dados) {
     
     if (dados.length === 0) {
         tbody.innerHTML = `
-        <tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`;
+        <tr>
+            <td colspan="5" class="p-10 text-center">
+                <i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i>
+                <p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada no sistema.</p>
+            </td>
+        </tr>`;
         return;
     }
 
@@ -323,7 +364,7 @@ function renderizarTabelaReal(dados) {
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     
-    // O pulo do gato: Trava a rolagem da página de fundo inteira (UX Premium)
+    // Trava a rolagem do fundo
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden');
     document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
 
@@ -333,7 +374,7 @@ function abrirModalCadastro(tipo) {
 
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        // HTML Injetado: E-mail em cima e Máscara estrita de CPF
+        // HTML Injetado: E-mail em cima e CEP embaixo
         conteudo.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
@@ -353,9 +394,9 @@ function abrirModalCadastro(tipo) {
                     <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
                 </div>
                 <div>
-                    <label class="flex items-center text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        CEP (Busca Automática)
-                        <span id="cep-status" class="ml-2 hidden font-bold"></span>
+                    <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        <span>CEP (Busca Automática)</span>
+                        <span id="cep-status" class="hidden text-[9px]"></span>
                     </label>
                     <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
                 </div>
@@ -385,7 +426,7 @@ function abrirModalCadastro(tipo) {
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2 md:col-span-1">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label>
                         <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
                     </div>
                     <div class="col-span-2 md:col-span-1">
@@ -411,7 +452,6 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() {
-    // Destrava a rolagem do visor
     document.getElementById('visor-da-tv').classList.add('overflow-y-auto');
     document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden');
     document.getElementById('modal-cadastro-rapido').classList.add('hidden');
@@ -424,7 +464,7 @@ async function buscarCEP(cepInput) {
     const statusSpan = document.getElementById('cep-status');
     if(statusSpan) {
         statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
-        statusSpan.className = 'ml-2 text-[10px] text-blue-500 uppercase';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
     }
 
     try {
@@ -438,15 +478,15 @@ async function buscarCEP(cepInput) {
             document.getElementById('cad-num').focus();
             
             if(statusSpan) {
-                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado!';
-                statusSpan.className = 'ml-2 text-[10px] text-emerald-500 uppercase';
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
                 setTimeout(() => statusSpan.classList.add('hidden'), 2500);
             }
         } else {
             dispararAlerta("CEP não encontrado na base dos Correios.");
             if(statusSpan) {
                 statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido';
-                statusSpan.className = 'ml-2 text-[10px] text-red-500 uppercase';
+                statusSpan.className = 'text-[9px] text-red-500 uppercase';
             }
             document.getElementById('cad-rua').value = '';
             document.getElementById('cad-bairro').value = '';
@@ -461,7 +501,7 @@ async function buscarCEP(cepInput) {
 function processarSalvamentoModal() {
     if (modalTipoAberto === 'cliente') {
         const nome = document.getElementById('cad-nome').value;
-        if(!nome) { dispararAlerta("O nome do cliente é obrigatório para vincular."); return; }
+        if(!nome) { dispararAlerta("O nome é obrigatório para vincular."); return; }
         
         const selectCliente = document.getElementById('db-cliente-nome');
         selectCliente.innerHTML += `<option value="${nome}" selected>${nome}</option>`;
