@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AutoManager - Dashboard</title>
+    
+    <!-- Tailwind CSS, Ícones e Gráficos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Barra de rolagem minimalista */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Transições Suaves */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .glass-card { background: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        
+        /* Oculta texto na sidebar quando minimizada */
+        .sidebar-text { display: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; }
+        .group:hover .sidebar-text { display: inline-block; opacity: 1; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden text-slate-800">
+
+    <!-- ========================================== -->
+    <!-- 1. SIDEBAR DESKTOP (Expansível no Hover)   -->
+    <!-- ========================================== -->
+    <!-- Ela tem 5rem (80px) fixa, mas no hover vai para 16rem (256px) -->
+    <aside class="group fixed top-0 left-0 h-full w-20 hover:w-64 bg-slate-900 text-white transition-all duration-300 z-50 hidden md:flex flex-col shadow-2xl border-r border-slate-800 overflow-hidden">
+        
+        <!-- Logo -->
+        <div class="h-16 flex items-center justify-start px-5 border-b border-slate-800/80 w-64">
+            <i class="ph-fill ph-car-profile text-3xl text-blue-500 shrink-0"></i>
+            <h1 class="text-xl font-black ml-4 tracking-tight sidebar-text text-white">Auto<span class="text-blue-500">Manager</span></h1>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 mt-6 flex flex-col gap-2 px-3 w-64">
+            <!-- Ativo -->
+            <a href="dashboard.html" class="flex items-center gap-4 p-3 rounded-xl bg-blue-600 text-white shadow-md transition-colors w-full">
+                <i class="ph-fill ph-squares-four text-2xl shrink-0"></i>
+                <span class="font-bold sidebar-text">Dashboard</span>
+            </a>
+            <!-- Inativos -->
+            <a href="#" class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full">
+                <i class="ph-fill ph-receipt text-2xl shrink-0"></i>
+                <span class="font-medium sidebar-text">Orçamentos</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full">
+                <i class="ph-fill ph-currency-circle-dollar text-2xl shrink-0"></i>
+                <span class="font-medium sidebar-text">Financeiro</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full">
+                <i class="ph-fill ph-users text-2xl shrink-0"></i>
+                <span class="font-medium sidebar-text">Clientes</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-colors w-full">
+                <i class="ph-fill ph-jeep text-2xl shrink-0"></i>
+                <span class="font-medium sidebar-text">Veículos</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- 2. CONTEÚDO PRINCIPAL                      -->
+    <!-- ========================================== -->
+    <!-- A margem esquerda (md:ml-20) garante que o conteúdo não fique atrás da sidebar fechada -->
+    <div class="flex-1 flex flex-col h-full w-full md:ml-20 relative">
+        
+        <!-- HEADER -->
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center z-10 sticky top-0 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="md:hidden bg-blue-600 p-2 rounded-lg text-white shadow-sm"><i class="ph-bold ph-car-profile text-xl"></i></div>
+                <div>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-800">Visão Geral</h2>
+                    <p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider hidden md:block">Indicadores de Desempenho</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 md:gap-6">
+                <button class="relative p-1 text-slate-400 hover:text-blue-600 transition">
+                    <i class="ph-fill ph-bell text-2xl"></i>
+                    <span class="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-white transform translate-x-1 -translate-y-1 shadow-sm">3</span>
+                </button>
+                <div class="flex items-center gap-3 border-l border-slate-200 pl-4 md:pl-6">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-bold text-slate-800">Kauã Freitas</p>
+                        <p class="text-[10px] text-blue-600 font-bold uppercase">Sistemas / Admin</p>
+                    </div>
+                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-tr from-blue-700 to-blue-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD (Scrollável) -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 fade-in pb-24 md:pb-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+                
+                <!-- KPIs -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <div class="glass-card p-4 md:p-6 border-l-4 border-l-emerald-500 flex flex-col justify-between hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Faturamento</p><i class="ph-fill ph-trend-up text-emerald-500 text-lg"></i></div>
+                        <p class="text-xl md:text-3xl font-black mt-2 text-slate-800 truncate" id="kpi-faturamento">R$ 0,00</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 border-l-4 border-l-blue-500 flex flex-col justify-between hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">Orçamentos</p><i class="ph-fill ph-receipt text-blue-500 text-lg"></i></div>
+                        <p class="text-xl md:text-3xl font-black mt-2 text-slate-800" id="kpi-orcamentos">0</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 border-l-4 border-l-amber-500 flex flex-col justify-between hover:-translate-y-1 transition-transform">
+                        <div class="flex justify-between items-start"><p class="text-[10px] md:text-xs text-slate-500 uppercase font-bold tracking-wider">A Receber</p><i class="ph-fill ph-clock text-amber-500 text-lg"></i></div>
+                        <p class="text-xl md:text-3xl font-black mt-2 text-amber-600 truncate" id="kpi-receber">R$ 0,00</p>
+                    </div>
+                    <div class="glass-card p-4 md:p-6 border-l-4 border-l-red-500 flex flex-col justify-between hover:-translate-y-1 transition-transform bg-red-50/30">
+                        <div class="flex justify-between items-start"><p class="text-[10px] md:text-xs text-red-600 uppercase font-bold tracking-wider">Inadimplência</p><i class="ph-fill ph-warning-circle text-red-500 text-lg"></i></div>
+                        <p class="text-xl md:text-3xl font-black mt-2 text-red-600">3 Notas</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card p-5 md:p-6 lg:col-span-2">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+                            <div class="w-2 h-6 bg-blue-600 rounded-full"></div> Fluxo de Caixa (6 Meses)
+                        </h3>
+                        <div class="relative w-full h-48 md:h-72">
+                            <canvas id="chartFaturamento"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card p-5 md:p-6 flex flex-col">
+                        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-6 flex items-center gap-2">
+                            <div class="w-2 h-6 bg-amber-500 rounded-full"></div> Status da Frota
+                        </h3>
+                        <div class="flex-1 relative w-full h-48 md:h-auto flex items-center justify-center">
+                            <canvas id="chartFrota"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Rápida -->
+                <div class="glass-card overflow-hidden">
+                    <div class="p-4 md:p-5 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-800">Orçamentos Recentes</h3>
+                        <button class="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">Ver Todos</button>
+                    </div>
+                    <div class="w-full overflow-x-auto">
+                        <table class="w-full text-left whitespace-nowrap">
+                            <thead class="bg-slate-50/80">
+                                <tr class="text-[10px] md:text-xs text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200">
+                                    <th class="px-5 py-3 md:py-4">Cliente / Vínculo</th>
+                                    <th class="px-5 py-3 md:py-4">Data</th>
+                                    <th class="px-5 py-3 md:py-4 text-right">Valor</th>
+                                    <th class="px-5 py-3 md:py-4 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-xs md:text-sm divide-y divide-slate-100" id="tabela-recentes">
+                                <!-- Injetado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. FAB (MENU FLUTUANTE MOBILE EXPANSÍVEL)  -->
+    <!-- ========================================== -->
+    <div class="md:hidden fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
+        
+        <!-- Sub-botões Ocultos (Menu Secundário) -->
+        <div id="fab-menu" class="hidden flex-col items-end gap-3 mb-2 origin-bottom transition-all duration-300 transform scale-95 opacity-0">
+            <a href="#" class="flex items-center gap-3 bg-white text-slate-700 px-4 py-2.5 rounded-full shadow-lg border border-slate-100 font-bold text-sm hover:bg-slate-50">
+                <span>Veículos</span> <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="ph-fill ph-jeep text-lg"></i></div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-white text-slate-700 px-4 py-2.5 rounded-full shadow-lg border border-slate-100 font-bold text-sm hover:bg-slate-50">
+                <span>Clientes</span> <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="ph-fill ph-users text-lg"></i></div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-white text-slate-700 px-4 py-2.5 rounded-full shadow-lg border border-slate-100 font-bold text-sm hover:bg-slate-50">
+                <span>Financeiro</span> <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="ph-fill ph-currency-circle-dollar text-lg"></i></div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-white text-slate-700 px-4 py-2.5 rounded-full shadow-lg border border-slate-100 font-bold text-sm hover:bg-slate-50">
+                <span>Orçamentos</span> <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="ph-fill ph-receipt text-lg"></i></div>
+            </a>
+        </div>
+
+        <!-- Botão Principal (Gatilho) -->
+        <button id="fab-main-btn" class="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center text-2xl transition-transform duration-300 focus:outline-none active:scale-90">
+            <i class="ph-bold ph-list transition-transform duration-300" id="fab-icon"></i>
+        </button>
+    </div>
+
+    <!-- Importando o Motor -->
+    <script src="dashboard.js"></script>
+</body>
+</html>
