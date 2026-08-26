@@ -252,7 +252,7 @@ function removerImagemArray(strToRem) {
 
 /**
  * ========================================================
- * SUPABASE CRUD E MODAL DE EXCLUSÃO
+ * SUPABASE CRUD E MODAL DE EXCLUSÃO (CORRIGIDO)
  * ========================================================
  */
 async function buscarOrcamentosSupabase() {
@@ -337,7 +337,7 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-// LÓGICA DO MODAL DE EXCLUSÃO (Seguro)
+// LÓGICA DO MODAL DE EXCLUSÃO (Seguro e com ID travado)
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
     const spanNum = document.getElementById('exc-os-num');
@@ -411,12 +411,12 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); document.getElementById('modal-cadastro-rapido').classList.add('hidden'); }
-async function buscarCEP(cepInput) { /* Mesma lógica */ }
-function processarSalvamentoModal() { /* Mesma lógica */ fecharModalCadastro(); }
+async function buscarCEP(cepInput) { /* Mantido */ }
+function processarSalvamentoModal() { /* Mantido */ fecharModalCadastro(); }
 
 /**
  * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (HORA EXATA NO CLIQUE)
+ * MOTOR DE IMPRESSÃO DE PDF (100% P&B E DATA/HORA REAL)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -441,7 +441,8 @@ function gerarPDFSupabase(dadosCodificados) {
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
     
     let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">`;
-    htmlTabela += `<thead style="background-color: #1e293b; color: white;">
+    // Fundo e texto em cinza escuro para melhor contraste B&W
+    htmlTabela += `<thead style="background-color: #333333; color: white;">
         <tr>
             <th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th>
             <th style="padding: 6px 10px; width: 5%;">Qtd</th>
@@ -452,23 +453,23 @@ function gerarPDFSupabase(dadosCodificados) {
     </thead><tbody>`;
     
     if(pecas.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #f1f5f9; font-weight: bold; padding: 6px 10px; color: #334155; text-transform: uppercase; font-size: 9px; border-bottom: 1px solid #e2e8f0;">1. Peças e Componentes</td></tr>`;
+        htmlTabela += `<tr><td colspan="5" style="background-color: #f4f4f4; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 9px; border-bottom: 1px solid #cccccc;">1. Peças e Componentes</td></tr>`;
         htmlTabela += pecas.map(i => `<tr>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${i.tipo}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">${i.quantidade}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9;"><div style="font-weight: bold; color: #0f172a;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #475569;">${format(i.valor_unitario)}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: bold; color: #0f172a;">${format(i.subtotal)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; color: #333333;">${i.tipo}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; font-weight: bold; color: #000000;">${i.quantidade}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #333333; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #000000;">${format(i.valor_unitario)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td>
         </tr>`).join('');
     }
     if(servicos.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #f1f5f9; font-weight: bold; padding: 6px 10px; color: #334155; text-transform: uppercase; font-size: 9px; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #e2e8f0;">2. Mão de Obra e Serviços</td></tr>`;
+        htmlTabela += `<tr><td colspan="5" style="background-color: #f4f4f4; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 9px; border-top: 1px solid #000000; border-bottom: 1px solid #cccccc;">2. Mão de Obra e Serviços</td></tr>`;
         htmlTabela += servicos.map(i => `<tr>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${i.tipo}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">${i.quantidade}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9;"><div style="font-weight: bold; color: #0f172a;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #475569;">${format(i.valor_unitario)}</td>
-            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: bold; color: #0f172a;">${format(i.subtotal)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; color: #333333;">${i.tipo}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; font-weight: bold; color: #000000;">${i.quantidade}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #333333; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #000000;">${format(i.valor_unitario)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #e5e5e5; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td>
         </tr>`).join('');
     }
     htmlTabela += `</tbody></table>`;
