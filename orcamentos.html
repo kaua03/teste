@@ -57,11 +57,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                            <select id="db-cliente-nome" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition"><option value="">Selecione...</option></select>
+                            <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
+                                <option value="">Carregando Clientes...</option>
+                            </select>
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                            <select id="db-veiculo-placa" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition"><option value="">Selecione...</option></select>
+                            <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
+                                <option value="">Carregando Veículos...</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -170,7 +174,7 @@
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl"><h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3><button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button></div>
         <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
-        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0"><button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button><button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button></div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0"><button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button><button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar Oficial</button></div>
     </div>
 </div>
 
@@ -225,13 +229,13 @@
             </div>
         </div>
 
-        <!-- ASSINATURAS E DATA (USANDO GEOMETRIA PURA CSS SEM DUPLICAR LINHAS) -->
+        <!-- ASSINATURAS E DATA COM GEOMETRIA CSS PURA -->
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
             
             <!-- Bloco de Assinatura -->
             <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #000000; height: 40px; margin-bottom: 5px;"></div>
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
+                <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #0f172a; height: 40px; margin-bottom: 5px;"></div>
+                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
                 <p style="font-size: 8px; color: #475569; margin: 4px 0 0 0;">Declaro estar de acordo com os serviços e valores detalhados nesta Ordem de Serviço.</p>
             </div>
             
@@ -244,12 +248,12 @@
                     <div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div>
                     <div style="width: 45px; border-bottom: 1px solid #000000; height: 1px;"></div>
                 </div>
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
+                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Data</p>
             </div>
 
         </div>
         
-        <!-- RODAPÉ DE PÁGINA (LINHA SÓLIDA) -->
+        <!-- RODAPÉ DE PÁGINA COM LINHA CONTÍNUA -->
         <div style="margin-top: 30px; text-align: center; font-size: 8px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 10px;">
             Documento gerado eletronicamente pelo sistema AutoManager Oficina. Este documento tem validade para fins de orçamento e controle interno.
         </div>
