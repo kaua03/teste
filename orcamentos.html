@@ -106,7 +106,7 @@
                         </div>
                         <div class="flex gap-3">
                             <input type="number" id="item-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center font-bold shadow-sm bg-white">
-                            <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="mascaraMoeda(this, event)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
+                            <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
                         </div>
                         <input type="hidden" id="item-id-edit" value="">
                         <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-5 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center">
@@ -191,78 +191,55 @@
 </div>
 
 <!-- ====================================================================== -->
-<!-- MODAL DE CADASTRO RÁPIDO                                               -->
+<!-- MODAL DE CADASTRO RÁPIDO (COM SCROLL INTERNO BLINDADO PARA MOBILE)     -->
 <!-- ====================================================================== -->
-<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/90 z-[500] flex items-center justify-center p-4 backdrop-blur-sm fade-in">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
-            <h3 id="modal-titulo" class="font-bold text-lg">Novo Cadastro</h3>
+<!-- A classe pb-28 empurra o modal para cima da barra inferior no celular -->
+<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/90 z-[999] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
+    <!-- max-h-full garante que ele expanda o máximo, mas sem vazar da tela -->
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
+        
+        <!-- Header Fixa -->
+        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0">
+            <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
             <button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition">
                 <i class="ph-bold ph-x text-xl"></i>
             </button>
         </div>
         
-        <div class="p-5 md:p-6 overflow-y-auto flex-1" id="modal-conteudo">
+        <!-- Conteúdo Interno Rolável -->
+        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo">
             <!-- Os inputs são injetados dinamicamente via orcamentos.js -->
         </div>
         
-        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+        <!-- Footer Fixa -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
             <button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">
                 Cancelar
             </button>
             <button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2">
-                <i class="ph-bold ph-check"></i> Salvar Cadastro
+                <i class="ph-bold ph-check"></i> Salvar
             </button>
         </div>
     </div>
 </div>
 
-<!-- ====================================================================== -->
-<!-- MOTOR DE IMPRESSÃO DE PDF (OCULTO EM COORDENADAS NEGATIVAS)           -->
-<!-- ====================================================================== -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (OCULTO EM COORDENADAS NEGATIVAS) -->
 <div style="position: absolute; left: -9999px; top: -9999px; width: 800px; background-color: white; z-index: -1;">
     <div id="pdf-template-real" style="padding: 40px; color: #1e293b; font-family: sans-serif;">
         <div style="border-bottom: 4px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #0f172a;">AutoManager - Oficina</h1>
-                <p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">CNPJ: 00.000.000/0001-00 | Documento Oficial de O.S.</p>
-            </div>
-            <div style="text-align: right;">
-                <h2 style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 0;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
-                <p style="font-size: 14px; font-weight: bold; margin: 5px 0 0 0;">Emissão: <span id="pdf-data"></span></p>
-            </div>
+            <div><h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #0f172a;">AutoManager - Oficina</h1><p style="font-size: 12px; color: #64748b; margin: 5px 0 0 0;">CNPJ: 00.000.000/0001-00 | Documento Oficial de O.S.</p></div>
+            <div style="text-align: right;"><h2 style="font-size: 24px; font-weight: bold; color: #2563eb; margin: 0;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2><p style="font-size: 14px; font-weight: bold; margin: 5px 0 0 0;">Emissão: <span id="pdf-data"></span></p></div>
         </div>
         <div style="display: flex; gap: 20px; margin-bottom: 30px; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div style="flex: 1;">
-                <p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Cliente</p>
-                <p style="font-size: 18px; font-weight: bold; margin: 0;" id="pdf-cli">---</p>
-            </div>
-            <div style="flex: 1;">
-                <p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Veículo / Placa</p>
-                <p style="font-size: 18px; font-weight: bold; margin: 0; text-transform: uppercase;" id="pdf-vei">---</p>
-            </div>
+            <div style="flex: 1;"><p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Cliente</p><p style="font-size: 18px; font-weight: bold; margin: 0;" id="pdf-cli">---</p></div>
+            <div style="flex: 1;"><p style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 5px 0;">Veículo / Placa</p><p style="font-size: 18px; font-weight: bold; margin: 0; text-transform: uppercase;" id="pdf-vei">---</p></div>
         </div>
         <table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 30px;">
-            <thead style="background-color: #1e293b; color: white;">
-                <tr>
-                    <th style="padding: 12px; font-size: 14px;">Tipo</th>
-                    <th style="padding: 12px; font-size: 14px;">Qtd</th>
-                    <th style="padding: 12px; font-size: 14px;">Descrição Serviço / Peça</th>
-                    <th style="padding: 12px; text-align: right; font-size: 14px;">V. Unitário</th>
-                    <th style="padding: 12px; text-align: right; font-size: 14px;">Subtotal</th>
-                </tr>
-            </thead>
+            <thead style="background-color: #1e293b; color: white;"><tr><th style="padding: 12px; font-size: 14px;">Tipo</th><th style="padding: 12px; font-size: 14px;">Qtd</th><th style="padding: 12px; font-size: 14px;">Descrição Serviço / Peça</th><th style="padding: 12px; text-align: right; font-size: 14px;">V. Unitário</th><th style="padding: 12px; text-align: right; font-size: 14px;">Subtotal</th></tr></thead>
             <tbody id="pdf-itens" style="border-bottom: 2px solid #e2e8f0;"></tbody>
         </table>
         <div style="display: flex; justify-content: flex-end;">
-            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; width: 50%; text-align: right;">
-                <p style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0;">Total Geral</p>
-                <p style="font-size: 28px; font-weight: 900; color: #0f172a; margin: 0;" id="pdf-tot">R$ 0,00</p>
-            </div>
-        </div>
-        <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-            Documento gerado eletronicamente pelo sistema AutoManager.<br>
-            Assinatura do Cliente: __________________________________________________
+            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; width: 50%; text-align: right;"><p style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0;">Total Geral</p><p style="font-size: 28px; font-weight: 900; color: #0f172a; margin: 0;" id="pdf-tot">R$ 0,00</p></div>
         </div>
     </div>
 </div>
