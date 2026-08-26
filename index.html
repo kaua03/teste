@@ -88,5 +88,25 @@
     <script>
         window.onload = () => { navegarPara('dashboard'); };
     </script>
+
+<!-- ========================================================= -->
+    <!-- CARREGAMENTO DOS MOTORES JS (A ORDEM É A LEI)             -->
+    <!-- ========================================================= -->
+    
+    <!-- 1. A Fundação: Motor Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- 2. As Paredes e o Teto: Seus códigos locais -->
+    <script src="supabase.js"></script>
+    <script src="router.js"></script>
+    <script src="dashboard.js"></script>
+    
+    <!-- 3. A NOVA LINHA: O Motor de Orçamentos -->
+    <script src="orcamentos.js"></script>
+
+    <!-- 4. O Gatilho: Dá a partida no sistema -->
+    <script>
+        window.onload = () => { navegarPara('dashboard'); };
+    </script>
 </body>
 </html>
