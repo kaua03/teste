@@ -390,18 +390,18 @@ function abrirModalCadastro(tipo) {
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
     } else {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        conteudo.innerHTML = `<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label><input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label><input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div></div>`;
+        conteudo.innerHTML = `<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div></div>`;
     }
     modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); document.getElementById('modal-cadastro-rapido').classList.add('hidden'); }
-async function buscarCEP(cepInput) { /* Mesma Lógica Mantida */ }
-function processarSalvamentoModal() { /* Mesma Lógica Mantida */ fecharModalCadastro(); }
+async function buscarCEP(cepInput) { /* Mesma lógica mantida */ }
+function processarSalvamentoModal() { /* Mesma lógica mantida */ fecharModalCadastro(); }
 
 /**
  * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (100% PRETO E BRANCO)
+ * MOTOR DE IMPRESSÃO DE PDF (CORPORATIVO - TONS DE SLATE/AZUL)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
@@ -419,17 +419,37 @@ function gerarPDFSupabase(dadosCodificados) {
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
     
-    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 10px; font-size: 10px;">`;
-    // Fundo e texto em cinza escuro para melhor contraste B&W
-    htmlTabela += `<thead style="background-color: #333333; color: white;"><tr><th style="padding: 6px 8px; width: 10%;">Tipo</th><th style="padding: 6px 8px; width: 5%;">Qtd</th><th style="padding: 6px 8px; width: 45%;">Descrição Serviço / Peça</th><th style="padding: 6px 8px; text-align: right; width: 20%;">V. Unitário</th><th style="padding: 6px 8px; text-align: right; width: 20%;">Subtotal</th></tr></thead><tbody>`;
+    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">`;
+    // Fundo Slate-800 com fonte branca
+    htmlTabela += `<thead style="background-color: #1e293b; color: white;">
+        <tr>
+            <th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th>
+            <th style="padding: 6px 10px; width: 5%;">Qtd</th>
+            <th style="padding: 6px 10px; width: 45%;">Descrição Serviço / Peça</th>
+            <th style="padding: 6px 10px; text-align: right; width: 20%;">V. Unitário</th>
+            <th style="padding: 6px 10px; text-align: right; width: 20%; border-top-right-radius: 4px;">Subtotal</th>
+        </tr>
+    </thead><tbody>`;
     
     if(pecas.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #f4f4f4; font-weight: bold; padding: 6px 8px; color: #000000; text-transform: uppercase;">1. Peças e Componentes</td></tr>`;
-        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; color: #333333;">${i.tipo}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #333333; font-style: italic;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; text-align: right; color: #000000;">${format(i.valor_unitario)}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += `<tr><td colspan="5" style="background-color: #f1f5f9; font-weight: bold; padding: 6px 10px; color: #334155; text-transform: uppercase; font-size: 9px; border-bottom: 1px solid #e2e8f0;">1. Peças e Componentes</td></tr>`;
+        htmlTabela += pecas.map(i => `<tr>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${i.tipo}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">${i.quantidade}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9;"><div style="font-weight: bold; color: #0f172a;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #475569;">${format(i.valor_unitario)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: bold; color: #0f172a;">${format(i.subtotal)}</td>
+        </tr>`).join('');
     }
     if(servicos.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #f4f4f4; font-weight: bold; padding: 6px 8px; color: #000000; text-transform: uppercase; border-top: 1px solid #000000;">2. Mão de Obra e Serviços</td></tr>`;
-        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; color: #333333;">${i.tipo}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #333333; font-style: italic;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; text-align: right; color: #000000;">${format(i.valor_unitario)}</td><td style="padding: 6px 8px; border-bottom: 1px solid #cccccc; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += `<tr><td colspan="5" style="background-color: #f1f5f9; font-weight: bold; padding: 6px 10px; color: #334155; text-transform: uppercase; font-size: 9px; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #e2e8f0;">2. Mão de Obra e Serviços</td></tr>`;
+        htmlTabela += servicos.map(i => `<tr>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${i.tipo}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">${i.quantidade}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9;"><div style="font-weight: bold; color: #0f172a;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #475569;">${format(i.valor_unitario)}</td>
+            <td style="padding: 6px 10px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: bold; color: #0f172a;">${format(i.subtotal)}</td>
+        </tr>`).join('');
     }
     htmlTabela += `</tbody></table>`;
     document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
