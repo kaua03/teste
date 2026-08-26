@@ -62,9 +62,14 @@
                 <i class="ph-fill ph-receipt text-2xl shrink-0"></i><span class="font-bold sidebar-text">Orçamentos</span>
             </button>
 
-            <!-- Botão Clientes (O NOVO MÓDULO) -->
+            <!-- Botão Clientes -->
             <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
                 <i class="ph-fill ph-users text-2xl shrink-0"></i><span class="font-bold sidebar-text">Clientes</span>
+            </button>
+
+            <!-- Botão Veículos -->
+            <button onclick="navegarPara('veiculos')" data-target="veiculos" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
+                <i class="ph-fill ph-car text-2xl shrink-0"></i><span class="font-bold sidebar-text">Veículos</span>
             </button>
         </nav>
     </aside>
@@ -89,7 +94,7 @@
 
         <!-- A TELA ONDE OS HTMLS SÃO INJETADOS -->
         <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in bg-slate-50/50">
-            <!-- O router.js vai injetar o dashboard.html, orcamentos.html ou clientes.html aqui -->
+            <!-- O router.js vai injetar os módulos aqui -->
         </main>
     </div>
 
@@ -106,9 +111,12 @@
             <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px] font-bold">O.S.</span>
         </button>
 
-        <!-- Botão Mobile de Clientes -->
         <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
             <i class="ph-fill ph-users text-2xl"></i><span class="text-[10px] font-bold">Clientes</span>
+        </button>
+
+        <button onclick="navegarPara('veiculos')" data-target="veiculos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-car text-2xl"></i><span class="text-[10px] font-bold">Veículos</span>
         </button>
 
     </nav>
@@ -127,6 +135,7 @@
     <script src="dashboard.js"></script>
     <script src="orcamentos.js"></script>
     <script src="clientes.js"></script>
+    <script src="veiculos.js"></script>
 
     <!-- INICIALIZAÇÃO -->
     <script>
