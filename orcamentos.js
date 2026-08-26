@@ -25,7 +25,8 @@ async function initOrcamentos() {
  */
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('nome, telefone').order('nome');
-    const { data: vei } = await window.banco.from('veiculos').select('placa, modelo, dono_nome').order('placa');
+    // Adicionado o campo "cor" na busca ao Supabase
+    const { data: vei } = await window.banco.from('veiculos').select('placa, modelo, dono_nome, cor').order('placa');
     
     globalClientes = cli || [];
     globalVeiculos = vei || [];
@@ -37,11 +38,14 @@ async function carregarListasBD() {
     selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
 
     globalClientes.forEach(c => {
-        selCli.innerHTML += `<option value="${c.nome}">${c.nome} (${c.telefone || 'Sem número'})</option>`;
+        // Correção dos 2 parênteses: substituído por um traço separador
+        selCli.innerHTML += `<option value="${c.nome}">${c.nome} - ${c.telefone || 'Sem número'}</option>`;
     });
 
     globalVeiculos.forEach(v => {
-        selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}</option>`;
+        // Lógica que adiciona a cor apenas se ela existir no cadastro do veículo
+        const textoCor = v.cor ? ` - ${v.cor}` : '';
+        selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${textoCor}</option>`;
     });
 }
 
@@ -53,11 +57,9 @@ function vincularClienteViceVersa(gatilho) {
     const selVei = document.getElementById('db-veiculo-placa');
 
     if (gatilho === 'cliente' && selCli.value) {
-        // Encontra o carro que pertence ao cliente escolhido
         const veiEncontrado = globalVeiculos.find(v => v.dono_nome === selCli.value);
         if (veiEncontrado) selVei.value = veiEncontrado.placa;
     } else if (gatilho === 'veiculo' && selVei.value) {
-        // Encontra o dono do carro escolhido
         const veiEncontrado = globalVeiculos.find(v => v.placa === selVei.value);
         if (veiEncontrado && veiEncontrado.dono_nome) selCli.value = veiEncontrado.dono_nome;
     }
@@ -377,7 +379,7 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-// LÓGICA DO MODAL DE EXCLUSÃO (Seguro)
+// LÓGICA DO MODAL DE EXCLUSÃO
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
     const spanNum = document.getElementById('exc-os-num');
@@ -435,13 +437,12 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** 
- * CADASTRO RÁPIDO DENTRO DA O.S 
- */
+/** CADASTRO RÁPIDO DENTRO DA O.S */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     const modal = document.getElementById('modal-cadastro-rapido'); const titulo = document.getElementById('modal-titulo'); const conteudo = document.getElementById('modal-conteudo');
+    
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
@@ -548,7 +549,7 @@ async function processarSalvamentoModal() {
 
 /**
  * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (ESTRITAMENTE PRETO, BRANCO E TONS DE CINZA)
+ * MOTOR DE IMPRESSÃO DE PDF (ESTRITAMENTE PRETO E BRANCO)
  * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
