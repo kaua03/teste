@@ -1,7 +1,9 @@
 <!-- orcamentos.html -->
 <div class="max-w-7xl mx-auto w-full pb-28 md:pb-4 flex flex-col relative fade-in font-sans">
     
-    <!-- SUB-TELA 1: LISTAGEM -->
+    <!-- ========================================== -->
+    <!-- SUB-TELA 1: LISTAGEM DE ORDENS DE SERVIÇO  -->
+    <!-- ========================================== -->
     <div id="view-lista-orcamentos" class="space-y-6 block">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
@@ -26,21 +28,23 @@
                         </tr>
                     </thead>
                     <tbody id="tabela-orcamentos-real" class="text-xs md:text-sm divide-y divide-slate-100">
-                        <tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium"><i class="ph-bold ph-spinner animate-spin text-2xl mb-2 text-blue-600"></i><br>Buscando dados...</td></tr>
+                        <tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium"><i class="ph-bold ph-spinner animate-spin text-2xl mb-2 text-blue-600"></i><br>Buscando dados no servidor...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- SUB-TELA 2: EMISSÃO DE O.S. -->
+    <!-- ========================================== -->
+    <!-- SUB-TELA 2: EMISSÃO / EDIÇÃO DE O.S.       -->
+    <!-- ========================================== -->
     <div id="view-novo-orcamento" class="space-y-6 hidden">
         <div class="flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
                 <i class="ph-bold ph-arrow-left text-lg"></i>
             </button>
             <div>
-                <h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Emissão de O.S.</h2>
+                <h2 id="titulo-tela-os" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Emissão de O.S.</h2>
                 <p class="text-[10px] md:text-xs text-blue-600 font-bold uppercase mt-0.5 tracking-wider">Modo Detalhado de Orçamentação</p>
             </div>
         </div>
@@ -67,7 +71,6 @@
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">2</div> Peças e Serviços</h3>
                     
-                    <!-- Novo Formulário Duplo -->
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
                         <div class="flex flex-col md:flex-row gap-3">
                             <div class="w-full md:w-32"><select id="item-tipo" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold bg-white text-slate-600 shadow-sm"><option value="Peça">Peça</option><option value="Serviço">Serviço</option></select></div>
@@ -151,7 +154,7 @@
     </div>
 </div>
 
-<!-- MODAL DE CADASTRO RÁPIDO (MANTIDO EXATAMENTE IGUAL) -->
+<!-- MODAL DE CADASTRO RÁPIDO -->
 <div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/90 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl"><h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3><button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button></div>
@@ -161,88 +164,86 @@
 </div>
 
 <!-- ====================================================================== -->
-<!-- MOTOR DE IMPRESSÃO DE PDF (O NOVO DESIGN DE CONCESSIONÁRIA)            -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (MARGENS COMPACTADAS PARA NÃO GASTAR 2 PÁGS) -->
 <!-- ====================================================================== -->
 <div style="position: absolute; left: -9999px; top: -9999px; width: 800px; background-color: white; z-index: -1;">
-    <div id="pdf-template-real" style="padding: 40px; color: #1e293b; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+    <div id="pdf-template-real" style="padding: 30px 40px; color: #1e293b; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
         
         <!-- CABEÇALHO -->
-        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
-                <h1 style="font-size: 28px; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">AutoManager</h1>
-                <p style="font-size: 11px; color: #64748b; margin: 5px 0 0 0; font-weight: bold;">SERVIÇOS AUTOMOTIVOS AVANÇADOS</p>
-                <p style="font-size: 10px; color: #94a3b8; margin: 2px 0 0 0;">CNPJ: 00.000.000/0001-00 | Rua Fictícia, 123 - Centro</p>
+                <h1 style="font-size: 26px; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">AutoManager</h1>
+                <p style="font-size: 10px; color: #64748b; margin: 3px 0 0 0; font-weight: bold;">SERVIÇOS AUTOMOTIVOS AVANÇADOS</p>
+                <p style="font-size: 9px; color: #94a3b8; margin: 1px 0 0 0;">CNPJ: 00.000.000/0001-00 | Rua Fictícia, 123 - Centro</p>
             </div>
             <div style="text-align: right;">
-                <h2 style="font-size: 22px; font-weight: bold; color: #2563eb; margin: 0;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
-                <p style="font-size: 12px; font-weight: bold; margin: 5px 0 0 0;">Emissão: <span id="pdf-data"></span></p>
-                <p style="font-size: 12px; margin: 2px 0 0 0; color: #64748b;">Status: <span id="pdf-status" style="font-weight: bold; color: #0f172a;"></span></p>
+                <h2 style="font-size: 20px; font-weight: bold; color: #2563eb; margin: 0;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
+                <p style="font-size: 11px; font-weight: bold; margin: 3px 0 0 0;">Emissão: <span id="pdf-data"></span></p>
+                <p style="font-size: 11px; margin: 1px 0 0 0; color: #64748b;">Status: <span id="pdf-status" style="font-weight: bold; color: #0f172a;"></span></p>
             </div>
         </div>
 
         <!-- DADOS DO CLIENTE E VEÍCULO -->
-        <div style="display: flex; gap: 20px; margin-bottom: 30px; background-color: #f8fafc; padding: 15px 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <div style="display: flex; gap: 15px; margin-bottom: 20px; background-color: #f8fafc; padding: 12px 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
             <div style="flex: 1;">
-                <p style="font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 4px 0; letter-spacing: 1px;">Cliente Responsável</p>
-                <p style="font-size: 16px; font-weight: bold; margin: 0; color: #0f172a;" id="pdf-cli">---</p>
+                <p style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 3px 0; letter-spacing: 1px;">Cliente Responsável</p>
+                <p style="font-size: 14px; font-weight: bold; margin: 0; color: #0f172a;" id="pdf-cli">---</p>
             </div>
-            <div style="flex: 1; border-left: 1px solid #cbd5e1; padding-left: 20px;">
-                <p style="font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 4px 0; letter-spacing: 1px;">Veículo / Placa</p>
-                <p style="font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase; color: #0f172a;" id="pdf-vei">---</p>
+            <div style="flex: 1; border-left: 1px solid #cbd5e1; padding-left: 15px;">
+                <p style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin: 0 0 3px 0; letter-spacing: 1px;">Veículo / Placa</p>
+                <p style="font-size: 14px; font-weight: bold; margin: 0; text-transform: uppercase; color: #0f172a;" id="pdf-vei">---</p>
             </div>
         </div>
 
         <!-- ITENS DA O.S -->
         <div id="pdf-container-itens">
-            <!-- Será gerado via JavaScript para separar Peças de Serviços -->
+            <!-- Será gerado via JavaScript -->
         </div>
 
-        <!-- RESUMO FINANCEIRO (ESTILO NOTA FISCAL) -->
-        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <div style="width: 300px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
-                <div style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 12px;">
-                    <span style="color: #64748b; font-weight: bold;">Total em Peças:</span>
-                    <span id="pdf-tot-pecas" style="font-weight: bold; color: #0f172a;">R$ 0,00</span>
+        <!-- RESUMO FINANCEIRO -->
+        <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
+            <div style="width: 280px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+                <div style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #64748b; font-weight: bold;">Total em Peças:</span><span id="pdf-tot-pecas" style="font-weight: bold; color: #0f172a;">R$ 0,00</span>
                 </div>
-                <div style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 12px;">
-                    <span style="color: #64748b; font-weight: bold;">Total em Serviços:</span>
-                    <span id="pdf-tot-servicos" style="font-weight: bold; color: #0f172a;">R$ 0,00</span>
+                <div style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #64748b; font-weight: bold;">Total em Serviços:</span><span id="pdf-tot-servicos" style="font-weight: bold; color: #0f172a;">R$ 0,00</span>
                 </div>
-                <div style="padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 12px; background-color: #fef2f2;">
-                    <span style="color: #ef4444; font-weight: bold;">Desconto Concedido:</span>
-                    <span id="pdf-tot-desc" style="font-weight: bold; color: #ef4444;">- R$ 0,00</span>
+                <div style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px; background-color: #fef2f2;">
+                    <span style="color: #ef4444; font-weight: bold;">Desconto Concedido:</span><span id="pdf-tot-desc" style="font-weight: bold; color: #ef4444;">- R$ 0,00</span>
                 </div>
-                <div style="padding: 15px; background-color: #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #0f172a; font-weight: 900; font-size: 14px; text-transform: uppercase;">Valor Final</span>
-                    <span id="pdf-tot-final" style="font-weight: 900; color: #2563eb; font-size: 20px;">R$ 0,00</span>
+                <div style="padding: 12px; background-color: #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #0f172a; font-weight: 900; font-size: 13px; text-transform: uppercase;">Valor Final</span><span id="pdf-tot-final" style="font-weight: 900; color: #2563eb; font-size: 18px;">R$ 0,00</span>
                 </div>
             </div>
         </div>
 
         <!-- OBSERVAÇÕES GERAIS -->
-        <div id="pdf-container-obs" style="margin-top: 30px; display: none;">
-            <h3 style="font-size: 11px; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;">Observações Gerais da O.S.</h3>
-            <p id="pdf-obs-texto" style="font-size: 12px; color: #475569; line-height: 1.5; margin: 0; background-color: #f8fafc; padding: 15px; border-radius: 6px; border-left: 3px solid #2563eb;"></p>
+        <div id="pdf-container-obs" style="margin-top: 15px; display: none;">
+            <h3 style="font-size: 10px; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px;">Observações Gerais da O.S.</h3>
+            <p id="pdf-obs-texto" style="font-size: 11px; color: #475569; line-height: 1.4; margin: 0; background-color: #f8fafc; padding: 12px; border-radius: 6px; border-left: 3px solid #2563eb;"></p>
         </div>
 
         <!-- FOTOS E ANEXOS -->
-        <div id="pdf-container-fotos" style="margin-top: 30px; display: none; page-break-before: auto;">
-            <h3 style="font-size: 11px; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 15px;">Evidências Fotográficas</h3>
-            <div id="pdf-fotos-grid" style="display: flex; flex-wrap: wrap; gap: 15px;">
-                <!-- Imagens injetadas via JS -->
-            </div>
+        <div id="pdf-container-fotos" style="margin-top: 15px; display: none;">
+            <h3 style="font-size: 10px; color: #0f172a; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px;">Evidências Fotográficas</h3>
+            <div id="pdf-fotos-grid" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
         </div>
 
         <!-- ASSINATURAS -->
-        <div style="margin-top: 60px; display: flex; justify-content: space-between; gap: 40px;">
-            <div style="flex: 1; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 10px;">
-                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
-                <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">Declaro estar de acordo com os serviços e valores acima.</p>
+        <div style="margin-top: 30px; display: flex; justify-content: space-between; gap: 30px;">
+            <div style="flex: 1; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+                <p style="font-size: 9px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
+                <p style="font-size: 8px; color: #64748b; margin: 2px 0 0 0;">Declaro estar de acordo com os serviços e valores acima.</p>
             </div>
-            <div style="flex: 1; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 10px;">
-                <p style="font-size: 10px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Responsável Técnico</p>
-                <p style="font-size: 9px; color: #64748b; margin: 2px 0 0 0;">AutoManager Oficina</p>
+            <div style="flex: 1; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+                <p style="font-size: 9px; font-weight: bold; color: #0f172a; margin: 0; text-transform: uppercase;">Responsável Técnico</p>
+                <p style="font-size: 8px; color: #64748b; margin: 2px 0 0 0;">AutoManager Oficina</p>
             </div>
+        </div>
+        
+        <div style="margin-top: 15px; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+            Documento gerado eletronicamente pelo sistema AutoManager.
         </div>
     </div>
 </div>
