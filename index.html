@@ -81,7 +81,11 @@
         window.onload = () => { navegarPara('dashboard'); };
     </script>
     
-<!-- CARREGAMENTO DOS MOTORES JS (Na mesma pasta) -->
+<!-- 1. O CDN Oficial do Supabase (Tem que vir primeiro) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- 2. Os seus arquivos locais (Sem a pasta 'js/', já que está tudo solto) -->
+    <script src="supabase.js"></script>
     <script src="router.js"></script>
     <script src="dashboard.js"></script>
 
