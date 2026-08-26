@@ -3,254 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AutoManager - Oficina</title>
+    <title>AutoManager - Master</title>
     
-    <!-- Tailwind e Ícones -->
+    <!-- Bibliotecas Oficiais -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <!-- Chart.js para os gráficos do Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Supabase SDK via CDN (O Back-end de Elite) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* Oculta scrollbar mas mantém funcionalidade no mobile */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-        
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .pb-safe { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
-        
-        /* Design Clean e Arredondado */
-        .glass-card { background: #ffffff; border-radius: 1.25rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
-        .tab-ativa { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 700; }
-        .tab-inativa { color: #64748b; font-weight: 500; }
+        .sidebar-text { display: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; }
+        .group:hover .sidebar-text { display: inline-block; opacity: 1; }
+        .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
     </style>
 </head>
-<body class="h-screen flex flex-col text-slate-800 overflow-hidden">
+<body class="h-screen flex overflow-hidden text-slate-800">
 
-    <!-- CABEÇALHO SUPERIOR (Minimalista e Fixo) -->
-    <header class="bg-white border-b border-slate-200 px-5 py-4 flex justify-between items-center shrink-0 z-20 sticky top-0 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                <i class="ph-bold ph-car-profile text-white text-xl"></i>
-            </div>
-            <div>
-                <h1 class="font-black text-lg leading-tight tracking-tight text-slate-900">Auto<span class="text-blue-600">Manager</span></h1>
-                <p class="text-[10px] text-slate-500 font-bold uppercase" id="header-titulo">Dashboard</p>
-            </div>
+    <!-- SIDEBAR DESKTOP -->
+    <aside class="group fixed top-0 left-0 h-full w-20 hover:w-64 bg-slate-900 text-white transition-all duration-300 z-50 hidden md:flex flex-col shadow-2xl overflow-hidden">
+        <div class="h-16 flex items-center px-5 border-b border-slate-800 w-64">
+            <i class="ph-fill ph-car-profile text-3xl text-blue-500 shrink-0"></i>
+            <h1 class="text-xl font-black ml-4 tracking-tight sidebar-text text-white">Auto<span class="text-blue-500">Manager</span></h1>
         </div>
-        <div class="flex items-center gap-4">
-            <button class="relative p-2 text-slate-400 hover:text-blue-600 transition">
-                <i class="ph-bold ph-bell text-xl"></i>
-                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+        <nav class="flex-1 mt-6 flex flex-col gap-2 px-3 w-64">
+            <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full bg-blue-600 text-white">
+                <i class="ph-fill ph-squares-four text-2xl shrink-0"></i><span class="font-bold sidebar-text">Dashboard</span>
             </button>
-            <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-blue-700 font-bold text-sm">
-                KF
+            <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
+                <i class="ph-fill ph-receipt text-2xl shrink-0"></i><span class="font-bold sidebar-text">Orçamentos</span>
+            </button>
+        </nav>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-full w-full md:ml-20 relative">
+        
+        <!-- HEADER TOPO -->
+        <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="md:hidden bg-blue-600 p-2 rounded-lg text-white shadow-sm"><i class="ph-bold ph-car-profile text-xl"></i></div>
+                <h2 class="text-lg md:text-xl font-black text-slate-800">AutoManager</h2>
             </div>
-        </div>
-    </header>
-
-    <!-- ÁREA DE CONTEÚDO (Onde as telas serão injetadas) -->
-    <main id="app-content" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-safe fade-in">
-        <!-- O Dashboard começa aqui -->
-        <div class="space-y-6 max-w-7xl mx-auto">
-            
-            <!-- Resumo Financeiro Clean -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="glass-card p-4 md:p-5 flex flex-col justify-between">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Faturamento</p>
-                        <i class="ph-fill ph-trend-up text-emerald-500 text-lg"></i>
-                    </div>
-                    <p class="text-xl md:text-2xl font-black text-slate-800" id="dash-fat">R$ 0,00</p>
-                </div>
-                
-                <div class="glass-card p-4 md:p-5 flex flex-col justify-between">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">A Receber</p>
-                        <i class="ph-fill ph-clock text-amber-500 text-lg"></i>
-                    </div>
-                    <p class="text-xl md:text-2xl font-black text-slate-800" id="dash-rec">R$ 0,00</p>
-                </div>
-
-                <div class="glass-card p-4 md:p-5 flex flex-col justify-between">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Orçamentos Ativos</p>
-                        <i class="ph-fill ph-receipt text-blue-500 text-lg"></i>
-                    </div>
-                    <p class="text-xl md:text-2xl font-black text-slate-800">14</p>
-                </div>
-
-                <div class="glass-card p-4 md:p-5 flex flex-col justify-between bg-red-50 border-red-100">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-[10px] md:text-xs text-red-500 font-bold uppercase tracking-wider">Inadimplência</p>
-                        <i class="ph-fill ph-warning-circle text-red-500 text-lg"></i>
-                    </div>
-                    <p class="text-xl md:text-2xl font-black text-red-600">3 Notas</p>
-                </div>
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">KF</div>
             </div>
+        </header>
 
-            <!-- Gráfico de Fluxo de Caixa (Ajustado para não cortar no celular) -->
-            <div class="glass-card p-5">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-sm font-bold text-slate-700">Fluxo de Caixa (Últimos 6 meses)</h3>
-                    <select class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-1.5 outline-none font-medium">
-                        <option>2026</option>
-                    </select>
-                </div>
-                <div class="relative w-full h-48 md:h-64">
-                    <canvas id="chartFluxo"></canvas>
-                </div>
-            </div>
+        <!-- O VISOR DA TV (Onde as telas serão injetadas) -->
+        <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in">
+            <!-- O conteúdo entra aqui -->
+        </main>
+    </div>
 
-            <!-- Tabela Rápida: Últimos Orçamentos -->
-            <div class="glass-card overflow-hidden">
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-slate-700">Orçamentos Recentes</h3>
-                    <button class="text-xs font-bold text-blue-600 hover:text-blue-800">Ver Todos</button>
-                </div>
-                <!-- O segredo do celular: overflow-x-auto com whitespace-nowrap -->
-                <div class="w-full overflow-x-auto">
-                    <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-50/50">
-                            <tr class="text-[10px] text-slate-500 uppercase tracking-wider">
-                                <th class="px-5 py-3 font-bold">Cliente</th>
-                                <th class="px-5 py-3 font-bold">Placa</th>
-                                <th class="px-5 py-3 font-bold text-right">Valor</th>
-                                <th class="px-5 py-3 font-bold text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-sm divide-y divide-slate-100" id="lista-recentes">
-                            <!-- Injetado via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-        </div>
-    </main>
-
-    <!-- NAVEGAÇÃO INFERIOR FLUTUANTE (Premium App Style) -->
-    <nav class="fixed bottom-0 w-full bg-white/90 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 pb-2 px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-        <button onclick="navBar('dashboard')" class="nav-btn flex flex-col items-center justify-center w-16 gap-1 text-blue-600 transition-colors">
-            <i class="ph-fill ph-squares-four text-2xl"></i>
-            <span class="text-[10px] font-bold">Início</span>
+    <!-- FAB MOBILE INFERIOR -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-2xl pb-2">
+        <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-blue-600 active">
+            <i class="ph-fill ph-squares-four text-2xl"></i><span class="text-[10px] font-bold">Início</span>
         </button>
-        <button onclick="navBar('orcamentos')" class="nav-btn flex flex-col items-center justify-center w-16 gap-1 text-slate-400 hover:text-slate-600 transition-colors">
-            <i class="ph-fill ph-receipt text-2xl"></i>
-            <span class="text-[10px] font-medium">Orçamentos</span>
-        </button>
-        <!-- Botão Ação Rápida Central -->
-        <button onclick="navBar('novo')" class="flex flex-col items-center justify-center -mt-8">
-            <div class="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f1f5f9] transform active:scale-95 transition-transform">
-                <i class="ph-bold ph-plus text-2xl"></i>
-            </div>
-        </button>
-        <button onclick="navBar('financeiro')" class="nav-btn flex flex-col items-center justify-center w-16 gap-1 text-slate-400 hover:text-slate-600 transition-colors">
-            <i class="ph-fill ph-currency-circle-dollar text-2xl"></i>
-            <span class="text-[10px] font-medium">Caixa</span>
-        </button>
-        <button onclick="navBar('clientes')" class="nav-btn flex flex-col items-center justify-center w-16 gap-1 text-slate-400 hover:text-slate-600 transition-colors">
-            <i class="ph-fill ph-users text-2xl"></i>
-            <span class="text-[10px] font-medium">Cadastros</span>
+        <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400">
+            <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px] font-bold">Orçamento</span>
         </button>
     </nav>
 
-    <!-- MOTOR DE FUNCIONAMENTO (Supabase + Lógica) -->
+    <!-- CARREGAMENTO DOS MOTORES JS (A ordem importa!) -->
+    <script src="js/supabase.js"></script>
+    <script src="js/router.js"></script>
+    <!-- Carregamos a lógica das telas aqui para estarem prontas quando o HTML chegar -->
+    <script src="js/dashboard.js"></script>
+
     <script>
-        // ==========================================
-        // 1. CONEXÃO SUPABASE (O Backend)
-        // ==========================================
-        // Substitua por suas chaves reais lá no painel do Supabase -> Settings -> API
-        const SUPABASE_URL = 'https://ttluojmseqmdylzscfit.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_PoOjjqsJfXF5H1gXngXY5w_HHZ86R0C';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        const formataDin = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-        // ==========================================
-        // 2. INICIALIZAÇÃO DO DASHBOARD
-        // ==========================================
-        function initDashboard() {
-            // Valores Falsos Racionais (Enquanto não conectamos os dados reais do banco)
-            document.getElementById('dash-fat').innerText = formataDin(45200);
-            document.getElementById('dash-rec').innerText = formataDin(8400);
-
-            // Tabela Recentes
-            const recentes = [
-                { cli: 'Larissa Silva', pla: 'RXY9A21', val: 1250, st: 'Aprovado', bg: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-                { cli: 'João Logística', pla: 'ABC-1234', val: 3400, st: 'Pendente', bg: 'bg-amber-50 text-amber-600 border-amber-200' },
-                { cli: 'Carlos Peças', pla: 'XYZ-9876', val: 450, st: 'Aprovado', bg: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
-            ];
-            
-            document.getElementById('lista-recentes').innerHTML = recentes.map(r => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-5 py-4 font-bold text-slate-700">${r.cli}</td>
-                    <td class="px-5 py-4 font-medium text-slate-500 uppercase">${r.pla}</td>
-                    <td class="px-5 py-4 font-black text-slate-800 text-right">${formataDin(r.val)}</td>
-                    <td class="px-5 py-4 text-center">
-                        <span class="border px-2.5 py-1 rounded-md text-[10px] font-bold ${r.bg}">${r.st}</span>
-                    </td>
-                </tr>
-            `).join('');
-
-            // Gráfico Limpo
-            Chart.defaults.font.family = 'Inter, sans-serif';
-            const ctx = document.getElementById('chartFluxo').getContext('2d');
-            
-            // Gradiente Premium Azul
-            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
-            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
-                    datasets: [{
-                        data: [12000, 19000, 15000, 25000, 22000, 45200],
-                        borderColor: '#2563eb',
-                        backgroundColor: gradient,
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4, // Suaviza a curva
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#2563eb',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, border: { display: false } },
-                        y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { maxTicksLimit: 5 } }
-                    }
-                }
-            });
-        }
-
-        // ==========================================
-        // 3. CONTROLE DE NAVEGAÇÃO
-        // ==========================================
-        function navBar(tela) {
-            // Em uma SPA real, aqui nós ocultaríamos a DIV do Dashboard e mostraríamos a do Financeiro.
-            // Para as próximas etapas, te mandarei o HTML das outras telas para injetarmos aqui.
-            alert("Navegando para: " + tela + " (Construiremos essa tela no próximo passo)");
-            document.getElementById('header-titulo').innerText = tela;
-        }
-
-        // Roda ao carregar
-        window.onload = initDashboard;
+        // Quando abrir o sistema, carrega o Dashboard por padrão
+        window.onload = () => { navegarPara('dashboard'); };
     </script>
 </body>
 </html>
