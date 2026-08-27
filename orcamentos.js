@@ -13,6 +13,8 @@ let idParaExcluir = null;
 let globalClientes = [];
 let globalVeiculos = [];
 
+const SENHA_GERENCIAL = "admin123";
+
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
@@ -319,7 +321,6 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-/** TIRA A "FOTOGRAFIA" DOS DADOS NO MOMENTO DO SALVAMENTO **/
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -437,7 +438,6 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-// ---- DESTRAVAR A O.S FECHADA COM SENHA DO USUÁRIO ----
 function abrirModalDestravar() {
     document.getElementById('input-senha-reabrir').value = '';
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
@@ -720,7 +720,9 @@ async function processarSalvamentoModal() {
 }
 
 /** 
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
+ * ========================================================
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (ERP MODE)
+ * ========================================================
  */
 function abrirModalFinanceiro() {
     if(!osEmEdicaoId) {
@@ -729,17 +731,11 @@ function abrirModalFinanceiro() {
     }
     
     document.getElementById('fin-total-os').innerText = formataDinheiro(valoresFinais.total);
-    document.getElementById('fin-entrada').value = '';
-    document.getElementById('fin-parcelas').value = '1';
-    document.getElementById('fin-forma-entrada').value = 'Pix';
     
-    const hojeStr = new Date().toISOString().split('T')[0];
-    const campoVencBase = document.getElementById('fin-vencimento-base');
+    // Inicia zerado, aguardando o usuário definir a modalidade
+    document.getElementById('fin-tipo-faturamento').value = 'avista';
     
-    // As datas iniciam como a data atual
-    if (campoVencBase) campoVencBase.value = hojeStr;
-    
-    gerarLinhasParcelas(); 
+    mudarTipoFaturamento();
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
@@ -747,44 +743,79 @@ function fecharModalFinanceiro() {
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
-// INTELIGÊNCIA: Joga a data pro mês seguinte se for Cartão/Boleto
-function aoMudarFormaPagamentoPrincipal() {
-    const forma = document.getElementById('fin-forma-entrada').value;
-    let data = new Date(); 
-    
-    if (forma === 'Cartão de Crédito' || forma === 'Boleto') {
-        data.setMonth(data.getMonth() + 1); 
+// INTELIGÊNCIA: Alterna os painéis visuais conforme a modalidade
+function mudarTipoFaturamento() {
+    const tipo = document.getElementById('fin-tipo-faturamento').value;
+    const boxEntrada = document.getElementById('box-fin-entrada');
+    const boxParcelamento = document.getElementById('box-fin-parcelamento');
+    const inputEntrada = document.getElementById('fin-entrada');
+
+    if (tipo === 'avista') {
+        boxEntrada.classList.remove('hidden');
+        boxParcelamento.classList.add('hidden');
+        inputEntrada.value = formataDinheiro(valoresFinais.total);
+        inputEntrada.readOnly = true;
+        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed');
+        inputEntrada.classList.remove('bg-white');
+    } else if (tipo === 'entrada_parcela') {
+        boxEntrada.classList.remove('hidden');
+        boxParcelamento.classList.remove('hidden');
+        inputEntrada.readOnly = false;
+        inputEntrada.value = ''; 
+        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed');
+        inputEntrada.classList.add('bg-white');
+        
+        // Data base do parcelamento inicia como hoje
+        document.getElementById('fin-vencimento-base').value = new Date().toISOString().split('T')[0];
+    } else if (tipo === 'parcelado') {
+        boxEntrada.classList.add('hidden');
+        boxParcelamento.classList.remove('hidden');
+        inputEntrada.value = '0,00';
+        
+        // Data base do parcelamento inicia como hoje
+        document.getElementById('fin-vencimento-base').value = new Date().toISOString().split('T')[0];
     }
-    
-    const dataStr = data.toISOString().split('T')[0];
-    const campoVencBase = document.getElementById('fin-vencimento-base');
-    
-    if(campoVencBase) campoVencBase.value = dataStr;
     
     gerarLinhasParcelas();
 }
 
+function aoMudarFormaPagamentoPrincipal() {
+    // Isso afeta apenas quando for parcelamento total e o usuário mudar a data base. 
+    // Como a data base agora é livre, apenas atualizamos as linhas
+    gerarLinhasParcelas();
+}
+
 function gerarLinhasParcelas() {
+    const tipo = document.getElementById('fin-tipo-faturamento').value;
     const total = valoresFinais.total;
-    const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
+    
+    let entrada = 0;
+    if (tipo === 'avista') entrada = total;
+    else if (tipo === 'entrada_parcela') entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
+    else if (tipo === 'parcelado') entrada = 0;
+
     let restante = total - entrada;
     if(restante < 0) restante = 0;
 
-    const inputRestante = document.getElementById('fin-restante');
-    if (inputRestante) inputRestante.value = formataDinheiro(restante);
+    const elRestante = document.getElementById('fin-restante');
+    if (elRestante) elRestante.innerText = formataDinheiro(restante);
 
-    const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
-    const dataBaseStr = document.getElementById('fin-vencimento-base').value;
-    const formaPrincipal = document.getElementById('fin-forma-entrada').value;
     const divSimulacao = document.getElementById('fin-simulacao');
 
-    if (restante === 0) {
-        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra.</div>`;
+    if (tipo === 'avista' || restante === 0) {
+        if(tipo !== 'avista') {
+             divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
+        } else {
+             divSimulacao.innerHTML = '';
+        }
         document.getElementById('fin-parcelas').disabled = true;
         return;
     }
 
     document.getElementById('fin-parcelas').disabled = false;
+    const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
+    const dataBaseStr = document.getElementById('fin-vencimento-base').value;
+    
     let html = '';
     let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
     let acumulado = 0;
@@ -808,12 +839,12 @@ function gerarLinhasParcelas() {
             <input type="text" id="parc-val-${i}" onkeyup="mascaraMoeda(this)" onblur="ajustarParcelasManualmente(${i})" value="${formataDinheiro(valorParc)}" class="w-full md:w-28 border border-slate-300 p-2 rounded-lg text-sm font-black text-slate-800 outline-none focus:border-emerald-500" title="Valor da Parcela">
             <input type="date" id="parc-data-${i}" value="${dateVal}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500" title="Data de Vencimento">
             <select id="parc-forma-${i}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer" title="Método de Pagamento">
-                <option value="Cartão de Crédito" ${formaPrincipal === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
-                <option value="Cartão de Débito" ${formaPrincipal === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
-                <option value="Pix" ${formaPrincipal === 'Pix' ? 'selected' : ''}>Pix</option>
-                <option value="Boleto" ${formaPrincipal === 'Boleto' ? 'selected' : ''}>Boleto</option>
-                <option value="Dinheiro" ${formaPrincipal === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
-                <option value="Transferência" ${formaPrincipal === 'Transferência' ? 'selected' : ''}>Transferência Bancária</option>
+                <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Pix">Pix</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Dinheiro">Dinheiro Físico</option>
+                <option value="Transferência">Transferência Bancária</option>
             </select>
         </div>`;
     }
@@ -822,7 +853,9 @@ function gerarLinhasParcelas() {
 
 window.ajustarParcelasManualmente = function(index) {
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
-    const restante = reverterMoeda(document.getElementById('fin-restante').value) || 0;
+    // Puxando o valor do span (innerText)
+    const elRestanteStr = document.getElementById('fin-restante').innerText;
+    const restante = reverterMoeda(elRestanteStr) || 0;
     
     let somaAnteriores = 0;
     for(let i=1; i<=index; i++) {
@@ -854,56 +887,63 @@ window.ajustarParcelasManualmente = function(index) {
 }
 
 async function processarLancarFinanceiro() {
-    const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
-    const formaEntrada = document.getElementById('fin-forma-entrada').value;
-    const dataEntradaStr = new Date().toISOString().split('T')[0]; // DATA ATUAL FIXADA PELO SISTEMA
+    const tipo = document.getElementById('fin-tipo-faturamento').value;
     const total = valoresFinais.total;
+    
+    let entrada = 0;
+    if (tipo === 'avista') entrada = total;
+    else if (tipo === 'entrada_parcela') entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
+    else if (tipo === 'parcelado') entrada = 0;
+
+    const formaEntrada = document.getElementById('fin-forma-entrada').value;
+    const dataAtualStr = new Date().toISOString().split('T')[0]; // Data de hoje cravada para a entrada
     const restante = total - entrada;
-    const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
+    const parcelas = (tipo === 'avista') ? 0 : (parseInt(document.getElementById('fin-parcelas').value) || 1);
     const cliente = document.getElementById('db-cliente-nome').value;
 
     if(total <= 0) { dispararAlerta("O valor total da O.S é zero."); return; }
     
     let somaParcelas = 0;
-    if(restante > 0) {
+    if(restante > 0 && tipo !== 'avista') {
         for(let i=1; i<=parcelas; i++) {
             somaParcelas += reverterMoeda(document.getElementById(`parc-val-${i}`).value) || 0;
         }
         if (Math.abs(somaParcelas - restante) > 0.05) {
-            dispararAlerta("A soma das parcelas não bate com o valor restante. Verifique os valores.");
+            dispararAlerta("A soma das parcelas não bate com o valor restante a parcelar. Verifique os valores.");
             return;
         }
     }
     
     const btnSalvar = document.getElementById('btn-salvar-fin');
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Gerando...';
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Faturando...';
     btnSalvar.disabled = true;
 
     let infoFinanceiraParaPDF = {
+        tipo: tipo,
         entrada: entrada,
         forma_entrada: formaEntrada,
-        data_entrada: dataEntradaStr,
+        data_entrada: dataAtualStr,
         parcelas: []
     };
 
     let records = [];
 
-    // Limpa registros anteriores para evitar duplicidade em re-faturamento
+    // Limpa o banco de duplicidades caso o gestor tenha estornado a OS
     await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
 
     if(entrada > 0) {
         records.push({
-            descricao: `Entrada O.S #${osEmEdicaoNumero} - ${cliente}`,
-            categoria: 'Adiantamento',
+            descricao: `Acerto O.S #${osEmEdicaoNumero} - ${cliente}`,
+            categoria: 'Serviços O.S',
             valor: entrada,
-            data_vencimento: dataEntradaStr,
-            status: 'Pago', // A ENTRADA NO MOMENTO DO FECHAMENTO SEMPRE É PAGA
-            data_pagamento: dataEntradaStr,
+            data_vencimento: dataAtualStr,
+            status: 'Pago', 
+            data_pagamento: dataAtualStr,
             forma_pagamento: formaEntrada
         });
     }
 
-    if (restante > 0 && parcelas > 0) {
+    if (restante > 0 && parcelas > 0 && tipo !== 'avista') {
         for(let i=1; i<=parcelas; i++) {
             const dataParc = document.getElementById(`parc-data-${i}`).value;
             const formaParc = document.getElementById(`parc-forma-${i}`).value;
@@ -953,13 +993,13 @@ async function processarLancarFinanceiro() {
         document.getElementById('db-status').value = 'Fechado';
         verificarStatusFinanceiro(); 
 
-        dispararAlerta("O.S Faturada e Fechada com sucesso!", "sucesso");
+        dispararAlerta("O.S Faturada com sucesso!", "sucesso");
         fecharModalFinanceiro();
         
     } catch (erro) {
         dispararAlerta("Falha ao integrar o financeiro no banco de dados.");
     } finally {
-        btnSalvar.innerHTML = '<i class="ph-bold ph-lock-key text-lg"></i> Faturar e Fechar O.S';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-lock-key text-lg"></i> Confirmar Faturamento';
         btnSalvar.disabled = false;
     }
 }
@@ -1056,7 +1096,7 @@ function gerarPDFSupabase(dadosCodificados) {
         
         if (fin.entrada > 0) {
             const dataEntradaBR = new Date(fin.data_entrada + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Entrada/Sinal:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
         }
         
         if (fin.parcelas && fin.parcelas.length > 0) {
@@ -1064,8 +1104,6 @@ function gerarPDFSupabase(dadosCodificados) {
                 const dataBR = new Date(p.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
                 htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${p.numero}/${fin.parcelas.length}:</b> ${format(p.valor)} - Vencimento: ${dataBR} (Via ${p.forma_pagamento})</td></tr>`;
             });
-        } else if (fin.entrada <= 0) {
-             htmlFin += `<tr><td style="padding: 4px;">Pendente de definição de parcelas.</td></tr>`;
         }
         htmlFin += `</table>`;
         
