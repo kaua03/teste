@@ -10,8 +10,12 @@ let osEmEdicaoId = null;
 let osEmEdicaoNumero = null; 
 let idParaExcluir = null;
 
+// Memória viva dos clientes e veículos
 let globalClientes = [];
 let globalVeiculos = [];
+
+// SENHA GLOBAL DE REABERTURA
+const SENHA_GERENCIAL = "admin123";
 
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
@@ -19,6 +23,9 @@ async function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
+/**
+ * BUSCA OS DADOS REAIS DO BANCO PARA OS DROPDOWNS
+ */
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
@@ -68,10 +75,30 @@ function dispararAlerta(msg, tipo = 'erro') {
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
 
-// ---- CONTROLE DE EXIBIÇÃO DO BOTÃO FINANCEIRO ----
+// ---- CONTROLE DE TRAVAS E BOTÕES FINANCEIROS ----
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const btnFin = document.getElementById('btn-gerar-financeiro');
+    const btnSalvar = document.getElementById('btn-salvar-db');
+    const btnDestravar = document.getElementById('btn-destravar-os');
+    const badgeFechada = document.getElementById('badge-os-fechada');
+    
+    // Se a O.S está fechada (Travada no banco)
+    if (status === 'Fechado') {
+        if(btnFin) btnFin.classList.add('hidden');
+        if(btnSalvar) btnSalvar.classList.add('hidden');
+        if(btnDestravar) btnDestravar.classList.remove('hidden');
+        if(badgeFechada) badgeFechada.classList.remove('hidden');
+        congelarCamposOS(true);
+        return;
+    }
+
+    // Se estiver aberta para edição
+    congelarCamposOS(false);
+    if(btnSalvar) btnSalvar.classList.remove('hidden');
+    if(btnDestravar) btnDestravar.classList.add('hidden');
+    if(badgeFechada) badgeFechada.classList.add('hidden');
+
     if (btnFin) {
         if(status === 'Finalizado') {
             btnFin.classList.remove('hidden');
@@ -79,6 +106,21 @@ function verificarStatusFinanceiro() {
             btnFin.classList.add('hidden');
         }
     }
+}
+
+function congelarCamposOS(travar) {
+    // Trava ou destrava todos os campos da O.S para impedir edição se estiver Fechada
+    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
+    campos.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.disabled = travar;
+    });
+
+    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input');
+    botoesAcao.forEach(btn => btn.disabled = travar);
+    
+    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
+    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
 }
 
 function alternarSubTelaOrcamento(modo) {
@@ -102,7 +144,7 @@ function alternarSubTelaOrcamento(modo) {
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
         calcularTotais();
-        verificarStatusFinanceiro(); 
+        verificarStatusFinanceiro(); // Atualiza botões
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -217,9 +259,19 @@ function atualizarInterfaceItensETotais() {
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
+        const isFechado = document.getElementById('db-status').value === 'Fechado';
+        
         divLista.innerHTML = itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
+            
+            // Se fechado, esconde botões
+            let acoes = isFechado ? '' : `
+            <div class="flex gap-1">
+                <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+            </div>`;
+
             return `
             <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
@@ -228,10 +280,7 @@ function atualizarInterfaceItensETotais() {
                 </div>
                 <div class="flex items-center gap-3 w-full lg:w-auto justify-between border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
                     <span class="font-black text-slate-900 text-sm md:text-base">${formataDinheiro(item.subtotal)}</span>
-                    <div class="flex gap-1">
-                        <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                        <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    </div>
+                    ${acoes}
                 </div>
             </div>`;
         }).join('');
@@ -255,11 +304,18 @@ function processarImagens(event) {
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     previewContainer.innerHTML = '';
+    
     if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    
+    const isFechado = document.getElementById('db-status').value === 'Fechado';
+
     imagensUploadArray.forEach(base64Str => {
         const imgBox = document.createElement('div');
         imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
-        imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        
+        let trashIcon = isFechado ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        
+        imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
         previewContainer.appendChild(imgBox);
     });
 }
@@ -293,23 +349,43 @@ async function salvarOrcamentoReal() {
         const clienteObj = globalClientes.find(c => c.nome === nome) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
 
+        // Mantém as informações financeiras velhas se houver
+        let finData = null;
+        if (osEmEdicaoId) {
+            const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
+            if(oldOrc && oldOrc.itens && oldOrc.itens.financeiro) {
+                finData = oldOrc.itens.financeiro;
+            }
+        }
+
         const payloadJSONB = { 
             lista_itens: itensTemporarios, 
             resumo: valoresFinais,
             cliente_dados: clienteObj,
             veiculo_dados: veiculoObj
         };
+        if(finData) payloadJSONB.financeiro = finData; // Devolve o financeiro se existir
         
         if (osEmEdicaoId) {
             const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
             if (error) throw error;
             dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+            alternarSubTelaOrcamento('lista');
         } else {
-            const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]);
+            const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
-            dispararAlerta("O.S gerada com sucesso!", "sucesso");
+            
+            // SE SALVOU PELA 1ª VEZ E ESTAVA COMO FINALIZADO, ATUALIZA A TELA PRA PODER GERAR O FINANCEIRO
+            if(status === 'Finalizado') {
+                dispararAlerta("O.S salva! Você já pode Gerar o Financeiro.", "sucesso");
+                const osJson = encodeURIComponent(JSON.stringify(novaOS));
+                abrirEdicaoOS(osJson); 
+                return; // Impede que vá para a lista
+            } else {
+                dispararAlerta("O.S gerada com sucesso!", "sucesso");
+                alternarSubTelaOrcamento('lista');
+            }
         }
-        alternarSubTelaOrcamento('lista');
     } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
 }
@@ -329,11 +405,26 @@ function abrirEdicaoOS(dadosCodificados) {
     if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
     selectVeiculo.value = orc.veiculo_placa;
 
-    document.getElementById('db-status').value = orc.status;
+    // Se estiver Fechado, a tag disabled foi colocada. Tem que tirar pra conseguir jogar o valor.
+    const selStatus = document.getElementById('db-status');
+    selStatus.disabled = false; 
+    
+    // Injeta a opção fechada temporariamente se precisar
+    if(orc.status === 'Fechado') {
+        const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
+        if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
+    }
+
+    selStatus.value = orc.status;
+    
     document.getElementById('db-obs').value = orc.observacao || '';
     itensTemporarios = orc.itens?.lista_itens || [];
     imagensUploadArray = orc.anexos || [];
-    if(imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); renderizarPreviewFotos(); }
+    
+    if(imagensUploadArray.length > 0) { 
+        document.getElementById('preview-anexos').classList.remove('hidden'); 
+        renderizarPreviewFotos(); 
+    }
 
     const descValor = orc.itens?.resumo?.desconto || 0;
     if (descValor > 0) {
@@ -344,11 +435,44 @@ function abrirEdicaoOS(dadosCodificados) {
     } else { document.getElementById('desc-val').value = ''; }
 
     calcularTotais();
-    verificarStatusFinanceiro(); // Verifica se está Finalizada para mostrar o botão
+    verificarStatusFinanceiro(); // Verifica se está Finalizada ou Fechada
     
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
+
+// ---- FUNÇÕES DE SENHA PARA DESTRAVAR A O.S ----
+function abrirModalDestravar() {
+    document.getElementById('input-senha-reabrir').value = '';
+    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+}
+
+function fecharModalDestravar() {
+    document.getElementById('modal-senha-destravar').classList.add('hidden');
+}
+
+async function processarDestravarOS() {
+    const senha = document.getElementById('input-senha-reabrir').value;
+    if(senha !== SENHA_GERENCIAL) {
+        dispararAlerta("Senha incorreta.");
+        return;
+    }
+    
+    try {
+        // Altera o status para Finalizado no banco e na tela
+        const { error } = await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        if (error) throw error;
+        
+        document.getElementById('db-status').value = 'Finalizado';
+        verificarStatusFinanceiro(); // Vai liberar os campos
+        
+        dispararAlerta("O.S Destravada!", "sucesso");
+        fecharModalDestravar();
+    } catch(e) {
+        dispararAlerta("Erro ao destravar a O.S.");
+    }
+}
+
 
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
@@ -371,7 +495,7 @@ async function confirmarExclusao() {
 }
 
 function obterCorStatus(status) {
-    const cores = { 'Em Aberto': 'bg-slate-100 text-slate-700', 'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700', 'Aguardando Peça': 'bg-orange-50 text-orange-700', 'Aguardando Pagamento': 'bg-amber-50 text-amber-700', 'Aprovado': 'bg-blue-50 text-blue-700', 'Em Execução': 'bg-indigo-50 text-indigo-700', 'Finalizado': 'bg-emerald-50 text-emerald-700', 'Não Usar': 'bg-red-50 text-red-700' };
+    const cores = { 'Em Aberto': 'bg-slate-100 text-slate-700', 'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700', 'Aguardando Peça': 'bg-orange-50 text-orange-700', 'Aguardando Pagamento': 'bg-amber-50 text-amber-700', 'Aprovado': 'bg-blue-50 text-blue-700', 'Em Execução': 'bg-indigo-50 text-indigo-700', 'Finalizado': 'bg-emerald-50 text-emerald-700', 'Fechado': 'bg-slate-800 text-white', 'Não Usar': 'bg-red-50 text-red-700' };
     return cores[status] || 'bg-slate-50 text-slate-500';
 }
 
@@ -382,15 +506,19 @@ function renderizarTabelaReal(dados) {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
+        
+        // Se a O.S tiver Fechada, o ícone muda para um cadeado.
+        const iconVisualizar = orc.status === 'Fechado' ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
+        
         return `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
-            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status}</span></td>
+            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status === 'Fechado' ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg transition" title="Visualizar/Editar"><i class="ph-bold ${iconVisualizar} text-lg"></i></button>
                     <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
                     <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 p-2 rounded-lg transition" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
@@ -399,7 +527,9 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** LÓGICA DO MODAL DE CADASTRO RÁPIDO **/
+/** 
+ * LÓGICA DO MODAL DE CADASTRO RÁPIDO (REVISADO) 
+ */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
@@ -408,6 +538,8 @@ function abrirModalCadastro(tipo) {
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
     const conteudo = document.getElementById('modal-conteudo');
+    
+    // Obtém o botão de salvar do rodapé e ajusta o nome dinamicamente
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
     
     if (tipo === 'cliente') {
@@ -612,12 +744,11 @@ function abrirModalFinanceiro() {
     document.getElementById('fin-entrada').value = '';
     document.getElementById('fin-parcelas').value = '1';
     
-    // A data base (1º Vencimento) já sugere 30 dias pra frente
     let dataHoje = new Date();
     dataHoje.setMonth(dataHoje.getMonth() + 1);
     document.getElementById('fin-vencimento-base').value = dataHoje.toISOString().split('T')[0];
     
-    gerarLinhasParcelas(); // Executa o motor dinâmico
+    gerarLinhasParcelas(); 
     
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
     document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
@@ -642,7 +773,6 @@ function gerarLinhasParcelas() {
     const dataBaseStr = document.getElementById('fin-vencimento-base').value;
     const divSimulacao = document.getElementById('fin-simulacao');
 
-    // Se o cliente pagou tudo na entrada
     if (restante === 0) {
         divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra.</div>`;
         document.getElementById('fin-parcelas').disabled = true;
@@ -656,7 +786,7 @@ function gerarLinhasParcelas() {
 
     for(let i=1; i<=parcelas; i++) {
         let d = new Date(dataBase);
-        d.setMonth(d.getMonth() + (i - 1)); // Pula os meses automaticamente
+        d.setMonth(d.getMonth() + (i - 1)); 
         let dateVal = d.toISOString().split('T')[0];
 
         html += `
@@ -691,7 +821,6 @@ async function processarLancarFinanceiro() {
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Gerando...';
     btnSalvar.disabled = true;
 
-    // Objeto para gravar na O.S e no PDF
     let infoFinanceiraParaPDF = {
         entrada: entrada,
         forma_entrada: formaEntrada,
@@ -700,7 +829,6 @@ async function processarLancarFinanceiro() {
 
     let records = [];
 
-    // Lança a Entrada (Já sai como Pago)
     if(entrada > 0) {
         records.push({
             descricao: `Entrada O.S #${osEmEdicaoNumero} - ${cliente}`,
@@ -713,14 +841,12 @@ async function processarLancarFinanceiro() {
         });
     }
 
-    // Lança as Parcelas Dinâmicas (Pendentes)
     if (restante > 0 && parcelas > 0) {
         const valorParc = restante / parcelas;
         for(let i=1; i<=parcelas; i++) {
             const dataParc = document.getElementById(`parc-data-${i}`).value;
             const formaParc = document.getElementById(`parc-forma-${i}`).value;
 
-            // Alimenta a foto pro PDF
             infoFinanceiraParaPDF.parcelas.push({
                 numero: i,
                 valor: valorParc,
@@ -728,7 +854,6 @@ async function processarLancarFinanceiro() {
                 forma_pagamento: formaParc
             });
 
-            // Alimenta o banco de dados do Contas a Receber
             records.push({
                 descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
                 categoria: 'Serviços O.S',
@@ -741,7 +866,6 @@ async function processarLancarFinanceiro() {
     }
 
     try {
-        // 1. Pega os dados mais recentes para não apagar nada
         const clienteObj = globalClientes.find(c => c.nome === cliente) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
 
@@ -750,27 +874,32 @@ async function processarLancarFinanceiro() {
             resumo: valoresFinais,
             cliente_dados: clienteObj,
             veiculo_dados: veiculoObj,
-            financeiro: infoFinanceiraParaPDF // A MÁGICA DA AUDITORIA
+            financeiro: infoFinanceiraParaPDF 
         };
 
-        // 2. Atualiza a O.S (salvando as parcelas dentro dela)
-        const { error: errOS } = await window.banco.from('orcamentos').update({ itens: payloadJSONB }).eq('id', osEmEdicaoId);
+        // FECHANDO A O.S NO BANCO
+        const { error: errOS } = await window.banco.from('orcamentos').update({ 
+            itens: payloadJSONB,
+            status: 'Fechado' // <--- O PULO DO GATO
+        }).eq('id', osEmEdicaoId);
         if(errOS) throw errOS;
 
-        // 3. Joga pro Contas a Receber
         if (records.length > 0) {
             const { error: errFin } = await window.banco.from('contas_receber').insert(records);
             if (errFin) throw errFin;
         }
         
-        dispararAlerta("Financeiro gerado com sucesso! Salvo na O.S e no Contas a Receber.", "sucesso");
+        document.getElementById('db-status').value = 'Fechado';
+        verificarStatusFinanceiro(); // Trava a tela
+
+        dispararAlerta("O.S Faturada e Fechada com sucesso!", "sucesso");
         fecharModalFinanceiro();
-        // Não fechamos a O.S. pois o cara vai querer clicar em gerar PDF em seguida.
+        
     } catch (erro) {
         dispararAlerta("Falha ao integrar o financeiro no banco de dados.");
         console.error(erro);
     } finally {
-        btnSalvar.innerHTML = '<i class="ph-bold ph-paper-plane-right text-lg"></i> Enviar p/ Contas a Receber';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-lock-key text-lg"></i> Faturar e Fechar O.S';
         btnSalvar.disabled = false;
     }
 }
@@ -795,7 +924,8 @@ function gerarPDFSupabase(dadosCodificados) {
     if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
 
     const pdfStatusEl = document.getElementById('pdf-status');
-    if(pdfStatusEl) pdfStatusEl.innerText = orc.status;
+    // Se for fechado no banco, imprime Faturado para o cliente não ver "Fechado"
+    if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
 
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
     let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
