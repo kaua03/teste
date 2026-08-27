@@ -398,7 +398,6 @@ function abrirModalCadastro(tipo) {
     
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
         
         conteudo.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -443,7 +442,6 @@ function abrirModalCadastro(tipo) {
         </div>`;
     } else {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
         
         let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
         const clienteOS = document.getElementById('db-cliente-nome').value;
@@ -530,7 +528,6 @@ async function buscarCEP(cepInput) {
 
 async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
     btnSalvar.disabled = true;
 
