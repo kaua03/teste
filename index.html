@@ -71,6 +71,11 @@
             <button onclick="navegarPara('veiculos')" data-target="veiculos" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
                 <i class="ph-fill ph-car text-2xl shrink-0"></i><span class="font-bold sidebar-text">Veículos</span>
             </button>
+
+            <!-- Botão Contas a Pagar (NOVO) -->
+            <button onclick="navegarPara('contas_pagar')" data-target="contas_pagar" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
+                <i class="ph-fill ph-money text-2xl shrink-0"></i><span class="font-bold sidebar-text">Contas a Pagar</span>
+            </button>
         </nav>
     </aside>
 
@@ -119,6 +124,11 @@
             <i class="ph-fill ph-car text-2xl"></i><span class="text-[10px] font-bold">Veículos</span>
         </button>
 
+        <!-- Botão Contas a Pagar (NOVO) -->
+        <button onclick="navegarPara('contas_pagar')" data-target="contas_pagar" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-money text-2xl"></i><span class="text-[10px] font-bold">A Pagar</span>
+        </button>
+
     </nav>
 
     <!-- ========================================== -->
@@ -136,6 +146,7 @@
     <script src="orcamentos.js"></script>
     <script src="clientes.js"></script>
     <script src="veiculos.js"></script>
+    <script src="contas_pagar.js"></script> <!-- NOVO SCRIPT -->
 
     <!-- INICIALIZAÇÃO -->
     <script>
