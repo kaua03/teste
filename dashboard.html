@@ -1,81 +1,71 @@
 <!-- dashboard.html -->
-<div class="max-w-7xl mx-auto space-y-6 w-full pb-4">
+<div class="max-w-7xl mx-auto w-full space-y-6 fade-in font-sans pb-4">
     
-    <!-- BLOCO 1: KPIs (Indicadores Chave) -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Faturamento</p>
-                <i class="ph-fill ph-trend-up text-emerald-500 text-lg"></i>
-            </div>
-            <p class="text-xl md:text-2xl font-black text-slate-800 truncate" id="dash-fat">R$ 0,00</p>
-        </div>
-        
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">A Receber</p>
-                <i class="ph-fill ph-clock text-amber-500 text-lg"></i>
-            </div>
-            <p class="text-xl md:text-2xl font-black text-slate-800 truncate" id="dash-rec">R$ 0,00</p>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Orçamentos</p>
-                <i class="ph-fill ph-receipt text-blue-500 text-lg"></i>
-            </div>
-            <p class="text-xl md:text-2xl font-black text-slate-800" id="dash-orc">0</p>
-        </div>
-
-        <div class="bg-red-50 rounded-xl shadow-sm border border-red-100 p-5 border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] md:text-xs text-red-600 font-bold uppercase tracking-wider">Inadimplência</p>
-                <i class="ph-fill ph-warning-circle text-red-500 text-lg"></i>
-            </div>
-            <p class="text-xl md:text-2xl font-black text-red-600 truncate" id="dash-inad">0 Notas</p>
-        </div>
+    <div class="mb-2">
+        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
+        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Desempenho Financeiro e Operacional</p>
     </div>
 
-    <!-- BLOCO 2: Gráficos de Análise Avançada -->
+    <!-- CARDS SUPERIORES DE INDICADORES -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-emerald-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Faturamento (Mês)</p>
+                <div class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500"><i class="ph-bold ph-trend-up text-lg"></i></div>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800" id="dash-fat"><i class="ph-bold ph-spinner animate-spin text-lg text-emerald-500"></i></h3>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-amber-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">A Receber (Futuro)</p>
+                <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500"><i class="ph-bold ph-clock text-lg"></i></div>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800" id="dash-rec"><i class="ph-bold ph-spinner animate-spin text-lg text-amber-500"></i></h3>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-blue-200 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">O.S. em Andamento</p>
+                <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500"><i class="ph-bold ph-wrench text-lg"></i></div>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800" id="dash-os"><i class="ph-bold ph-spinner animate-spin text-lg text-blue-500"></i></h3>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-200 flex flex-col relative overflow-hidden group bg-red-50/30">
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-[10px] text-red-600 font-bold uppercase tracking-wider">Inadimplência</p>
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600"><i class="ph-bold ph-warning-circle text-lg"></i></div>
+            </div>
+            <h3 class="text-2xl font-black text-red-600" id="dash-inad"><i class="ph-bold ph-spinner animate-spin text-lg text-red-500"></i></h3>
+            <p class="text-[10px] text-red-400 font-bold mt-1">Boletos/Contas Atrasadas</p>
+        </div>
+
+    </div>
+
+    <!-- ÁREA DOS GRÁFICOS -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 lg:col-span-2">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Fluxo de Caixa (6 Meses)</h3>
-                <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded">2026</span>
-            </div>
-            <div class="relative w-full h-48 md:h-64">
-                <canvas id="chartFaturamento"></canvas>
-            </div>
-        </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col">
-            <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-6">Status da Frota</h3>
-            <div class="flex-1 relative w-full h-48 md:h-auto flex items-center justify-center">
-                <canvas id="chartFrota"></canvas>
+        <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Fluxo de Caixa (Últimos 6 Meses)</h3>
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200" id="dash-ano-grafico">2026</span>
+            </div>
+            <div class="h-64 w-full relative">
+                <canvas id="chartFluxo"></canvas>
             </div>
         </div>
-    </div>
 
-    <!-- BLOCO 3: Listagem Rápida -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Orçamentos Recentes</h3>
-            <button onclick="navegarPara('orcamentos')" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Ver Todos</button>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Status da Oficina (O.S)</h3>
+            <div class="h-56 w-full relative flex items-center justify-center">
+                <canvas id="chartOS"></canvas>
+            </div>
         </div>
-        <div class="w-full overflow-x-auto">
-            <table class="w-full text-left whitespace-nowrap">
-                <thead class="bg-slate-50/80">
-                    <tr class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                        <th class="px-5 py-4">Cliente / Vínculo</th>
-                        <th class="px-5 py-4">Placa</th>
-                        <th class="px-5 py-4 text-right">Valor Total</th>
-                        <th class="px-5 py-4 text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="text-sm divide-y divide-slate-100" id="lista-recentes">
-                    <!-- Os dados entram aqui via JavaScript -->
-                </tbody>
-            </table>
-        </div>
+
     </div>
 </div>
