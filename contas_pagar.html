@@ -1,0 +1,123 @@
+<!-- contas_pagar.html -->
+<div class="max-w-7xl mx-auto w-full pb-28 md:pb-4 flex flex-col relative fade-in font-sans">
+    
+    <!-- SUB-TELA 1: LISTAGEM E ABAS -->
+    <div id="view-lista-pagar" class="space-y-6 block">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Contas a Pagar</h2>
+                <p class="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">Controle de Despesas</p>
+            </div>
+            <button onclick="alternarSubTelaPagar('novo')" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(220,38,38,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2">
+                <i class="ph-bold ph-minus-circle text-lg"></i> Nova Despesa
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col">
+            <!-- ABAS DE NAVEGAÇÃO -->
+            <div class="flex border-b border-slate-100 bg-slate-50/50 p-2 gap-2">
+                <button onclick="mudarAbaPagar('Pendente')" id="aba-pendentes" class="flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-slate-800 shadow-sm border border-slate-200 transition-all">Pêndentes / Atrasadas</button>
+                <button onclick="mudarAbaPagar('Pago')" id="aba-pagas" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 transition-all">Histórico (Pagas)</button>
+            </div>
+
+            <div class="w-full overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-50/80 border-b border-slate-100">
+                        <tr class="text-slate-500 text-[10px] md:text-xs uppercase tracking-wider font-bold">
+                            <th class="p-4 md:p-5">Vencimento</th>
+                            <th class="p-4 md:p-5">Descrição / Categoria</th>
+                            <th class="p-4 md:p-5 text-right">Valor</th>
+                            <th class="p-4 md:p-5 text-center">Status</th>
+                            <th class="p-4 md:p-5 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-pagar-real" class="text-xs md:text-sm divide-y divide-slate-100">
+                        <tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium"><i class="ph-bold ph-spinner animate-spin text-2xl mb-2 text-blue-600"></i><br>Buscando contas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUB-TELA 2: FORMULÁRIO DE DESPESA -->
+    <div id="view-form-pagar" class="space-y-6 hidden">
+        <div class="flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <button onclick="alternarSubTelaPagar('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                <i class="ph-bold ph-arrow-left text-lg"></i>
+            </button>
+            <div>
+                <h2 id="titulo-tela-pagar" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Nova Despesa</h2>
+                <p class="text-[10px] md:text-xs text-red-600 font-bold uppercase mt-0.5 tracking-wider">Cadastro de Conta</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-slate-100 max-w-3xl">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição da Conta <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="pag-desc" placeholder="Ex: Conta de Energia, Peças Fornecedor X..." class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Categoria</label>
+                    <select id="pag-cat" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium cursor-pointer">
+                        <option value="Fornecedores">Fornecedores (Peças/Insumos)</option>
+                        <option value="Despesas Fixas">Despesas Fixas (Água, Luz, Net)</option>
+                        <option value="Folha de Pagamento">Folha de Pagamento / Sócios</option>
+                        <option value="Impostos">Impostos / Taxas</option>
+                        <option value="Outros" selected>Outros</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor (R$) <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="pag-val" onkeyup="mascaraMoeda(this)" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-slate-50 focus:bg-white outline-none focus:border-red-500 font-black text-red-600">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data de Vencimento <span class="text-red-500 text-sm">*</span></label>
+                    <input type="date" id="pag-venc" class="w-full md:w-1/2 border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 pt-5 border-t border-slate-100">
+                <button onclick="alternarSubTelaPagar('lista')" class="px-6 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition text-sm">Cancelar</button>
+                <button onclick="salvarContaPagarBD()" id="btn-salvar-pagar" class="px-8 py-3 bg-red-600 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(220,38,38,0.3)] hover:bg-red-700 transition transform active:scale-95 text-sm flex items-center gap-2">
+                    <i class="ph-bold ph-floppy-disk text-lg"></i> Salvar Despesa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE BAIXA (PAGAMENTO) -->
+<div id="modal-baixa-pagar" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm fade-in">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="bg-emerald-600 p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold text-lg"><i class="ph-bold ph-check-circle mr-2"></i> Baixar Conta</h3>
+            <button onclick="fecharModalBaixaPagar()" class="hover:bg-emerald-700 p-1 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <p class="text-xs text-slate-500 font-bold uppercase mb-1">Conta a Pagar:</p>
+                <p id="baixa-pagar-desc" class="font-bold text-slate-800 text-sm"></p>
+                <p id="baixa-pagar-val" class="font-black text-red-600 text-xl mt-1"></p>
+            </div>
+            <div class="border-t border-slate-100 pt-4">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data do Pagamento Realizado</label>
+                <input type="date" id="baixa-pagar-data" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm focus:border-emerald-500 outline-none font-bold">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagamento</label>
+                <select id="baixa-pagar-forma" class="w-full border border-slate-300 p-2.5 rounded-xl text-sm focus:border-emerald-500 outline-none font-medium">
+                    <option value="Pix">Pix</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Dinheiro">Dinheiro Físico</option>
+                    <option value="Transferência">Transferência Bancária</option>
+                </select>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button onclick="fecharModalBaixaPagar()" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm text-sm">Cancelar</button>
+            <button onclick="confirmarBaixaPagar()" class="flex-1 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-md text-sm">Confirmar Pagamento</button>
+        </div>
+    </div>
+</div>
