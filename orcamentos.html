@@ -134,7 +134,6 @@
                 <div class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
                     <div class="mb-5">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
-                        <!-- SENSOR DO FINANCEIRO (onchange) -->
                         <select id="db-status" onchange="verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
                             <option value="Em Aberto" selected>Em Aberto</option>
                             <option value="Aguardando Aprovação">Aguardando Aprovação</option>
@@ -159,15 +158,12 @@
                         </div>
                     </div>
                     
-                    <!-- BOTÃO SALVAR PADRÃO -->
                     <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base mb-3"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                     
-                    <!-- BOTÃO DO FINANCEIRO -->
                     <button id="btn-gerar-financeiro" onclick="abrirModalFinanceiro()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(16,185,129,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base border border-emerald-500">
                         <i class="ph-bold ph-hand-coins text-xl"></i> FATURAR (FINANCEIRO)
                     </button>
                     
-                    <!-- BOTÃO DE DESTRAVAR -->
                     <button id="btn-destravar-os" onclick="abrirModalDestravar()" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base border border-slate-600">
                         <i class="ph-bold ph-lock-key-open text-xl"></i> REABRIR O.S (EXIGE SENHA)
                     </button>
@@ -223,7 +219,7 @@
     </div>
 </div>
 
-<!-- MODAL DE LANÇAMENTO FINANCEIRO (INTELIGÊNCIA DE DATAS E PARCELAS EDITÁVEIS) -->
+<!-- MODAL DE LANÇAMENTO FINANCEIRO (INTELIGÊNCIA DE DATAS E NOMENCLATURA ERP) -->
 <div id="modal-financeiro" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
     <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-emerald-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
@@ -239,14 +235,14 @@
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Entrada / Sinal (R$)</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor da Entrada (R$)</label>
                     <input type="text" id="fin-entrada" onkeyup="mascaraMoeda(this); gerarLinhasParcelas()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagamento</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagto. (Entrada)</label>
                     <select id="fin-forma-entrada" onchange="aoMudarFormaPagamentoPrincipal()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
                         <option value="Pix" selected>Pix</option>
-                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Dinheiro">Dinheiro Físico</option>
                         <option value="Cartão de Débito">Cartão de Débito</option>
                         <option value="Cartão de Crédito">Cartão de Crédito</option>
                         <option value="Boleto">Boleto</option>
@@ -254,18 +250,19 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data (Entrada)</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data de Recebimento</label>
+                    <!-- Esta data é HOJE e NÃO MUDA com select de forma de pagamento -->
                     <input type="date" id="fin-data-entrada" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Restante a Parcelar</label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Saldo a Parcelar</label>
                     <input type="text" id="fin-restante" readonly class="w-full border border-slate-200 p-3 rounded-xl text-lg bg-slate-100 outline-none font-black text-slate-400 cursor-not-allowed shadow-inner" value="R$ 0,00">
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-5 mt-5">
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Parcelar o Restante em</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condição de Pagamento</label>
                     <select id="fin-parcelas" onchange="gerarLinhasParcelas()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
                         <option value="1">1x (Parcela Única)</option>
                         <option value="2">2x Sem Juros</option>
@@ -278,7 +275,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Base (1º Vencimento)</label>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Primeiro Vencimento</label>
                     <input type="date" id="fin-vencimento-base" onchange="gerarLinhasParcelas()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
                 </div>
             </div>
