@@ -263,7 +263,6 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-/** TIRA A "FOTOGRAFIA" DOS DADOS NO MOMENTO DO SALVAMENTO **/
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -384,7 +383,7 @@ function renderizarTabelaReal(dados) {
 }
 
 /** 
- * LÓGICA DO MODAL DE CADASTRO RÁPIDO (REVISADO E LIMPO)
+ * LÓGICA DO MODAL DE CADASTRO RÁPIDO (CABEÇALHO LIMPO E ASTERISCOS) 
  */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
@@ -396,9 +395,6 @@ function abrirModalCadastro(tipo) {
     const conteudo = document.getElementById('modal-conteudo');
     
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    
-    // Troca o botão fechar para apenas o ícone X
-    const headerModal = modal.querySelector('.bg-blue-600');
     
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
