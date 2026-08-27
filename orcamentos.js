@@ -155,7 +155,14 @@ function mascaraMoeda(campo) {
     campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
 }
 
-// FORMATADOR LIMPO APENAS PARA OS CAMPOS DE INPUT DAS PARCELAS
+function formatarDataISO(dataObj) {
+    const ano = dataObj.getFullYear();
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+// FORMATADOR LIMPO APENAS PARA OS CAMPOS DE INPUT DAS PARCELAS (Sem o "R$")
 function valorParaInput(v) {
     let val = v.toFixed(2);
     val = val.replace('.', ',');
@@ -163,7 +170,7 @@ function valorParaInput(v) {
     return val;
 }
 
-// CORREÇÃO MESTRA: A REVERSÃO DE MOEDA IGNORA TUDO E PEGA SÓ O NÚMERO
+// CORREÇÃO: IGNORA LETRAS E PEGA SÓ NÚMERO, VÍRGULA E PONTO (Resolve o bug do R$)
 function reverterMoeda(texto) {
     if(!texto) return 0;
     let limpo = texto.toString().replace(/[^\d,-]/g, '');
@@ -757,6 +764,11 @@ function mudarTipoFaturamento() {
     const boxParcelamento = document.getElementById('box-fin-parcelamento');
     const inputEntrada = document.getElementById('fin-entrada');
 
+    // Sempre reseta a data base ao trocar a modalidade, calculando localmente o "mês seguinte"
+    let d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    const dataMesQueVem = formatarDataISO(d);
+
     if (tipo === 'avista') {
         boxEntrada.classList.remove('hidden');
         boxParcelamento.classList.add('hidden');
@@ -772,19 +784,15 @@ function mudarTipoFaturamento() {
         inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed');
         inputEntrada.classList.add('bg-white');
         
-        document.getElementById('fin-vencimento-base').value = new Date().toISOString().split('T')[0];
+        document.getElementById('fin-vencimento-base').value = dataMesQueVem;
     } else if (tipo === 'parcelado') {
         boxEntrada.classList.add('hidden');
         boxParcelamento.classList.remove('hidden');
         inputEntrada.value = '0,00';
         
-        document.getElementById('fin-vencimento-base').value = new Date().toISOString().split('T')[0];
+        document.getElementById('fin-vencimento-base').value = dataMesQueVem;
     }
     
-    gerarLinhasParcelas();
-}
-
-function aoMudarFormaPagamentoPrincipal() {
     gerarLinhasParcelas();
 }
 
@@ -817,7 +825,6 @@ function gerarLinhasParcelas() {
 
     document.getElementById('fin-parcelas').disabled = false;
     
-    // Trava inteligente para garantir no mínimo 1 linha
     const numDigitado = parseInt(document.getElementById('fin-parcelas').value);
     const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
     
@@ -838,7 +845,7 @@ function gerarLinhasParcelas() {
 
         let d = new Date(dataBase);
         d.setMonth(d.getMonth() + (i - 1)); 
-        let dateVal = d.toISOString().split('T')[0];
+        let dateVal = formatarDataISO(d);
 
         html += `
         <div class="flex flex-col md:flex-row gap-2 items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all hover:border-emerald-300">
@@ -904,7 +911,7 @@ async function processarLancarFinanceiro() {
     else if (tipo === 'parcelado') entrada = 0;
 
     const formaEntrada = document.getElementById('fin-forma-entrada').value;
-    const dataAtualStr = new Date().toISOString().split('T')[0]; 
+    const dataAtualStr = formatarDataISO(new Date()); 
     const restante = total - entrada;
     
     const numDigitado = parseInt(document.getElementById('fin-parcelas').value);
