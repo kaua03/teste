@@ -6,7 +6,7 @@ async function navegarPara(tela) {
     try {
         // 1. Atualiza o visual dos botões no Menu Desktop (Lateral)
         document.querySelectorAll('.nav-btn').forEach(btn => {
-            if(btn.dataset.target === tela) {
+            if (btn.dataset.target === tela) {
                 btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
                 btn.classList.remove('text-slate-400', 'hover:bg-slate-800');
             } else {
@@ -17,7 +17,7 @@ async function navegarPara(tela) {
 
         // 2. Atualiza o visual dos botões no Menu Mobile (Inferior)
         document.querySelectorAll('.nav-item-mob').forEach(btn => {
-            if(btn.dataset.target === tela) {
+            if (btn.dataset.target === tela) {
                 btn.classList.add('text-blue-600');
                 btn.classList.remove('text-slate-400', 'hover:text-slate-600');
             } else {
@@ -39,9 +39,8 @@ async function navegarPara(tela) {
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
         if (tela === 'veiculos' && typeof initVeiculos === 'function') initVeiculos();
-        
-        // Linha adicionada para engatilhar o Contas a Pagar
         if (tela === 'contas_pagar' && typeof initContasPagar === 'function') initContasPagar();
+        if (tela === 'contas_receber' && typeof initContasReceber === 'function') initContasReceber();
 
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
