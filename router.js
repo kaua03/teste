@@ -4,38 +4,46 @@
 
 async function navegarPara(tela) {
     try {
-        // SISTEMA DE SEGURANÇA (Verifica se está logado)
-        const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
+        const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
+        const usuarioLogado = usuarioLogadoStr ? JSON.parse(usuarioLogadoStr) : null;
         
         if (!usuarioLogado && tela !== 'login') {
-            tela = 'login'; // Força ir pro login se tentar burlar
+            tela = 'login'; 
         }
 
-        // CAMUFLAGEM DE MENUS (CORREÇÃO DO BUG MOBILE)
+        // SALVA A TELA ATUAL NA MEMÓRIA (Se não for o login)
+        if (tela !== 'login') {
+            localStorage.setItem('lastRoute', tela);
+        }
+
         const sidebar = document.getElementById('sidebar-desktop');
         const header = document.getElementById('header-top');
         const navMob = document.getElementById('nav-mobile');
         const mainWrap = document.getElementById('main-wrapper');
 
         if (tela === 'login') {
-            // Força ocultar com CSS in-line (não quebra as classes do Tailwind)
             if (sidebar) sidebar.style.display = 'none';
             if (header) header.style.display = 'none';
             if (navMob) navMob.style.display = 'none';
             if (mainWrap) mainWrap.classList.remove('md:ml-20');
         } else {
-            // Limpando o style in-line, o Tailwind volta a assumir o controle responsivo 100%!
             if (sidebar) sidebar.style.display = '';
             if (header) header.style.display = '';
             if (navMob) navMob.style.display = '';
             if (mainWrap) mainWrap.classList.add('md:ml-20');
             
-            // Coloca a inicial do nome do usuario no icone
-            const avatar = document.getElementById('user-avatar');
-            if(avatar && usuarioLogado) avatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
+            // Injeta dados do usuário no Menu Superior
+            if(usuarioLogado) {
+                const avatar = document.getElementById('user-avatar');
+                if(avatar) avatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
+                
+                const dropName = document.getElementById('dropdown-user-name');
+                const dropEmail = document.getElementById('dropdown-user-email');
+                if(dropName) dropName.innerText = usuarioLogado.nome;
+                if(dropEmail) dropEmail.innerText = usuarioLogado.email;
+            }
         }
 
-        // Atualiza cores dos botões
         document.querySelectorAll('.nav-btn').forEach(btn => {
             if (btn.dataset.target === tela) {
                 btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
@@ -56,13 +64,11 @@ async function navegarPara(tela) {
             }
         });
 
-        // Injeta a tela
         const response = await fetch(tela + '.html');
         if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
         const html = await response.text();
         document.getElementById('visor-da-tv').innerHTML = html;
 
-        // Inicia motores
         if (tela === 'dashboard' && typeof initDashboard === 'function') initDashboard();
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
