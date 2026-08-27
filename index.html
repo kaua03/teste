@@ -24,7 +24,7 @@
 </head>
 <body class="h-screen flex overflow-hidden text-slate-800">
 
-    <!-- MENU LATERAL (COM ID PARA OCULTAR NO LOGIN) -->
+    <!-- MENU LATERAL -->
     <aside id="sidebar-desktop" class="group fixed top-0 left-0 h-full w-20 hover:w-64 bg-slate-900 text-white transition-all duration-300 z-50 hidden md:flex flex-col shadow-2xl overflow-hidden">
         <div class="h-16 flex items-center px-5 border-b border-slate-800 w-64">
             <i class="ph-fill ph-car-profile text-3xl text-blue-500 shrink-0"></i>
@@ -43,22 +43,36 @@
     <!-- ÁREA PRINCIPAL -->
     <div id="main-wrapper" class="flex-1 flex flex-col h-full w-full md:ml-20 relative transition-all">
         
-        <!-- CABEÇALHO (COM ID PARA OCULTAR NO LOGIN) -->
+        <!-- CABEÇALHO -->
         <header id="header-top" class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="md:hidden bg-blue-600 p-2 rounded-lg text-white shadow-sm"><i class="ph-bold ph-car-profile text-xl"></i></div>
                 <h2 class="text-lg md:text-xl font-black text-slate-800 tracking-tight">AutoManager</h2>
             </div>
             <div class="flex items-center gap-4">
-                <!-- Avatar clicável para Sair -->
-                <div onclick="fazerLogout()" id="user-avatar" class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md cursor-pointer hover:bg-red-500 transition" title="Sair do Sistema">U</div>
+                
+                <!-- MENU DO USUÁRIO (DROPDOWN) -->
+                <div class="relative">
+                    <div onclick="toggleUserMenu()" id="user-avatar" class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md cursor-pointer hover:bg-blue-700 transition select-none" title="Opções">U</div>
+                    
+                    <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 fade-in">
+                        <div class="p-3 border-b border-slate-100 bg-slate-50">
+                            <p id="dropdown-user-name" class="text-xs font-black text-slate-800">Usuário</p>
+                            <p id="dropdown-user-email" class="text-[10px] font-bold text-slate-400 truncate mt-0.5">email@oficina.com</p>
+                        </div>
+                        <button onclick="fazerLogout()" class="w-full text-left px-4 py-3 text-sm text-red-600 font-bold hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <i class="ph-bold ph-sign-out text-lg"></i> Sair do Sistema
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </header>
 
         <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in bg-slate-50/50"></main>
     </div>
 
-    <!-- MENU INFERIOR MOBILE (COM ID) -->
+    <!-- MENU INFERIOR MOBILE -->
     <nav id="nav-mobile" class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-2 overflow-x-auto">
         <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-blue-600 active transition-colors"><i class="ph-fill ph-squares-four text-xl"></i><span class="text-[9px] font-bold">Início</span></button>
         <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600"><i class="ph-fill ph-receipt text-xl"></i><span class="text-[9px] font-bold">O.S.</span></button>
@@ -73,7 +87,7 @@
     <script src="supabase.js"></script>
     <script src="router.js"></script>
     
-    <script src="login.js"></script> <!-- SCRIPT DE LOGIN AQUI -->
+    <script src="login.js"></script>
     <script src="dashboard.js"></script>
     <script src="orcamentos.js"></script>
     <script src="clientes.js"></script>
@@ -82,7 +96,26 @@
     <script src="contas_receber.js"></script>
 
     <script>
-        window.onload = () => { navegarPara('dashboard'); };
+        // Função para abrir/fechar o Menu do Avatar
+        function toggleUserMenu() {
+            const drop = document.getElementById('user-dropdown');
+            drop.classList.toggle('hidden');
+        }
+
+        // Fechar o menu ao clicar fora
+        document.addEventListener('click', (e) => {
+            const avatar = document.getElementById('user-avatar');
+            const drop = document.getElementById('user-dropdown');
+            if(avatar && drop && !avatar.contains(e.target) && !drop.contains(e.target)) {
+                drop.classList.add('hidden');
+            }
+        });
+
+        window.onload = () => { 
+            // A MÁGICA DA MEMÓRIA: Puxa a última tela salva ou vai pro dashboard
+            const ultimaTela = localStorage.getItem('lastRoute') || 'dashboard';
+            navegarPara(ultimaTela); 
+        };
     </script>
 </body>
 </html>
