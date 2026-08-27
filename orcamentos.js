@@ -71,7 +71,6 @@ function dispararAlerta(msg, tipo = 'erro') {
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
 
-// ---- CONTROLE DE EXIBIÇÃO DO BOTÃO FINANCEIRO ----
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const btnFin = document.getElementById('btn-gerar-financeiro');
@@ -79,7 +78,6 @@ function verificarStatusFinanceiro() {
     const btnDestravar = document.getElementById('btn-destravar-os');
     const badgeFechada = document.getElementById('badge-os-fechada');
     
-    // Se a O.S está fechada (Travada no banco)
     if (status === 'Fechado') {
         if(btnFin) btnFin.classList.add('hidden');
         if(btnSalvar) btnSalvar.classList.add('hidden');
@@ -89,7 +87,6 @@ function verificarStatusFinanceiro() {
         return;
     }
 
-    // Se estiver aberta para edição
     congelarCamposOS(false);
     if(btnSalvar) btnSalvar.classList.remove('hidden');
     if(btnDestravar) btnDestravar.classList.add('hidden');
@@ -139,7 +136,7 @@ function alternarSubTelaOrcamento(modo) {
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
         calcularTotais();
-        verificarStatusFinanceiro(); // Esconde o botão Financeiro na nova OS
+        verificarStatusFinanceiro(); 
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -260,7 +257,6 @@ function atualizarInterfaceItensETotais() {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
             
-            // Se fechado, esconde botões
             let acoes = isFechado ? '' : `
             <div class="flex gap-1">
                 <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
@@ -326,7 +322,6 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-/** TIRA A "FOTOGRAFIA" DOS DADOS NO MOMENTO DO SALVAMENTO **/
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -432,7 +427,6 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-// ---- FUNÇÕES DE SENHA PARA DESTRAVAR A O.S ----
 function abrirModalDestravar() {
     document.getElementById('input-senha-reabrir').value = '';
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
@@ -462,7 +456,6 @@ async function processarDestravarOS() {
         dispararAlerta("Erro ao destravar a O.S.");
     }
 }
-
 
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
@@ -516,9 +509,6 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** 
- * LÓGICA DO MODAL DE CADASTRO RÁPIDO
- */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     
@@ -714,7 +704,7 @@ async function processarSalvamentoModal() {
 
 /** 
  * ========================================================
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (PARCELAS)
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
  * ========================================================
  */
 function abrirModalFinanceiro() {
@@ -726,18 +716,34 @@ function abrirModalFinanceiro() {
     document.getElementById('fin-total-os').innerText = formataDinheiro(valoresFinais.total);
     document.getElementById('fin-entrada').value = '';
     document.getElementById('fin-parcelas').value = '1';
+    document.getElementById('fin-forma-entrada').value = 'Pix';
     
-    let dataHoje = new Date();
-    dataHoje.setMonth(dataHoje.getMonth() + 1);
-    document.getElementById('fin-vencimento-base').value = dataHoje.toISOString().split('T')[0];
+    const hojeStr = new Date().toISOString().split('T')[0];
+    document.getElementById('fin-data-entrada').value = hojeStr;
+    document.getElementById('fin-vencimento-base').value = hojeStr;
     
     gerarLinhasParcelas(); 
-    
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
     document.getElementById('modal-financeiro').classList.add('hidden');
+}
+
+// INTELIGÊNCIA: Joga a data de entrada pro mês seguinte se for Cartão/Boleto
+function aoMudarFormaPagamentoPrincipal() {
+    const forma = document.getElementById('fin-forma-entrada').value;
+    let data = new Date();
+    
+    if (forma === 'Cartão de Crédito' || forma === 'Boleto') {
+        data.setMonth(data.getMonth() + 1);
+    }
+    
+    const dataStr = data.toISOString().split('T')[0];
+    document.getElementById('fin-data-entrada').value = dataStr;
+    document.getElementById('fin-vencimento-base').value = dataStr;
+    
+    gerarLinhasParcelas();
 }
 
 function gerarLinhasParcelas() {
@@ -746,12 +752,12 @@ function gerarLinhasParcelas() {
     let restante = total - entrada;
     if(restante < 0) restante = 0;
 
-    // AQUI ESTÁ A CORREÇÃO DE SEGURANÇA QUE FALTAVA
     const inputRestante = document.getElementById('fin-restante');
     if (inputRestante) inputRestante.value = formataDinheiro(restante);
 
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
     const dataBaseStr = document.getElementById('fin-vencimento-base').value;
+    const formaPrincipal = document.getElementById('fin-forma-entrada').value;
     const divSimulacao = document.getElementById('fin-simulacao');
 
     if (restante === 0) {
@@ -762,10 +768,18 @@ function gerarLinhasParcelas() {
 
     document.getElementById('fin-parcelas').disabled = false;
     let html = '';
-    const valorParc = restante / parcelas;
     let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+    let acumulado = 0;
 
     for(let i=1; i<=parcelas; i++) {
+        let valorParc = 0;
+        if (i === parcelas) {
+            valorParc = restante - acumulado;
+        } else {
+            valorParc = Math.floor((restante / parcelas) * 100) / 100;
+            acumulado += valorParc;
+        }
+
         let d = new Date(dataBase);
         d.setMonth(d.getMonth() + (i - 1)); 
         let dateVal = d.toISOString().split('T')[0];
@@ -773,30 +787,78 @@ function gerarLinhasParcelas() {
         html += `
         <div class="flex flex-col md:flex-row gap-2 items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all hover:border-emerald-300">
             <span class="font-black text-xs text-blue-600 w-full md:w-16">Parc ${i}/${parcelas}</span>
-            <input type="text" readonly value="${formataDinheiro(valorParc)}" class="w-full md:w-28 text-sm font-black text-slate-800 bg-transparent border-none outline-none">
+            <input type="text" id="parc-val-${i}" onkeyup="mascaraMoeda(this)" onblur="ajustarParcelasManualmente(${i})" value="${formataDinheiro(valorParc)}" class="w-full md:w-28 border border-slate-300 p-2 rounded-lg text-sm font-black text-slate-800 outline-none focus:border-emerald-500">
             <input type="date" id="parc-data-${i}" value="${dateVal}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
             <select id="parc-forma-${i}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
-                <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
-                <option value="Cartão de Débito">Cartão de Débito</option>
-                <option value="Pix">Pix</option>
-                <option value="Boleto">Boleto</option>
-                <option value="Dinheiro">Dinheiro Físico</option>
-                <option value="Transferência">Transferência Bancária</option>
+                <option value="Cartão de Crédito" ${formaPrincipal === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
+                <option value="Cartão de Débito" ${formaPrincipal === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
+                <option value="Pix" ${formaPrincipal === 'Pix' ? 'selected' : ''}>Pix</option>
+                <option value="Boleto" ${formaPrincipal === 'Boleto' ? 'selected' : ''}>Boleto</option>
+                <option value="Dinheiro" ${formaPrincipal === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
+                <option value="Transferência" ${formaPrincipal === 'Transferência' ? 'selected' : ''}>Transferência Bancária</option>
             </select>
         </div>`;
     }
     divSimulacao.innerHTML = html;
 }
 
+// INTELIGÊNCIA: Recalcula o resto se você digitar o valor de uma parcela na mão
+window.ajustarParcelasManualmente = function(index) {
+    const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
+    const restante = reverterMoeda(document.getElementById('fin-restante').value) || 0;
+    
+    let somaAnteriores = 0;
+    for(let i=1; i<=index; i++) {
+        somaAnteriores += reverterMoeda(document.getElementById(`parc-val-${i}`).value) || 0;
+    }
+    
+    let restanteParaDistribuir = restante - somaAnteriores;
+    
+    if (restanteParaDistribuir < 0) {
+        // Se digitou mais do que devia, trava no limite máximo
+        const limiteMaximoDaParcela = restante - (somaAnteriores - reverterMoeda(document.getElementById(`parc-val-${index}`).value));
+        document.getElementById(`parc-val-${index}`).value = formataDinheiro(limiteMaximoDaParcela);
+        restanteParaDistribuir = 0;
+    }
+    
+    const parcelasRestantes = parcelas - index;
+    if (parcelasRestantes > 0) {
+        let acumulado = 0;
+        for(let i = index + 1; i <= parcelas; i++) {
+            let valorParc = 0;
+            if (i === parcelas) {
+                valorParc = restanteParaDistribuir - acumulado;
+            } else {
+                valorParc = Math.floor((restanteParaDistribuir / parcelasRestantes) * 100) / 100;
+                acumulado += valorParc;
+            }
+            document.getElementById(`parc-val-${i}`).value = formataDinheiro(valorParc);
+        }
+    }
+}
+
 async function processarLancarFinanceiro() {
     const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
     const formaEntrada = document.getElementById('fin-forma-entrada').value;
+    const dataEntradaStr = document.getElementById('fin-data-entrada').value;
     const total = valoresFinais.total;
     const restante = total - entrada;
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
     const cliente = document.getElementById('db-cliente-nome').value;
 
     if(total <= 0) { dispararAlerta("O valor total da O.S é zero."); return; }
+    
+    // VERIFICAÇÃO DE SEGURANÇA: A SOMA DAS PARCELAS BATE COM O RESTANTE?
+    let somaParcelas = 0;
+    if(restante > 0) {
+        for(let i=1; i<=parcelas; i++) {
+            somaParcelas += reverterMoeda(document.getElementById(`parc-val-${i}`).value) || 0;
+        }
+        if (Math.abs(somaParcelas - restante) > 0.05) {
+            dispararAlerta("A soma das parcelas não bate com o valor restante. Verifique os valores.");
+            return;
+        }
+    }
     
     const btnSalvar = document.getElementById('btn-salvar-fin');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Gerando...';
@@ -805,28 +867,36 @@ async function processarLancarFinanceiro() {
     let infoFinanceiraParaPDF = {
         entrada: entrada,
         forma_entrada: formaEntrada,
+        data_entrada: dataEntradaStr,
         parcelas: []
     };
 
     let records = [];
+    const hojeStr = new Date().toISOString().split('T')[0];
 
+    // Lança a Entrada
     if(entrada > 0) {
+        // Se a data da entrada for futura (ex: Cartão pra daqui 30 dias), fica Pendente. Senão, Pago.
+        const statusEntrada = (dataEntradaStr > hojeStr) ? 'Pendente' : 'Pago';
+        const dataPagamentoEntrada = (statusEntrada === 'Pago') ? dataEntradaStr : null;
+
         records.push({
             descricao: `Entrada O.S #${osEmEdicaoNumero} - ${cliente}`,
             categoria: 'Adiantamento',
             valor: entrada,
-            data_vencimento: new Date().toISOString().split('T')[0],
-            status: 'Pago', 
-            data_pagamento: new Date().toISOString().split('T')[0],
+            data_vencimento: dataEntradaStr,
+            status: statusEntrada, 
+            data_pagamento: dataPagamentoEntrada,
             forma_pagamento: formaEntrada
         });
     }
 
+    // Lança as Parcelas Dinâmicas 
     if (restante > 0 && parcelas > 0) {
-        const valorParc = restante / parcelas;
         for(let i=1; i<=parcelas; i++) {
             const dataParc = document.getElementById(`parc-data-${i}`).value;
             const formaParc = document.getElementById(`parc-forma-${i}`).value;
+            const valorParc = reverterMoeda(document.getElementById(`parc-val-${i}`).value);
 
             infoFinanceiraParaPDF.parcelas.push({
                 numero: i,
@@ -858,7 +928,6 @@ async function processarLancarFinanceiro() {
             financeiro: infoFinanceiraParaPDF 
         };
 
-        // FECHANDO A O.S NO BANCO
         const { error: errOS } = await window.banco.from('orcamentos').update({ 
             itens: payloadJSONB,
             status: 'Fechado' 
@@ -871,7 +940,7 @@ async function processarLancarFinanceiro() {
         }
         
         document.getElementById('db-status').value = 'Fechado';
-        verificarStatusFinanceiro(); // Trava a tela
+        verificarStatusFinanceiro(); 
 
         dispararAlerta("O.S Faturada e Fechada com sucesso!", "sucesso");
         fecharModalFinanceiro();
@@ -884,7 +953,6 @@ async function processarLancarFinanceiro() {
         btnSalvar.disabled = false;
     }
 }
-
 
 /**
  * MOTOR DE IMPRESSÃO
@@ -903,7 +971,6 @@ function gerarPDFSupabase(dadosCodificados) {
     if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
 
     const pdfStatusEl = document.getElementById('pdf-status');
-    // Se for fechado no banco, imprime Faturado para o cliente não ver "Fechado"
     if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
 
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
@@ -978,7 +1045,8 @@ function gerarPDFSupabase(dadosCodificados) {
         htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
         
         if (fin.entrada > 0) {
-            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Entrada/Sinal:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+            const dataEntradaBR = new Date(fin.data_entrada + 'T12:00:00Z').toLocaleDateString('pt-BR');
+            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Entrada/Sinal:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR})</td></tr>`;
         }
         
         if (fin.parcelas && fin.parcelas.length > 0) {
