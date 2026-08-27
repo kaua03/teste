@@ -162,7 +162,6 @@ function formatarDataISO(dataObj) {
     return `${ano}-${mes}-${dia}`;
 }
 
-// FORMATADOR LIMPO APENAS PARA OS CAMPOS DE INPUT DAS PARCELAS (Sem o "R$")
 function valorParaInput(v) {
     let val = v.toFixed(2);
     val = val.replace('.', ',');
@@ -170,7 +169,6 @@ function valorParaInput(v) {
     return val;
 }
 
-// CORREÇÃO: IGNORA LETRAS E PEGA SÓ NÚMERO, VÍRGULA E PONTO (Resolve o bug do R$)
 function reverterMoeda(texto) {
     if(!texto) return 0;
     let limpo = texto.toString().replace(/[^\d,-]/g, '');
@@ -764,7 +762,6 @@ function mudarTipoFaturamento() {
     const boxParcelamento = document.getElementById('box-fin-parcelamento');
     const inputEntrada = document.getElementById('fin-entrada');
 
-    // Sempre reseta a data base ao trocar a modalidade, calculando localmente o "mês seguinte"
     let d = new Date();
     d.setMonth(d.getMonth() + 1);
     const dataMesQueVem = formatarDataISO(d);
@@ -796,6 +793,11 @@ function mudarTipoFaturamento() {
     gerarLinhasParcelas();
 }
 
+function aoMudarFormaPagamentoPrincipal() {
+    gerarLinhasParcelas();
+}
+
+// MOTOR DE CÁLCULO DE PARCELAS CONTÁBEIS (Distribui os centavos)
 function gerarLinhasParcelas() {
     const tipo = document.getElementById('fin-tipo-faturamento').value;
     const total = valoresFinais.total;
@@ -832,16 +834,16 @@ function gerarLinhasParcelas() {
     
     let html = '';
     let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
-    let acumulado = 0;
+    
+    // A Mágica Matemática: Calcula os centavos para distribuir nas primeiras parcelas
+    let centavosTotal = Math.round(restante * 100);
+    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
+    let restoCentavos = centavosTotal % parcelas;
 
     for(let i=1; i<=parcelas; i++) {
-        let valorParc = 0;
-        if (i === parcelas) {
-            valorParc = restante - acumulado;
-        } else {
-            valorParc = Math.floor((restante / parcelas) * 100) / 100;
-            acumulado += valorParc;
-        }
+        // Se a parcela atual for menor ou igual ao resto, ela ganha 1 centavo a mais
+        let valorParcCentavos = centavosPorParcela + (i <= restoCentavos ? 1 : 0);
+        let valorParc = valorParcCentavos / 100;
 
         let d = new Date(dataBase);
         d.setMonth(d.getMonth() + (i - 1)); 
@@ -887,15 +889,15 @@ window.ajustarParcelasManualmente = function(index) {
     
     const parcelasRestantes = parcelas - index;
     if (parcelasRestantes > 0) {
-        let acumulado = 0;
+        // Redividir o restante entre as próximas parcelas mantendo a precisão dos centavos
+        let centavosRestantes = Math.round(restanteParaDistribuir * 100);
+        let centavosPorParcela = Math.floor(centavosRestantes / parcelasRestantes);
+        let restoCentavos = centavosRestantes % parcelasRestantes;
+
         for(let i = index + 1; i <= parcelas; i++) {
-            let valorParc = 0;
-            if (i === parcelas) {
-                valorParc = restanteParaDistribuir - acumulado;
-            } else {
-                valorParc = Math.floor((restanteParaDistribuir / parcelasRestantes) * 100) / 100;
-                acumulado += valorParc;
-            }
+            let posicaoAjuste = i - index;
+            let valorParcCentavos = centavosPorParcela + (posicaoAjuste <= restoCentavos ? 1 : 0);
+            let valorParc = valorParcCentavos / 100;
             document.getElementById(`parc-val-${i}`).value = valorParaInput(valorParc);
         }
     }
