@@ -39,30 +39,37 @@
     <!-- SUB-TELA 2: EMISSÃO / EDIÇÃO DE O.S.       -->
     <!-- ========================================== -->
     <div id="view-novo-orcamento" class="space-y-6 hidden">
-        <div class="flex items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-            <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
-                <i class="ph-bold ph-arrow-left text-lg"></i>
-            </button>
-            <div>
-                <h2 id="titulo-tela-os" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Emissão de O.S.</h2>
-                <p class="text-[10px] md:text-xs text-blue-600 font-bold uppercase mt-0.5 tracking-wider">Modo Detalhado de Orçamentação</p>
+        <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center gap-4">
+                <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                    <i class="ph-bold ph-arrow-left text-lg"></i>
+                </button>
+                <div>
+                    <h2 id="titulo-tela-os" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">Emissão de O.S.</h2>
+                    <p class="text-[10px] md:text-xs text-blue-600 font-bold uppercase mt-0.5 tracking-wider">Modo Detalhado de Orçamentação</p>
+                </div>
+            </div>
+            <!-- BADEGE DE O.S FECHADA (SÓ APARECE SE TRAVADA) -->
+            <div id="badge-os-fechada" class="hidden bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
+                <i class="ph-fill ph-lock-key text-lg"></i>
+                <span class="text-xs font-black uppercase tracking-wider">O.S. Fechada e Faturada</span>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div id="container-campos-os" class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div class="xl:col-span-2 space-y-6">
                 <!-- IDENTIFICAÇÃO -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
                             <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
                                 <option value="">Carregando Clientes...</option>
                             </select>
                         </div>
                         <div>
-                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
                             <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
                                 <option value="">Carregando Veículos...</option>
                             </select>
@@ -73,7 +80,7 @@
                 <!-- PEÇAS E SERVIÇOS -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">2</div> Peças e Serviços</h3>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
+                    <div id="box-add-item" class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
                         <div class="flex flex-col md:flex-row gap-3">
                             <div class="w-full md:w-32"><select id="item-tipo" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold bg-white text-slate-600 shadow-sm"><option value="Peça">Peça</option><option value="Serviço">Serviço</option></select></div>
                             <div class="flex-1"><input type="text" id="item-nome" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white"></div>
@@ -99,21 +106,21 @@
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
                             <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                         </div>
-                        <div>
+                        <div id="box-upload-fotos">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
                             <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
                                 <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="processarImagens(event)" />
                             </label>
-                            <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
                         </div>
+                        <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
                     </div>
                 </div>
             </div>
 
             <!-- COLUNA DIREITA: RESUMO -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
                     <div class="space-y-3">
                         <div class="flex gap-2">
@@ -127,7 +134,7 @@
                 <div class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
                     <div class="mb-5">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
-                        <!-- AQUI ESTÁ O SENSOR DO FINANCEIRO (onchange) -->
+                        <!-- O FECHADO FOI REMOVIDO PARA O USUÁRIO COMUM NÃO PODER ESCOLHER. O SISTEMA COLOCA ISSO. -->
                         <select id="db-status" onchange="verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
                             <option value="Em Aberto" selected>Em Aberto</option>
                             <option value="Aguardando Aprovação">Aguardando Aprovação</option>
@@ -136,6 +143,7 @@
                             <option value="Aprovado">Aprovado</option>
                             <option value="Em Execução">Em Execução</option>
                             <option value="Finalizado">Finalizado</option>
+                            <option value="Fechado" class="hidden" disabled>Fechado (Faturado)</option>
                             <option value="Não Usar">Não Usar</option>
                             <option value="Orçamento">Orçamento</option>
                         </select>
@@ -150,11 +158,18 @@
                             <span class="font-black text-2xl md:text-3xl text-blue-400 tracking-tight" id="db-total">R$ 0,00</span>
                         </div>
                     </div>
-                    <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                     
-                    <!-- BOTÃO DO FINANCEIRO (Aparece ao Finalizar) -->
-                    <button id="btn-gerar-financeiro" onclick="abrirModalFinanceiro()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(16,185,129,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base mt-4 border border-emerald-500">
-                        <i class="ph-bold ph-hand-coins text-xl"></i> GERAR RECEITA
+                    <!-- BOTÃO SALVAR PADRÃO -->
+                    <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base mb-3"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                    
+                    <!-- BOTÃO DO FINANCEIRO (Aparece ao escolher Finalizado E a OS existir) -->
+                    <button id="btn-gerar-financeiro" onclick="abrirModalFinanceiro()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(16,185,129,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base border border-emerald-500">
+                        <i class="ph-bold ph-hand-coins text-xl"></i> FATURAR (FINANCEIRO)
+                    </button>
+                    
+                    <!-- BOTÃO DE DESTRAVAR (Aparece quando a O.S está fechada) -->
+                    <button id="btn-destravar-os" onclick="abrirModalDestravar()" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base border border-slate-600">
+                        <i class="ph-bold ph-lock-key-open text-xl"></i> REABRIR O.S (EXIGE SENHA)
                     </button>
                 </div>
             </div>
@@ -177,7 +192,23 @@
     </div>
 </div>
 
-<!-- MODAL DE CADASTRO RÁPIDO -->
+<!-- MODAL DE AUTENTICAÇÃO (DESTRAVAR O.S FECHADA) -->
+<div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/95 z-[1500] flex items-center justify-center p-4 backdrop-blur-md fade-in">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
+            <h3 class="text-xl font-black text-white mb-2">Reabrir O.S Faturada?</h3>
+            <p class="text-xs text-slate-400 font-medium mb-6">Atenção: Ao reabrir, os dados do Contas a Receber desta O.S NÃO serão apagados automaticamente. <br><br><b>Digite a senha gerencial:</b></p>
+            <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
+        </div>
+        <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
+            <button onclick="fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
+            <button onclick="processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar O.S</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CADASTRO RÁPIDO (CABEÇALHO LIMPO E ASTERISCOS) -->
 <div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/90 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
@@ -196,7 +227,7 @@
 <div id="modal-financeiro" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
     <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-emerald-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
-            <h3 class="font-bold text-lg tracking-tight flex items-center"><i class="ph-bold ph-hand-coins mr-2 text-2xl"></i> Integração Financeira</h3>
+            <h3 class="font-bold text-lg tracking-tight flex items-center"><i class="ph-bold ph-hand-coins mr-2 text-2xl"></i> Faturar O.S. (Gerar Financeiro)</h3>
             <button onclick="fecharModalFinanceiro()" class="hover:bg-emerald-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
         </div>
         <div class="p-4 md:p-6 overflow-y-auto flex-1 space-y-5">
@@ -251,12 +282,12 @@
         
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
             <button onclick="fecharModalFinanceiro()" class="px-5 py-3 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
-            <button onclick="processarLancarFinanceiro()" id="btn-salvar-fin" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition text-sm flex items-center gap-2 transform active:scale-95"><i class="ph-bold ph-paper-plane-right text-lg"></i> Enviar p/ Contas a Receber</button>
+            <button onclick="processarLancarFinanceiro()" id="btn-salvar-fin" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition text-sm flex items-center gap-2 transform active:scale-95"><i class="ph-bold ph-lock-key text-lg"></i> Faturar e Fechar O.S</button>
         </div>
     </div>
 </div>
 
-<!-- MOTOR DE IMPRESSÃO DE PDF -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (FIXED / OPACITY 0) -->
 <div style="position: fixed; top: 0; left: 200vw; width: 800px; opacity: 0; pointer-events: none; z-index: -9999; background-color: white;">
     <div id="pdf-template-real" style="padding: 30px 40px; color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
         <div style="border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
@@ -304,9 +335,8 @@
             </div>
         </div>
         
-        <!-- O NOVO BLOCO FINANCEIRO INJETADO AQUI NO PDF -->
         <div id="pdf-container-financeiro" style="display: none; margin-top: 15px; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB;">
-             <!-- Dinâmico via JS -->
+             <!-- Dinâmico -->
         </div>
 
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
