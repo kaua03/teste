@@ -11,17 +11,24 @@ async function navegarPara(tela) {
             tela = 'login'; // Força ir pro login se tentar burlar
         }
 
-        // CAMUFLAGEM DE MENUS SE FOR A TELA DE LOGIN
+        // CAMUFLAGEM DE MENUS (CORREÇÃO DO BUG MOBILE)
+        const sidebar = document.getElementById('sidebar-desktop');
+        const header = document.getElementById('header-top');
+        const navMob = document.getElementById('nav-mobile');
+        const mainWrap = document.getElementById('main-wrapper');
+
         if (tela === 'login') {
-            document.getElementById('sidebar-desktop').classList.add('hidden');
-            document.getElementById('header-top').classList.add('hidden');
-            document.getElementById('nav-mobile').classList.add('hidden');
-            document.getElementById('main-wrapper').classList.remove('md:ml-20');
+            // Força ocultar com CSS in-line (não quebra as classes do Tailwind)
+            if (sidebar) sidebar.style.display = 'none';
+            if (header) header.style.display = 'none';
+            if (navMob) navMob.style.display = 'none';
+            if (mainWrap) mainWrap.classList.remove('md:ml-20');
         } else {
-            document.getElementById('sidebar-desktop').classList.remove('hidden');
-            document.getElementById('header-top').classList.remove('hidden');
-            document.getElementById('nav-mobile').classList.remove('hidden');
-            document.getElementById('main-wrapper').classList.add('md:ml-20');
+            // Limpando o style in-line, o Tailwind volta a assumir o controle responsivo 100%!
+            if (sidebar) sidebar.style.display = '';
+            if (header) header.style.display = '';
+            if (navMob) navMob.style.display = '';
+            if (mainWrap) mainWrap.classList.add('md:ml-20');
             
             // Coloca a inicial do nome do usuario no icone
             const avatar = document.getElementById('user-avatar');
