@@ -383,16 +383,46 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
+/** 
+ * CADASTRO RÁPIDO DENTRO DA O.S E SELEÇÃO DE DONO INTELIGENTE 
+ */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     const modal = document.getElementById('modal-cadastro-rapido'); const titulo = document.getElementById('modal-titulo'); const conteudo = document.getElementById('modal-conteudo');
+    
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
         conteudo.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3"><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo</label><input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label><input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp</label><input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label><input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1"><label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label><input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700"></div><div class="md:col-span-2 flex gap-2"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label><input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div class="w-20"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label><input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold"></div></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label><input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label><input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none"></div></div>`;
     } else {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        conteudo.innerHTML = `<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div><div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label><input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div><div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label><input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div></div></div>`;
+        
+        let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
+        const clienteOS = document.getElementById('db-cliente-nome').value;
+        
+        globalClientes.forEach(c => {
+            const selected = (c.nome === clienteOS) ? 'selected' : '';
+            optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
+        });
+
+        conteudo.innerHTML = `
+        <div class="space-y-4">
+            <div class="border-b border-slate-100 pb-4 mb-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
+                <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
+                    ${optionsDono}
+                </select>
+                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul)</label><input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700"></div>
+                <div class="col-span-2 md:col-span-1"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo</label><input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label><input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label><input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium"></div>
+            </div>
+        </div>`;
     }
     modal.classList.remove('hidden');
 }
@@ -464,10 +494,9 @@ async function processarSalvamentoModal() {
             const modelo = document.getElementById('cad-modelo').value;
             const cor = document.getElementById('cad-cor').value;
             const ano = document.getElementById('cad-ano').value;
+            const dono = document.getElementById('cad-dono').value;
             
             if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
-            
-            const dono = document.getElementById('db-cliente-nome').value || '';
             
             const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
             if (error) throw error;
@@ -489,29 +518,17 @@ async function processarSalvamentoModal() {
 }
 
 /**
- * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (BLOCOS LIMPOS)
- * ========================================================
+ * PDF COM FOTOGRAFIA DE DADOS (LISTA ORGANIZADA)
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     document.getElementById('pdf-id').innerText = orc.numero_os;
-    
-    // DATAS
-    const dataAbertura = new Date(orc.data_criacao);
-    const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
-    if(pdfDataAberturaEl) pdfDataAberturaEl.innerText = dataAbertura.toLocaleDateString('pt-BR');
-
     const dataAtual = new Date();
-    const pdfDataEmissaoEl = document.getElementById('pdf-data-emissao');
-    if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
+    document.getElementById('pdf-data').innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
+    document.getElementById('pdf-status').innerText = orc.status;
 
-    const pdfStatusEl = document.getElementById('pdf-status');
-    if(pdfStatusEl) pdfStatusEl.innerText = orc.status;
-
-    // DADOS CLIENTE E VEÍCULO
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
     let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
 
@@ -544,7 +561,6 @@ function gerarPDFSupabase(dadosCodificados) {
     const pdfVeiDetEl = document.getElementById('pdf-vei-det');
     if(pdfVeiDetEl) pdfVeiDetEl.innerText = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
 
-    // ITENS DA TABELA
     const itensReais = orc.itens.lista_itens || [];
     const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
