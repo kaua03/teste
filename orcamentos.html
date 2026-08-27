@@ -124,11 +124,20 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800">
+                <div class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
                     <div class="mb-5">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
-                        <select id="db-status" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner">
-                            <option value="Em Aberto" selected>Em Aberto</option><option value="Aguardando Aprovação">Aguardando Aprovação</option><option value="Aguardando Peça">Aguardando Peça</option><option value="Aguardando Pagamento">Aguardando Pagamento</option><option value="Aprovado">Aprovado</option><option value="Em Execução">Em Execução</option><option value="Finalizado">Finalizado</option><option value="Não Usar">Não Usar</option><option value="Orçamento">Orçamento</option>
+                        <!-- AQUI ESTÁ O SENSOR DO FINANCEIRO (onchange) -->
+                        <select id="db-status" onchange="verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
+                            <option value="Em Aberto" selected>Em Aberto</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Aguardando Peça">Aguardando Peça</option>
+                            <option value="Aguardando Pagamento">Aguardando Pagamento</option>
+                            <option value="Aprovado">Aprovado</option>
+                            <option value="Em Execução">Em Execução</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Não Usar">Não Usar</option>
+                            <option value="Orçamento">Orçamento</option>
                         </select>
                     </div>
 
@@ -142,6 +151,11 @@
                         </div>
                     </div>
                     <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                    
+                    <!-- BOTÃO DO FINANCEIRO (Aparece ao Finalizar) -->
+                    <button id="btn-gerar-financeiro" onclick="abrirModalFinanceiro()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(16,185,129,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base mt-4 border border-emerald-500">
+                        <i class="ph-bold ph-hand-coins text-xl"></i> GERAR RECEITA
+                    </button>
                 </div>
             </div>
         </div>
@@ -163,30 +177,85 @@
     </div>
 </div>
 
-<!-- MODAL DE CADASTRO RÁPIDO (CABEÇALHO LIMPO) -->
+<!-- MODAL DE CADASTRO RÁPIDO -->
 <div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/90 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
-        <!-- CABEÇALHO APENAS COM TÍTULO E BOTÃO FECHAR -->
-        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
-            <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
-            <button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl"><h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3><button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button></div>
+        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0"><button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button><button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button></div>
+    </div>
+</div>
+
+<!-- MODAL DE LANÇAMENTO FINANCEIRO AUTOMÁTICO -->
+<div id="modal-financeiro" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 backdrop-blur-sm fade-in">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
+        <div class="bg-emerald-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
+            <h3 class="font-bold text-lg tracking-tight flex items-center"><i class="ph-bold ph-hand-coins mr-2 text-2xl"></i> Integração Financeira</h3>
+            <button onclick="fecharModalFinanceiro()" class="hover:bg-emerald-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+        </div>
+        <div class="p-4 md:p-6 overflow-y-auto flex-1 space-y-5">
+            
+            <div class="bg-emerald-50 border border-emerald-100 p-5 rounded-xl flex justify-between items-center shadow-inner">
+                <span class="text-emerald-700 font-black text-sm uppercase tracking-wider">Total da O.S</span>
+                <span id="fin-total-os" class="text-3xl font-black text-emerald-700">R$ 0,00</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor de Entrada / Sinal (R$)</label>
+                    <input type="text" id="fin-entrada" onkeyup="mascaraMoeda(this); calcularSimulacaoFinanceira()" placeholder="0,00" class="w-full border border-slate-300 p-3.5 rounded-xl text-lg bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Restante a Parcelar (R$)</label>
+                    <input type="text" id="fin-restante" readonly class="w-full border border-slate-200 p-3.5 rounded-xl text-lg bg-slate-100 outline-none font-black text-slate-400 cursor-not-allowed shadow-inner">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condição do Restante</label>
+                    <select id="fin-parcelas" onchange="calcularSimulacaoFinanceira()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
+                        <option value="1">1x (À vista / Parcela Única)</option>
+                        <option value="2">2x Sem Juros</option>
+                        <option value="3">3x Sem Juros</option>
+                        <option value="4">4x Sem Juros</option>
+                        <option value="5">5x Sem Juros</option>
+                        <option value="6">6x Sem Juros</option>
+                        <option value="12">12x Sem Juros</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data do 1º Vencimento</label>
+                    <input type="date" id="fin-vencimento" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagamento Principal</label>
+                <select id="fin-forma" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Pix" selected>Pix</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Transferência">Transferência Bancária</option>
+                </select>
+            </div>
+            
+            <div id="fin-simulacao" class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm font-medium text-blue-700 shadow-inner">
+                <!-- Preview of parcels will go here -->
+            </div>
         </div>
         
-        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
-        
-        <!-- RODAPÉ COM O BOTÃO PRINCIPAL -->
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-            <button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
-            <button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
+            <button onclick="fecharModalFinanceiro()" class="px-5 py-3 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
+            <button onclick="processarLancarFinanceiro()" id="btn-salvar-fin" class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition text-sm flex items-center gap-2 transform active:scale-95"><i class="ph-bold ph-paper-plane-right text-lg"></i> Enviar p/ Contas a Receber</button>
         </div>
     </div>
 </div>
 
-<!-- MOTOR DE IMPRESSÃO DE PDF (FANTASMA POSITION: FIXED) -->
+<!-- MOTOR DE IMPRESSÃO DE PDF (FIXED / OPACITY 0) -->
 <div style="position: fixed; top: 0; left: 200vw; width: 800px; opacity: 0; pointer-events: none; z-index: -9999; background-color: white;">
     <div id="pdf-template-real" style="padding: 30px 40px; color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-        
-        <!-- CABEÇALHO -->
         <div style="border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
                 <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #000000; text-transform: uppercase; letter-spacing: -0.5px;">AUTOMANAGER OFICINA</h1>
@@ -200,31 +269,21 @@
                 <p style="font-size: 10px; margin: 1px 0 0 0; color: #000000;"><span style="font-weight: bold;">Status:</span> <span id="pdf-status"></span></p>
             </div>
         </div>
-
-        <!-- DADOS CLIENTE E VEÍCULO (NOVO BLOCO LIMPO) -->
         <div style="border: 1px solid #000000; padding: 10px; margin-bottom: 20px; font-size: 11px; line-height: 1.6; color: #000000; background-color: #F9FAFB;">
             <div style="display: flex; flex-wrap: wrap; margin-bottom: 4px;">
                 <div style="width: 50%;"><span style="font-weight: 900;">NOME:</span> <span id="pdf-cli-nome" style="text-transform: uppercase;"></span></div>
                 <div style="width: 25%;"><span style="font-weight: 900;">CPF:</span> <span id="pdf-cli-doc"></span></div>
                 <div style="width: 25%;"><span style="font-weight: 900;">CELULAR:</span> <span id="pdf-cli-tel"></span></div>
             </div>
-            <div style="margin-bottom: 4px;">
-                <span style="font-weight: 900;">ENDEREÇO:</span> <span id="pdf-cli-end" style="text-transform: uppercase;"></span>
-            </div>
-            
+            <div style="margin-bottom: 4px;"><span style="font-weight: 900;">ENDEREÇO:</span> <span id="pdf-cli-end" style="text-transform: uppercase;"></span></div>
             <div style="border-top: 1px dashed #9CA3AF; margin: 8px 0;"></div>
-            
             <div style="display: flex; flex-wrap: wrap;">
                 <div style="width: 50%;"><span style="font-weight: 900;">VEÍCULO:</span> <span id="pdf-vei-mod" style="text-transform: uppercase;"></span></div>
                 <div style="width: 25%;"><span style="font-weight: 900;">PLACA:</span> <span id="pdf-vei-placa" style="font-weight: 900; text-transform: uppercase;"></span></div>
                 <div style="width: 25%;"><span style="font-weight: 900;">COR/ANO:</span> <span id="pdf-vei-det" style="text-transform: uppercase;"></span></div>
             </div>
         </div>
-
-        <!-- ITENS DA O.S -->
         <div id="pdf-container-itens"></div>
-
-        <!-- RESUMO FINANCEIRO E OBSERVAÇÕES -->
         <div style="display: flex; gap: 20px; margin-top: 15px;">
             <div style="flex: 2;">
                 <div id="pdf-container-obs" style="display: none; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB; height: 100%;">
@@ -241,8 +300,6 @@
                 </table>
             </div>
         </div>
-
-        <!-- ASSINATURAS E DATA -->
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
             <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
                 <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #000000; height: 40px; margin-bottom: 5px;"></div>
@@ -260,10 +317,6 @@
                 <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
             </div>
         </div>
-        
-        <!-- RODAPÉ DE PÁGINA -->
-        <div style="margin-top: 30px; text-align: center; font-size: 8px; color: #6B7280; border-top: 1px solid #D1D5DB; padding-top: 10px;">
-            Documento gerado eletronicamente pelo sistema AutoManager Oficina. Este documento tem validade para fins de orçamento e controle interno.
-        </div>
+        <div style="margin-top: 30px; text-align: center; font-size: 8px; color: #6B7280; border-top: 1px solid #D1D5DB; padding-top: 10px;">Documento gerado eletronicamente pelo sistema AutoManager Oficina. Este documento tem validade para fins de orçamento e controle interno.</div>
     </div>
 </div>
