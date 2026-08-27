@@ -220,8 +220,6 @@ function renderizarTabelaPagar() {
     if (dadosFiltrados.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-check-circle text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma conta ${abaAtivaPagar.toLowerCase()} encontrada.</p></td></tr>`; return;
     }
-    
-    const hoje = new Date().toISOString().split('T')[0];
 
     tbody.innerHTML = dadosFiltrados.map(conta => {
         const jsonCodificado = encodeURIComponent(JSON.stringify(conta));
@@ -233,28 +231,54 @@ function renderizarTabelaPagar() {
         if (conta.status === 'Pago') {
             statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-check mr-1"></i>Pago</span>`;
             const dataPagBR = new Date(conta.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            infoData = `<p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">Pago em: ${dataPagBR}</p><p class="text-xs font-bold text-slate-500">Via ${conta.forma_pagamento}</p>`;
+            infoData = `<p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">Pago em</p><p class="font-bold text-slate-800 text-sm">${dataPagBR}</p><p class="text-[9px] font-bold text-slate-400 mt-0.5">Via ${conta.forma_pagamento}</p>`;
         } else {
+            // LÓGICA BLINDADA DE DATAS
             const dataVencBR = new Date(conta.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            if (conta.data_vencimento < hoje) {
-                statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-warning mr-1"></i>Atrasado</span>`;
-                infoData = `<p class="text-[10px] text-red-500 font-bold uppercase tracking-wider mb-0.5">Venceu: ${dataVencBR}</p>`;
+            const dataAtual = new Date();
+            const hoje = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
+            
+            const partesVenc = conta.data_vencimento.split('-');
+            const venc = new Date(partesVenc[0], partesVenc[1] - 1, partesVenc[2]);
+            
+            const diffTime = venc.getTime() - hoje.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            let corTexto, textoDias, badgeHtml;
+
+            if (diffDays < 0) {
+                corTexto = 'text-red-500';
+                textoDias = `Atrasado há ${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''}`;
+                badgeHtml = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-warning mr-1"></i>Atrasado</span>`;
+            } else if (diffDays === 0) {
+                corTexto = 'text-orange-500';
+                textoDias = 'Vence Hoje';
+                badgeHtml = `<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-clock mr-1"></i>Hoje</span>`;
+            } else if (diffDays === 1) {
+                corTexto = 'text-blue-500';
+                textoDias = 'Vence Amanhã';
+                badgeHtml = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">A Vencer</span>`;
             } else {
-                statusBadge = `<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-[10px] font-bold uppercase">No Prazo</span>`;
-                infoData = `<p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Vence: ${dataVencBR}</p>`;
+                corTexto = 'text-slate-500';
+                textoDias = `Vence em ${diffDays} dias`;
+                badgeHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold uppercase">No Prazo</span>`;
             }
+
+            statusBadge = badgeHtml;
+            infoData = `<p class="text-[10px] ${corTexto} font-bold uppercase tracking-wider mb-0.5">${textoDias}</p><p class="font-bold text-slate-800 text-sm">${dataVencBR}</p>`;
         }
 
+        // BOTÕES 100% QUADRADOS E BASEADOS EM ÍCONES
         let botoesAcao = '';
         if(conta.status === 'Pendente') {
             botoesAcao = `
-            <button onclick="abrirModalBaixaPagar('${jsonCodificado}')" class="bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600 px-3 py-2 rounded-lg transition text-xs font-bold shadow-sm" title="Informar Pagamento">Pagar</button>
-            <button onclick="abrirEdicaoPagar('${jsonCodificado}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-            <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
+            <button onclick="abrirModalBaixaPagar('${jsonCodificado}')" class="bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Pagar"><i class="ph-bold ph-check text-lg"></i></button>
+            <button onclick="abrirEdicaoPagar('${jsonCodificado}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+            <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
         } else {
              botoesAcao = `
-             <button onclick="reverterBaixaPagar(${conta.id})" class="bg-amber-500 text-white hover:bg-amber-600 border border-amber-600 px-3 py-2 rounded-lg transition text-xs font-bold shadow-sm flex items-center gap-1" title="Desfazer Pagamento"><i class="ph-bold ph-arrow-u-up-left"></i> Reverter</button>
-             <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
+             <button onclick="reverterBaixaPagar(${conta.id})" class="bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Reverter Pagamento"><i class="ph-bold ph-arrow-u-up-left text-lg"></i></button>
+             <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
         }
 
         return `
