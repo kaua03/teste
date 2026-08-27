@@ -273,7 +273,6 @@ async function salvarOrcamentoReal() {
     if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
     const btnSalvar = document.getElementById('btn-salvar-db');
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO...';
     btnSalvar.disabled = true;
 
     try {
@@ -528,7 +527,6 @@ async function buscarCEP(cepInput) {
 
 async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
     btnSalvar.disabled = true;
 
     try {
