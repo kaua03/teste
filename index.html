@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AutoManager - Master</title>
     
-    <!-- Bibliotecas Oficiais de Elite -->
+    <!-- Bibliotecas Oficiais -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- A IMPRESSORA PDF (Carregada no Core do Sistema) -->
+    <!-- Motor de Impressão PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -29,10 +29,10 @@
         .sidebar-text { display: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; }
         .group:hover .sidebar-text { display: inline-block; opacity: 1; }
         
-        /* Respiro de Segurança para o Mobile (Evita o corte pelo Bottom Nav) */
+        /* Respiro de Segurança para Mobile */
         .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
         
-        /* Animação de Entrada Suave */
+        /* Animação de Entrada */
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { 
             from { opacity: 0; transform: translateY(5px); } 
@@ -72,9 +72,14 @@
                 <i class="ph-fill ph-car text-2xl shrink-0"></i><span class="font-bold sidebar-text">Veículos</span>
             </button>
 
-            <!-- Botão Contas a Pagar (NOVO) -->
+            <!-- Botão Contas a Pagar -->
             <button onclick="navegarPara('contas_pagar')" data-target="contas_pagar" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
                 <i class="ph-fill ph-money text-2xl shrink-0"></i><span class="font-bold sidebar-text">Contas a Pagar</span>
+            </button>
+
+            <!-- Botão Contas a Receber -->
+            <button onclick="navegarPara('contas_receber')" data-target="contas_receber" class="nav-btn flex items-center gap-4 p-3 rounded-xl transition-colors w-full text-slate-400 hover:bg-slate-800">
+                <i class="ph-fill ph-hand-coins text-2xl shrink-0"></i><span class="font-bold sidebar-text">Contas a Receber</span>
             </button>
         </nav>
     </aside>
@@ -97,36 +102,38 @@
             </div>
         </header>
 
-        <!-- A TELA ONDE OS HTMLS SÃO INJETADOS -->
+        <!-- VISOR DA TV: ONDE O ROTEADOR INJETA AS PÁGINAS -->
         <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in bg-slate-50/50">
-            <!-- O router.js vai injetar os módulos aqui -->
         </main>
     </div>
 
     <!-- ========================================== -->
     <!-- MENU INFERIOR (MOBILE)                     -->
     <!-- ========================================== -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-2">
+    <nav class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-2 overflow-x-auto">
         
-        <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-blue-600 active transition-colors">
-            <i class="ph-fill ph-squares-four text-2xl"></i><span class="text-[10px] font-bold">Início</span>
+        <button onclick="navegarPara('dashboard')" data-target="dashboard" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-blue-600 active transition-colors">
+            <i class="ph-fill ph-squares-four text-xl"></i><span class="text-[9px] font-bold">Início</span>
         </button>
         
-        <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
-            <i class="ph-fill ph-receipt text-2xl"></i><span class="text-[10px] font-bold">O.S.</span>
+        <button onclick="navegarPara('orcamentos')" data-target="orcamentos" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-receipt text-xl"></i><span class="text-[9px] font-bold">O.S.</span>
         </button>
 
-        <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
-            <i class="ph-fill ph-users text-2xl"></i><span class="text-[10px] font-bold">Clientes</span>
+        <button onclick="navegarPara('clientes')" data-target="clientes" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-users text-xl"></i><span class="text-[9px] font-bold">Clientes</span>
         </button>
 
-        <button onclick="navegarPara('veiculos')" data-target="veiculos" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
-            <i class="ph-fill ph-car text-2xl"></i><span class="text-[10px] font-bold">Veículos</span>
+        <button onclick="navegarPara('veiculos')" data-target="veiculos" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-car text-xl"></i><span class="text-[9px] font-bold">Veículos</span>
         </button>
 
-        <!-- Botão Contas a Pagar (NOVO) -->
-        <button onclick="navegarPara('contas_pagar')" data-target="contas_pagar" class="nav-item-mob flex flex-col items-center justify-center w-16 gap-1 text-slate-400 transition-colors hover:text-slate-600">
-            <i class="ph-fill ph-money text-2xl"></i><span class="text-[10px] font-bold">A Pagar</span>
+        <button onclick="navegarPara('contas_pagar')" data-target="contas_pagar" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-money text-xl"></i><span class="text-[9px] font-bold">Pagar</span>
+        </button>
+
+        <button onclick="navegarPara('contas_receber')" data-target="contas_receber" class="nav-item-mob flex flex-col items-center justify-center min-w-[3.5rem] gap-1 text-slate-400 transition-colors hover:text-slate-600">
+            <i class="ph-fill ph-hand-coins text-xl"></i><span class="text-[9px] font-bold">Receber</span>
         </button>
 
     </nav>
@@ -138,19 +145,19 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     
-    <!-- 2. Roteador de Telas -->
+    <!-- 2. Roteador Master (SPA) -->
     <script src="router.js"></script>
     
-    <!-- 3. Módulos Independentes -->
+    <!-- 3. Módulos do Sistema -->
     <script src="dashboard.js"></script>
     <script src="orcamentos.js"></script>
     <script src="clientes.js"></script>
     <script src="veiculos.js"></script>
-    <script src="contas_pagar.js"></script> <!-- NOVO SCRIPT -->
+    <script src="contas_pagar.js"></script>
+    <script src="contas_receber.js"></script>
 
     <!-- INICIALIZAÇÃO -->
     <script>
-        // Quando a página termina de carregar, ele abre o Dashboard automaticamente
         window.onload = () => { 
             navegarPara('dashboard'); 
         };
