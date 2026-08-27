@@ -1,119 +1,211 @@
-// dashboard.js
+// ========================================================
+// AutoManager - Módulo Dashboard Analítico
+// ========================================================
+
+let dashChartFluxo = null;
+let dashChartOS = null;
 
 async function initDashboard() {
-    console.log("🟢 Dashboard Final Inicializado (Conectado ao Supabase).");
-    await carregarDadosReaisDoBanco();
+    console.log("🟢 Módulo Dashboard Inicializado.");
+    document.getElementById('dash-ano-grafico').innerText = new Date().getFullYear();
+    await compilarDadosReais();
 }
 
-async function carregarDadosReaisDoBanco() {
-    const formataDin = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
+async function compilarDadosReais() {
     try {
-        const { data: orcamentos, error: errOrc } = await window.banco
-            .from('orcamentos')
-            .select('*')
-            .order('id', { ascending: false })
-            .limit(5);
+        // 1. Busca todos os dados cruciais simultaneamente
+        const [reqReceber, reqPagar, reqOS] = await Promise.all([
+            window.banco.from('contas_receber').select('*'),
+            window.banco.from('contas_pagar').select('*'),
+            window.banco.from('orcamentos').select('status')
+        ]);
 
-        if (errOrc) throw errOrc;
+        const receitas = reqReceber.data || [];
+        const despesas = reqPagar.data || [];
+        const ordens = reqOS.data || [];
 
-        const { data: financas, error: errFin } = await window.banco
-            .from('financeiro')
-            .select('*');
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth();
+        const anoAtual = hoje.getFullYear();
+        const hojeISO = hoje.toISOString().split('T')[0];
 
-        if (errFin) throw errFin;
-
-        let faturamentoReal = 0;
-        let aReceberReal = 0;
-        let notasInadimplentes = 0;
-
-        financas.forEach(item => {
-            if (item.tipo === 'Entrada' && item.status === 'Pago') faturamentoReal += item.valor;
-            if (item.tipo === 'Entrada' && item.status === 'Pendente') {
-                aReceberReal += item.valor;
-                notasInadimplentes++;
+        // Métrica 1: Faturamento do Mês (Soma do que foi PAGO neste mês)
+        let faturamentoMes = 0;
+        receitas.forEach(r => {
+            if (r.status === 'Pago' && r.data_pagamento) {
+                // Previne erros de fuso com T12:00
+                const d = new Date(r.data_pagamento + 'T12:00:00Z');
+                if (d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
+                    faturamentoMes += r.valor;
+                }
             }
         });
 
-        // TRAVA DE SEGURANÇA: Se o usuário já mudou de tela, cancela a operação silenciosamente.
-        if (!document.getElementById('dash-fat')) return;
+        // Métrica 2: A Receber (Soma de Pendentes que ainda não venceram ou vencem hoje)
+        let aReceber = 0;
+        receitas.forEach(r => {
+            if (r.status === 'Pendente' && r.data_vencimento >= hojeISO) {
+                aReceber += r.valor;
+            }
+        });
 
-        document.getElementById('dash-fat').innerText = formataDin(faturamentoReal);
-        document.getElementById('dash-rec').innerText = formataDin(aReceberReal);
-        document.getElementById('dash-orc').innerText = orcamentos ? orcamentos.length.toString() : "0";
-        document.getElementById('dash-inad').innerText = `${notasInadimplentes} Notas`;
+        // Métrica 3: Inadimplência (Quantidade de Contas Pendentes e Atrasadas)
+        let contasAtrasadas = 0;
+        receitas.forEach(r => {
+            if (r.status === 'Pendente' && r.data_vencimento < hojeISO) {
+                contasAtrasadas++;
+            }
+        });
 
-        const tabela = document.getElementById('lista-recentes');
+        // Métrica 4: O.S em Andamento (Tudo que não está fechado, finalizado ou cancelado)
+        let osAbertas = 0;
+        let contagemStatusOS = {};
         
-        if (!orcamentos || orcamentos.length === 0) {
-            tabela.innerHTML = '<tr><td colspan="4" class="px-5 py-8 text-center text-slate-400 font-bold">Nenhum orçamento emitido ainda.</td></tr>';
-        } else {
-            tabela.innerHTML = orcamentos.map(orc => {
-                let corBg = 'bg-slate-100 text-slate-600 border-slate-200';
-                if (orc.status === 'Aprovado') corBg = 'bg-emerald-50 text-emerald-600 border-emerald-200';
-                if (orc.status === 'Aguardando Peça') corBg = 'bg-amber-50 text-amber-600 border-amber-200';
+        ordens.forEach(o => {
+            // Contagem geral para o Gráfico de Rosca
+            contagemStatusOS[o.status] = (contagemStatusOS[o.status] || 0) + 1;
+            
+            // Regra para contar "Em Andamento"
+            if (!['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status)) {
+                osAbertas++;
+            }
+        });
 
-                return `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-5 py-4">
-                        <p class="font-bold text-slate-800">${orc.cliente_nome}</p>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase">Orç #${orc.id}</p>
-                    </td>
-                    <td class="px-5 py-4 font-bold text-slate-500 uppercase">${orc.veiculo_placa}</td>
-                    <td class="px-5 py-4 font-black text-slate-800 text-right">${formataDin(orc.valor_total)}</td>
-                    <td class="px-5 py-4 text-center">
-                        <span class="border px-2.5 py-1 rounded-md text-[10px] font-bold ${corBg} shadow-sm">${orc.status}</span>
-                    </td>
-                </tr>`;
-            }).join('');
+        // ============================================
+        // INJETANDO NA TELA
+        // ============================================
+        document.getElementById('dash-fat').innerText = faturamentoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('dash-rec').innerText = aReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('dash-os').innerText = `${osAbertas} O.S.`;
+        document.getElementById('dash-inad').innerText = `${contasAtrasadas} Notas`;
+
+        // ============================================
+        // PROCESSANDO GRÁFICO DE FLUXO (ÚLTIMOS 6 MESES)
+        // ============================================
+        const labelsMeses = [];
+        const dadosReceitas = [];
+        const dadosDespesas = [];
+
+        // Monta o array dos últimos 6 meses (do mais antigo pro atual)
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            
+            // Pega o nome do mês (ex: "ago")
+            const nomeMes = d.toLocaleString('pt-BR', { month: 'short' });
+            labelsMeses.push(nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1));
+            
+            const mesTarget = d.getMonth();
+            const anoTarget = d.getFullYear();
+
+            // Soma Receitas daquele mês
+            const sumRec = receitas.reduce((acc, curr) => {
+                if (curr.status === 'Pago' && curr.data_pagamento) {
+                    const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
+                    if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
+                }
+                return acc;
+            }, 0);
+
+            // Soma Despesas daquele mês
+            const sumDesp = despesas.reduce((acc, curr) => {
+                if (curr.status === 'Pago' && curr.data_pagamento) {
+                    const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
+                    if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
+                }
+                return acc;
+            }, 0);
+
+            dadosReceitas.push(sumRec);
+            dadosDespesas.push(sumDesp);
         }
 
-        renderizarGraficosDashboard();
+        renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemStatusOS);
 
-    } catch (erro) {
-        console.error("Erro Crítico de Conexão com o Supabase:", erro);
-        if (document.getElementById('dash-fat')) {
-            document.getElementById('dash-fat').innerText = "Erro";
-            document.getElementById('lista-recentes').innerHTML = '<tr><td colspan="4" class="px-5 py-4 text-center text-red-500 font-bold">Falha ao ler o banco de dados.</td></tr>';
-        }
+    } catch(e) {
+        console.error("Falha ao compilar dashboard:", e);
+        document.getElementById('dash-fat').innerText = "Erro";
+        document.getElementById('dash-rec').innerText = "Erro";
     }
 }
 
-function renderizarGraficosDashboard() {
-    Chart.defaults.font.family = 'Inter, sans-serif';
-    Chart.defaults.color = '#94a3b8';
+function renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemStatus) {
+    // 1. Gráfico de Fluxo de Caixa (Linha)
+    const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
+    if(dashChartFluxo) dashChartFluxo.destroy();
+    
+    dashChartFluxo = new Chart(ctxFluxo, {
+        type: 'line',
+        data: {
+            labels: labelsMeses,
+            datasets: [
+                {
+                    label: 'Entradas (Receitas)',
+                    data: dadosReceitas,
+                    borderColor: '#10b981', // Emerald 500
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#10b981',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                },
+                {
+                    label: 'Saídas (Despesas)',
+                    data: dadosDespesas,
+                    borderColor: '#ef4444', // Red 500
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#ef4444',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { font: { family: 'Inter', size: 10, weight: 'bold' }, usePointStyle: true, boxWidth: 8 } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10, weight: 'bold' }, color: '#94a3b8' } },
+                y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8', callback: function(val){ return 'R$ ' + val; } } }
+            }
+        }
+    });
 
-    const canvasFaturamento = document.getElementById('chartFaturamento');
-    if(canvasFaturamento) {
-        const ctxLinha = canvasFaturamento.getContext('2d');
-        const gradient = ctxLinha.createLinearGradient(0, 0, 0, 250);
-        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
-        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+    // 2. Gráfico de O.S (Rosca)
+    const labelsOS = Object.keys(contagemStatus);
+    const dadosOS = Object.values(contagemStatus);
+    
+    // Paleta de cores corporativa dinâmica para os status
+    const coresOS = ['#3b82f6', '#f59e0b', '#10b981', '#6366f1', '#8b5cf6', '#ec4899', '#64748b'];
 
-        new Chart(ctxLinha, {
-            type: 'line',
-            data: {
-                labels: ['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
-                datasets: [{
-                    label: 'Faturamento',
-                    data: [12000, 18000, 15000, 25000, 32000, 42000],
-                    borderColor: '#2563eb', backgroundColor: gradient, borderWidth: 3, fill: true, tension: 0.4,
-                    pointBackgroundColor: '#ffffff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, border: { display: false } }, y: { border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { maxTicksLimit: 5 } } } }
-        });
-    }
+    const ctxOS = document.getElementById('chartOS').getContext('2d');
+    if(dashChartOS) dashChartOS.destroy();
 
-    const canvasFrota = document.getElementById('chartFrota');
-    if(canvasFrota) {
-        new Chart(canvasFrota, {
-            type: 'doughnut',
-            data: {
-                labels: ['Prontos', 'Na Oficina'],
-                datasets: [{ data: [75, 25], backgroundColor: ['#10b981', '#3b82f6'], borderWidth: 0, hoverOffset: 4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } } } }
-        });
-    }
+    dashChartOS = new Chart(ctxOS, {
+        type: 'doughnut',
+        data: {
+            labels: labelsOS.length > 0 ? labelsOS : ['Sem O.S'],
+            datasets: [{
+                data: dadosOS.length > 0 ? dadosOS : [1],
+                backgroundColor: dadosOS.length > 0 ? coresOS : ['#f1f5f9'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10, weight: 'bold' }, usePointStyle: true, boxWidth: 8, padding: 15 } }
+            }
+        }
+    });
 }
