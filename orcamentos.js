@@ -7,23 +7,18 @@ let valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
 let modalTipoAberto = '';
 let imagensUploadArray = []; 
 let osEmEdicaoId = null; 
-let osEmEdicaoNumero = null; // Memória para o número da O.S.
+let osEmEdicaoNumero = null; 
 let idParaExcluir = null;
 
-// Memória viva dos clientes e veículos
 let globalClientes = [];
 let globalVeiculos = [];
 
-// AGORA É ASYNC PARA GARANTIR QUE AS LISTAS CARREGUEM PRIMEIRO
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
     buscarOrcamentosSupabase();
 }
 
-/**
- * BUSCA OS DADOS REAIS DO BANCO PARA OS DROPDOWNS
- */
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
@@ -107,7 +102,7 @@ function alternarSubTelaOrcamento(modo) {
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
         calcularTotais();
-        verificarStatusFinanceiro(); // Esconde o botão Financeiro na nova OS
+        verificarStatusFinanceiro(); 
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -322,7 +317,7 @@ async function salvarOrcamentoReal() {
 function abrirEdicaoOS(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
-    osEmEdicaoNumero = orc.numero_os; // Salva o número da OS pro Financeiro
+    osEmEdicaoNumero = orc.numero_os; // Salva o número pro Financeiro
     
     document.getElementById('titulo-tela-os').innerText = `Edição da O.S. #${orc.numero_os}`;
     
@@ -349,7 +344,7 @@ function abrirEdicaoOS(dadosCodificados) {
     } else { document.getElementById('desc-val').value = ''; }
 
     calcularTotais();
-    verificarStatusFinanceiro(); // Verifica se já está Finalizada
+    verificarStatusFinanceiro(); // Verifica se está Finalizada para mostrar o botão
     
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
@@ -404,9 +399,7 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** 
- * LÓGICA DO MODAL DE CADASTRO RÁPIDO
- */
+/** LÓGICA DO MODAL DE CADASTRO RÁPIDO **/
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
@@ -606,7 +599,7 @@ async function processarSalvamentoModal() {
 
 /** 
  * ========================================================
- * LÓGICA DO MODAL FINANCEIRO (CONTAS A RECEBER)
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (PARCELAS)
  * ========================================================
  */
 function abrirModalFinanceiro() {
@@ -618,9 +611,13 @@ function abrirModalFinanceiro() {
     document.getElementById('fin-total-os').innerText = formataDinheiro(valoresFinais.total);
     document.getElementById('fin-entrada').value = '';
     document.getElementById('fin-parcelas').value = '1';
-    document.getElementById('fin-vencimento').value = new Date().toISOString().split('T')[0];
     
-    calcularSimulacaoFinanceira();
+    // A data base (1º Vencimento) já sugere 30 dias pra frente
+    let dataHoje = new Date();
+    dataHoje.setMonth(dataHoje.getMonth() + 1);
+    document.getElementById('fin-vencimento-base').value = dataHoje.toISOString().split('T')[0];
+    
+    gerarLinhasParcelas(); // Executa o motor dinâmico
     
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
     document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
@@ -633,47 +630,77 @@ function fecharModalFinanceiro() {
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
-function calcularSimulacaoFinanceira() {
+function gerarLinhasParcelas() {
     const total = valoresFinais.total;
-    const entradaStr = document.getElementById('fin-entrada').value;
-    const entrada = reverterMoeda(entradaStr) || 0;
-    
+    const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
     let restante = total - entrada;
     if(restante < 0) restante = 0;
-    
+
     document.getElementById('fin-restante').value = formataDinheiro(restante);
-    
+
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
+    const dataBaseStr = document.getElementById('fin-vencimento-base').value;
     const divSimulacao = document.getElementById('fin-simulacao');
-    
+
+    // Se o cliente pagou tudo na entrada
     if (restante === 0) {
-        divSimulacao.innerHTML = `<span class="text-emerald-600 font-bold"><i class="ph-bold ph-check-circle mr-1"></i> O valor da entrada cobre o total da O.S. Nenhuma parcela extra será gerada.</span>`;
+        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra.</div>`;
         document.getElementById('fin-parcelas').disabled = true;
-    } else {
-        document.getElementById('fin-parcelas').disabled = false;
-        const valorParcela = restante / parcelas;
-        divSimulacao.innerHTML = `<span class="text-blue-700 font-bold"><i class="ph-bold ph-info mr-1"></i> O cliente pagará: <br>Entrada de ${formataDinheiro(entrada)} + ${parcelas}x de ${formataDinheiro(valorParcela)} no Restante.</span>`;
+        return;
     }
+
+    document.getElementById('fin-parcelas').disabled = false;
+    let html = '';
+    const valorParc = restante / parcelas;
+    let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+
+    for(let i=1; i<=parcelas; i++) {
+        let d = new Date(dataBase);
+        d.setMonth(d.getMonth() + (i - 1)); // Pula os meses automaticamente
+        let dateVal = d.toISOString().split('T')[0];
+
+        html += `
+        <div class="flex flex-col md:flex-row gap-2 items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all hover:border-emerald-300">
+            <span class="font-black text-xs text-blue-600 w-full md:w-16">Parc ${i}/${parcelas}</span>
+            <input type="text" readonly value="${formataDinheiro(valorParc)}" class="w-full md:w-28 text-sm font-black text-slate-800 bg-transparent border-none outline-none">
+            <input type="date" id="parc-data-${i}" value="${dateVal}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+            <select id="parc-forma-${i}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
+                <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Pix">Pix</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Dinheiro">Dinheiro Físico</option>
+                <option value="Transferência">Transferência Bancária</option>
+            </select>
+        </div>`;
+    }
+    divSimulacao.innerHTML = html;
 }
 
 async function processarLancarFinanceiro() {
-    const total = valoresFinais.total;
     const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
+    const formaEntrada = document.getElementById('fin-forma-entrada').value;
+    const total = valoresFinais.total;
+    const restante = total - entrada;
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
-    const dataVenc = document.getElementById('fin-vencimento').value;
-    const formaPag = document.getElementById('fin-forma').value;
     const cliente = document.getElementById('db-cliente-nome').value;
 
     if(total <= 0) { dispararAlerta("O valor total da O.S é zero."); return; }
-    if(!dataVenc) { dispararAlerta("Selecione a data do primeiro vencimento."); return; }
     
     const btnSalvar = document.getElementById('btn-salvar-fin');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Gerando...';
     btnSalvar.disabled = true;
 
+    // Objeto para gravar na O.S e no PDF
+    let infoFinanceiraParaPDF = {
+        entrada: entrada,
+        forma_entrada: formaEntrada,
+        parcelas: []
+    };
+
     let records = [];
-    
-    // REGISTRO 1: A Entrada (Sinal) - Já cai como pago hoje.
+
+    // Lança a Entrada (Já sai como Pago)
     if(entrada > 0) {
         records.push({
             descricao: `Entrada O.S #${osEmEdicaoNumero} - ${cliente}`,
@@ -682,39 +709,65 @@ async function processarLancarFinanceiro() {
             data_vencimento: new Date().toISOString().split('T')[0],
             status: 'Pago', 
             data_pagamento: new Date().toISOString().split('T')[0],
-            forma_pagamento: formaPag
+            forma_pagamento: formaEntrada
         });
     }
 
-    // REGISTRO 2: As Parcelas do Restante - Caem como Pendentes a partir do Vencimento escolhido.
-    const restante = total - entrada;
-    if(restante > 0 && parcelas > 0) {
-        const valorParcela = restante / parcelas;
-        let dataBase = new Date(dataVenc + 'T12:00:00Z');
-        
+    // Lança as Parcelas Dinâmicas (Pendentes)
+    if (restante > 0 && parcelas > 0) {
+        const valorParc = restante / parcelas;
         for(let i=1; i<=parcelas; i++) {
-            let d = new Date(dataBase);
-            d.setMonth(d.getMonth() + (i - 1)); // Pula 1 mês para cada parcela subsequente
+            const dataParc = document.getElementById(`parc-data-${i}`).value;
+            const formaParc = document.getElementById(`parc-forma-${i}`).value;
+
+            // Alimenta a foto pro PDF
+            infoFinanceiraParaPDF.parcelas.push({
+                numero: i,
+                valor: valorParc,
+                data_vencimento: dataParc,
+                forma_pagamento: formaParc
+            });
+
+            // Alimenta o banco de dados do Contas a Receber
             records.push({
                 descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
                 categoria: 'Serviços O.S',
-                valor: parseFloat(valorParcela.toFixed(2)),
-                data_vencimento: d.toISOString().split('T')[0],
+                valor: parseFloat(valorParc.toFixed(2)),
+                data_vencimento: dataParc,
                 status: 'Pendente',
-                forma_pagamento: formaPag
+                forma_pagamento: formaParc
             });
         }
     }
 
     try {
-        const { error } = await window.banco.from('contas_receber').insert(records);
-        if (error) throw error;
+        // 1. Pega os dados mais recentes para não apagar nada
+        const clienteObj = globalClientes.find(c => c.nome === cliente) || {};
+        const veiculoObj = globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
+
+        const payloadJSONB = { 
+            lista_itens: itensTemporarios, 
+            resumo: valoresFinais,
+            cliente_dados: clienteObj,
+            veiculo_dados: veiculoObj,
+            financeiro: infoFinanceiraParaPDF // A MÁGICA DA AUDITORIA
+        };
+
+        // 2. Atualiza a O.S (salvando as parcelas dentro dela)
+        const { error: errOS } = await window.banco.from('orcamentos').update({ itens: payloadJSONB }).eq('id', osEmEdicaoId);
+        if(errOS) throw errOS;
+
+        // 3. Joga pro Contas a Receber
+        if (records.length > 0) {
+            const { error: errFin } = await window.banco.from('contas_receber').insert(records);
+            if (errFin) throw errFin;
+        }
         
-        dispararAlerta("Financeiro gerado com sucesso! Vá em 'A Receber'.", "sucesso");
+        dispararAlerta("Financeiro gerado com sucesso! Salvo na O.S e no Contas a Receber.", "sucesso");
         fecharModalFinanceiro();
-        // Voltar a tela da OS para o status normal? Não, deixa ele ver.
+        // Não fechamos a O.S. pois o cara vai querer clicar em gerar PDF em seguida.
     } catch (erro) {
-        dispararAlerta("Falha ao gerar o financeiro no banco de dados.");
+        dispararAlerta("Falha ao integrar o financeiro no banco de dados.");
         console.error(erro);
     } finally {
         btnSalvar.innerHTML = '<i class="ph-bold ph-paper-plane-right text-lg"></i> Enviar p/ Contas a Receber';
@@ -724,7 +777,9 @@ async function processarLancarFinanceiro() {
 
 
 /**
- * PDF COM FOTOGRAFIA DE DADOS (LISTA ORGANIZADA)
+ * ========================================================
+ * MOTOR DE IMPRESSÃO DE PDF (COM BLOCO FINANCEIRO)
+ * ========================================================
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
@@ -805,6 +860,33 @@ function gerarPDFSupabase(dadosCodificados) {
         if(boxObs) boxObs.style.display = 'block'; 
     } else { 
         if(boxObs) boxObs.style.display = 'none'; 
+    }
+
+    // A MÁGICA DA INJEÇÃO DO BLOCO FINANCEIRO NO PDF
+    const fin = orc.itens?.financeiro;
+    const containerFin = document.getElementById('pdf-container-financeiro');
+    if (fin) {
+        let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
+        htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
+        
+        if (fin.entrada > 0) {
+            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Entrada/Sinal:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+        }
+        
+        if (fin.parcelas && fin.parcelas.length > 0) {
+            fin.parcelas.forEach(p => {
+                const dataBR = new Date(p.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${p.numero}/${fin.parcelas.length}:</b> ${format(p.valor)} - Vencimento: ${dataBR} (Via ${p.forma_pagamento})</td></tr>`;
+            });
+        } else if (fin.entrada <= 0) {
+             htmlFin += `<tr><td style="padding: 4px;">Pendente de definição de parcelas.</td></tr>`;
+        }
+        htmlFin += `</table>`;
+        
+        containerFin.innerHTML = htmlFin;
+        containerFin.style.display = 'block';
+    } else {
+        containerFin.style.display = 'none';
     }
 
     const el = document.getElementById('pdf-template-real');
