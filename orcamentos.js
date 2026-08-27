@@ -734,11 +734,9 @@ function abrirModalFinanceiro() {
     document.getElementById('fin-forma-entrada').value = 'Pix';
     
     const hojeStr = new Date().toISOString().split('T')[0];
-    const campoDataEntrada = document.getElementById('fin-data-entrada');
     const campoVencBase = document.getElementById('fin-vencimento-base');
     
     // As datas iniciam como a data atual
-    if (campoDataEntrada) campoDataEntrada.value = hojeStr;
     if (campoVencBase) campoVencBase.value = hojeStr;
     
     gerarLinhasParcelas(); 
@@ -749,18 +747,18 @@ function fecharModalFinanceiro() {
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
+// INTELIGÊNCIA: Joga a data pro mês seguinte se for Cartão/Boleto
 function aoMudarFormaPagamentoPrincipal() {
     const forma = document.getElementById('fin-forma-entrada').value;
-    let data = new Date(); // Vencimento Base puxa data de hoje
+    let data = new Date(); 
     
     if (forma === 'Cartão de Crédito' || forma === 'Boleto') {
-        data.setMonth(data.getMonth() + 1); // Pula 30 dias para o primeiro vencimento
+        data.setMonth(data.getMonth() + 1); 
     }
     
     const dataStr = data.toISOString().split('T')[0];
     const campoVencBase = document.getElementById('fin-vencimento-base');
     
-    // A DATA DE ENTRADA É INTOCÁVEL (SEMPRE HOJE NO FECHAMENTO). O VENCIMENTO BASE QUE PULA
     if(campoVencBase) campoVencBase.value = dataStr;
     
     gerarLinhasParcelas();
@@ -858,7 +856,7 @@ window.ajustarParcelasManualmente = function(index) {
 async function processarLancarFinanceiro() {
     const entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
     const formaEntrada = document.getElementById('fin-forma-entrada').value;
-    const dataEntradaStr = document.getElementById('fin-data-entrada')?.value || new Date().toISOString().split('T')[0];
+    const dataEntradaStr = new Date().toISOString().split('T')[0]; // DATA ATUAL FIXADA PELO SISTEMA
     const total = valoresFinais.total;
     const restante = total - entrada;
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
@@ -889,21 +887,18 @@ async function processarLancarFinanceiro() {
     };
 
     let records = [];
-    const hojeStr = new Date().toISOString().split('T')[0];
 
+    // Limpa registros anteriores para evitar duplicidade em re-faturamento
     await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
 
     if(entrada > 0) {
-        const statusEntrada = (dataEntradaStr > hojeStr) ? 'Pendente' : 'Pago';
-        const dataPagamentoEntrada = (statusEntrada === 'Pago') ? dataEntradaStr : null;
-
         records.push({
             descricao: `Entrada O.S #${osEmEdicaoNumero} - ${cliente}`,
             categoria: 'Adiantamento',
             valor: entrada,
             data_vencimento: dataEntradaStr,
-            status: statusEntrada, 
-            data_pagamento: dataPagamentoEntrada,
+            status: 'Pago', // A ENTRADA NO MOMENTO DO FECHAMENTO SEMPRE É PAGA
+            data_pagamento: dataEntradaStr,
             forma_pagamento: formaEntrada
         });
     }
