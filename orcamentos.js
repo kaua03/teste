@@ -260,6 +260,7 @@ function atualizarInterfaceItensETotais() {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
             
+            // Se fechado, esconde botões
             let acoes = isFechado ? '' : `
             <div class="flex gap-1">
                 <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
@@ -515,10 +516,11 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
+/** 
+ * LÓGICA DO MODAL DE CADASTRO RÁPIDO
+ */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
-    document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
@@ -617,8 +619,6 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { 
-    document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden'); 
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -713,7 +713,9 @@ async function processarSalvamentoModal() {
 }
 
 /** 
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
+ * ========================================================
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (PARCELAS)
+ * ========================================================
  */
 function abrirModalFinanceiro() {
     if(!osEmEdicaoId) {
@@ -731,14 +733,10 @@ function abrirModalFinanceiro() {
     
     gerarLinhasParcelas(); 
     
-    document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
-    document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
@@ -860,6 +858,7 @@ async function processarLancarFinanceiro() {
             financeiro: infoFinanceiraParaPDF 
         };
 
+        // FECHANDO A O.S NO BANCO
         const { error: errOS } = await window.banco.from('orcamentos').update({ 
             itens: payloadJSONB,
             status: 'Fechado' 
@@ -872,7 +871,7 @@ async function processarLancarFinanceiro() {
         }
         
         document.getElementById('db-status').value = 'Fechado';
-        verificarStatusFinanceiro(); 
+        verificarStatusFinanceiro(); // Trava a tela
 
         dispararAlerta("O.S Faturada e Fechada com sucesso!", "sucesso");
         fecharModalFinanceiro();
@@ -885,6 +884,7 @@ async function processarLancarFinanceiro() {
         btnSalvar.disabled = false;
     }
 }
+
 
 /**
  * MOTOR DE IMPRESSÃO
@@ -903,6 +903,7 @@ function gerarPDFSupabase(dadosCodificados) {
     if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
 
     const pdfStatusEl = document.getElementById('pdf-status');
+    // Se for fechado no banco, imprime Faturado para o cliente não ver "Fechado"
     if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
 
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
