@@ -10,7 +10,6 @@ let osEmEdicaoId = null;
 let osEmEdicaoNumero = null; 
 let idParaExcluir = null;
 
-// Memória viva dos clientes e veículos
 let globalClientes = [];
 let globalVeiculos = [];
 
@@ -23,9 +22,6 @@ async function initOrcamentos() {
     buscarOrcamentosSupabase();
 }
 
-/**
- * BUSCA OS DADOS REAIS DO BANCO PARA OS DROPDOWNS
- */
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
@@ -75,7 +71,7 @@ function dispararAlerta(msg, tipo = 'erro') {
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
 
-// ---- CONTROLE DE TRAVAS E BOTÕES FINANCEIROS ----
+// ---- CONTROLE DE EXIBIÇÃO DO BOTÃO FINANCEIRO ----
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const btnFin = document.getElementById('btn-gerar-financeiro');
@@ -109,7 +105,6 @@ function verificarStatusFinanceiro() {
 }
 
 function congelarCamposOS(travar) {
-    // Trava ou destrava todos os campos da O.S para impedir edição se estiver Fechada
     const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
     campos.forEach(id => {
         const el = document.getElementById(id);
@@ -144,7 +139,7 @@ function alternarSubTelaOrcamento(modo) {
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
         calcularTotais();
-        verificarStatusFinanceiro(); // Atualiza botões
+        verificarStatusFinanceiro(); // Esconde o botão Financeiro na nova OS
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -265,7 +260,6 @@ function atualizarInterfaceItensETotais() {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
             
-            // Se fechado, esconde botões
             let acoes = isFechado ? '' : `
             <div class="flex gap-1">
                 <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
@@ -349,7 +343,6 @@ async function salvarOrcamentoReal() {
         const clienteObj = globalClientes.find(c => c.nome === nome) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
 
-        // Mantém as informações financeiras velhas se houver
         let finData = null;
         if (osEmEdicaoId) {
             const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
@@ -364,7 +357,7 @@ async function salvarOrcamentoReal() {
             cliente_dados: clienteObj,
             veiculo_dados: veiculoObj
         };
-        if(finData) payloadJSONB.financeiro = finData; // Devolve o financeiro se existir
+        if(finData) payloadJSONB.financeiro = finData; 
         
         if (osEmEdicaoId) {
             const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
@@ -375,12 +368,11 @@ async function salvarOrcamentoReal() {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
             
-            // SE SALVOU PELA 1ª VEZ E ESTAVA COMO FINALIZADO, ATUALIZA A TELA PRA PODER GERAR O FINANCEIRO
             if(status === 'Finalizado') {
                 dispararAlerta("O.S salva! Você já pode Gerar o Financeiro.", "sucesso");
                 const osJson = encodeURIComponent(JSON.stringify(novaOS));
                 abrirEdicaoOS(osJson); 
-                return; // Impede que vá para a lista
+                return; 
             } else {
                 dispararAlerta("O.S gerada com sucesso!", "sucesso");
                 alternarSubTelaOrcamento('lista');
@@ -393,7 +385,7 @@ async function salvarOrcamentoReal() {
 function abrirEdicaoOS(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
-    osEmEdicaoNumero = orc.numero_os; // Salva o número pro Financeiro
+    osEmEdicaoNumero = orc.numero_os; 
     
     document.getElementById('titulo-tela-os').innerText = `Edição da O.S. #${orc.numero_os}`;
     
@@ -405,11 +397,9 @@ function abrirEdicaoOS(dadosCodificados) {
     if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
     selectVeiculo.value = orc.veiculo_placa;
 
-    // Se estiver Fechado, a tag disabled foi colocada. Tem que tirar pra conseguir jogar o valor.
     const selStatus = document.getElementById('db-status');
     selStatus.disabled = false; 
     
-    // Injeta a opção fechada temporariamente se precisar
     if(orc.status === 'Fechado') {
         const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
         if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
@@ -435,7 +425,7 @@ function abrirEdicaoOS(dadosCodificados) {
     } else { document.getElementById('desc-val').value = ''; }
 
     calcularTotais();
-    verificarStatusFinanceiro(); // Verifica se está Finalizada ou Fechada
+    verificarStatusFinanceiro(); 
     
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
@@ -459,12 +449,11 @@ async function processarDestravarOS() {
     }
     
     try {
-        // Altera o status para Finalizado no banco e na tela
         const { error } = await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
         if (error) throw error;
         
         document.getElementById('db-status').value = 'Finalizado';
-        verificarStatusFinanceiro(); // Vai liberar os campos
+        verificarStatusFinanceiro(); 
         
         dispararAlerta("O.S Destravada!", "sucesso");
         fecharModalDestravar();
@@ -507,7 +496,6 @@ function renderizarTabelaReal(dados) {
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
         
-        // Se a O.S tiver Fechada, o ícone muda para um cadeado.
         const iconVisualizar = orc.status === 'Fechado' ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
         return `
@@ -527,9 +515,6 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
-/** 
- * LÓGICA DO MODAL DE CADASTRO RÁPIDO (REVISADO) 
- */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
@@ -538,8 +523,6 @@ function abrirModalCadastro(tipo) {
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
     const conteudo = document.getElementById('modal-conteudo');
-    
-    // Obtém o botão de salvar do rodapé e ajusta o nome dinamicamente
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
     
     if (tipo === 'cliente') {
@@ -730,9 +713,7 @@ async function processarSalvamentoModal() {
 }
 
 /** 
- * ========================================================
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (PARCELAS)
- * ========================================================
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
  */
 function abrirModalFinanceiro() {
     if(!osEmEdicaoId) {
@@ -767,7 +748,9 @@ function gerarLinhasParcelas() {
     let restante = total - entrada;
     if(restante < 0) restante = 0;
 
-    document.getElementById('fin-restante').value = formataDinheiro(restante);
+    // AQUI ESTÁ A CORREÇÃO DE SEGURANÇA QUE FALTAVA
+    const inputRestante = document.getElementById('fin-restante');
+    if (inputRestante) inputRestante.value = formataDinheiro(restante);
 
     const parcelas = parseInt(document.getElementById('fin-parcelas').value) || 1;
     const dataBaseStr = document.getElementById('fin-vencimento-base').value;
@@ -877,10 +860,9 @@ async function processarLancarFinanceiro() {
             financeiro: infoFinanceiraParaPDF 
         };
 
-        // FECHANDO A O.S NO BANCO
         const { error: errOS } = await window.banco.from('orcamentos').update({ 
             itens: payloadJSONB,
-            status: 'Fechado' // <--- O PULO DO GATO
+            status: 'Fechado' 
         }).eq('id', osEmEdicaoId);
         if(errOS) throw errOS;
 
@@ -890,7 +872,7 @@ async function processarLancarFinanceiro() {
         }
         
         document.getElementById('db-status').value = 'Fechado';
-        verificarStatusFinanceiro(); // Trava a tela
+        verificarStatusFinanceiro(); 
 
         dispararAlerta("O.S Faturada e Fechada com sucesso!", "sucesso");
         fecharModalFinanceiro();
@@ -904,11 +886,8 @@ async function processarLancarFinanceiro() {
     }
 }
 
-
 /**
- * ========================================================
- * MOTOR DE IMPRESSÃO DE PDF (COM BLOCO FINANCEIRO)
- * ========================================================
+ * MOTOR DE IMPRESSÃO
  */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
@@ -924,7 +903,6 @@ function gerarPDFSupabase(dadosCodificados) {
     if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
 
     const pdfStatusEl = document.getElementById('pdf-status');
-    // Se for fechado no banco, imprime Faturado para o cliente não ver "Fechado"
     if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
 
     let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
@@ -992,7 +970,6 @@ function gerarPDFSupabase(dadosCodificados) {
         if(boxObs) boxObs.style.display = 'none'; 
     }
 
-    // A MÁGICA DA INJEÇÃO DO BLOCO FINANCEIRO NO PDF
     const fin = orc.itens?.financeiro;
     const containerFin = document.getElementById('pdf-container-financeiro');
     if (fin) {
