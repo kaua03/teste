@@ -384,7 +384,7 @@ function renderizarTabelaReal(dados) {
 }
 
 /** 
- * LÓGICA DO MODAL DE CADASTRO RÁPIDO (REVISADO) 
+ * LÓGICA DO MODAL DE CADASTRO RÁPIDO (REVISADO E LIMPO)
  */
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
@@ -395,8 +395,10 @@ function abrirModalCadastro(tipo) {
     const titulo = document.getElementById('modal-titulo'); 
     const conteudo = document.getElementById('modal-conteudo');
     
-    // Obtém o botão de salvar do rodapé e ajusta o nome dinamicamente
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+    
+    // Troca o botão fechar para apenas o ícone X
+    const headerModal = modal.querySelector('.bg-blue-600');
     
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
