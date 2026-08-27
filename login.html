@@ -1,0 +1,24 @@
+<!-- login.html -->
+<div class="min-h-[80vh] flex items-center justify-center p-4 fade-in font-sans">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-slate-100">
+        <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+            <i class="ph-fill ph-car-profile text-4xl text-blue-600"></i>
+        </div>
+        <h2 class="text-3xl font-black text-slate-800 mb-1 tracking-tight">Auto<span class="text-blue-600">Manager</span></h2>
+        <p class="text-xs text-slate-500 mb-8 font-bold uppercase tracking-wider">Acesso ao Sistema</p>
+        
+        <div class="space-y-4 text-left">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail de Acesso</label>
+                <input type="email" id="login-email" placeholder="admin@oficina.com" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm outline-none focus:border-blue-500 font-bold bg-slate-50 focus:bg-white transition-colors">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Senha</label>
+                <input type="password" id="login-senha" placeholder="••••••••" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm outline-none focus:border-blue-500 font-bold bg-slate-50 focus:bg-white transition-colors">
+            </div>
+            <button onclick="realizarLogin()" id="btn-login" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(37,99,235,0.3)] hover:bg-blue-700 transition transform active:scale-95 mt-2 flex justify-center items-center gap-2">
+                ENTRAR <i class="ph-bold ph-sign-in text-lg"></i>
+            </button>
+        </div>
+    </div>
+</div>
