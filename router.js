@@ -39,6 +39,9 @@ async function navegarPara(tela) {
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
         if (tela === 'veiculos' && typeof initVeiculos === 'function') initVeiculos();
+        
+        // Linha adicionada para engatilhar o Contas a Pagar
+        if (tela === 'contas_pagar' && typeof initContasPagar === 'function') initContasPagar();
 
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
