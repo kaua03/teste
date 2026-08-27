@@ -4,7 +4,31 @@
 
 async function navegarPara(tela) {
     try {
-        // 1. Atualiza o visual dos botões no Menu Desktop (Lateral)
+        // SISTEMA DE SEGURANÇA (Verifica se está logado)
+        const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
+        
+        if (!usuarioLogado && tela !== 'login') {
+            tela = 'login'; // Força ir pro login se tentar burlar
+        }
+
+        // CAMUFLAGEM DE MENUS SE FOR A TELA DE LOGIN
+        if (tela === 'login') {
+            document.getElementById('sidebar-desktop').classList.add('hidden');
+            document.getElementById('header-top').classList.add('hidden');
+            document.getElementById('nav-mobile').classList.add('hidden');
+            document.getElementById('main-wrapper').classList.remove('md:ml-20');
+        } else {
+            document.getElementById('sidebar-desktop').classList.remove('hidden');
+            document.getElementById('header-top').classList.remove('hidden');
+            document.getElementById('nav-mobile').classList.remove('hidden');
+            document.getElementById('main-wrapper').classList.add('md:ml-20');
+            
+            // Coloca a inicial do nome do usuario no icone
+            const avatar = document.getElementById('user-avatar');
+            if(avatar && usuarioLogado) avatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
+        }
+
+        // Atualiza cores dos botões
         document.querySelectorAll('.nav-btn').forEach(btn => {
             if (btn.dataset.target === tela) {
                 btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
@@ -15,7 +39,6 @@ async function navegarPara(tela) {
             }
         });
 
-        // 2. Atualiza o visual dos botões no Menu Mobile (Inferior)
         document.querySelectorAll('.nav-item-mob').forEach(btn => {
             if (btn.dataset.target === tela) {
                 btn.classList.add('text-blue-600');
@@ -26,15 +49,13 @@ async function navegarPara(tela) {
             }
         });
 
-        // 3. Busca o arquivo HTML correspondente
+        // Injeta a tela
         const response = await fetch(tela + '.html');
         if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
         const html = await response.text();
-        
-        // 4. Injeta o HTML no meio da tela (Visor da TV)
         document.getElementById('visor-da-tv').innerHTML = html;
 
-        // 5. A MÁGICA: Liga o motor do módulo que acabou de ser carregado
+        // Inicia motores
         if (tela === 'dashboard' && typeof initDashboard === 'function') initDashboard();
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
