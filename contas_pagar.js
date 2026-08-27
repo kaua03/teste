@@ -4,6 +4,7 @@
 
 let contaPagarEmEdicaoId = null;
 let idContaParaBaixar = null;
+let idParaExcluirPagar = null;
 let abaAtivaPagar = 'Pendente'; 
 let cacheContasPagar = [];
 
@@ -36,7 +37,7 @@ function alternarSubTelaPagar(modo) {
         document.getElementById('pag-desc').value = '';
         document.getElementById('pag-cat').value = 'Outros';
         document.getElementById('pag-val').value = '';
-        document.getElementById('pag-venc').value = new Date().toISOString().split('T')[0]; // Data de hoje
+        document.getElementById('pag-venc').value = new Date().toISOString().split('T')[0];
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -63,6 +64,13 @@ function mudarAbaPagar(aba) {
     renderizarTabelaPagar();
 }
 
+function mascaraMoeda(campo) {
+    let valor = campo.value.replace(/\D/g, ''); 
+    if (valor === '') { campo.value = ''; return; }
+    valor = (parseInt(valor, 10) / 100).toFixed(2);
+    campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+}
+
 async function buscarContasPagarSupabase() {
     try {
         const { data, error } = await window.banco.from('contas_pagar').select('*').order('data_vencimento', { ascending: true });
@@ -82,7 +90,6 @@ async function salvarContaPagarBD() {
 
     if (!desc || !valString || !venc) { dispararAlertaPagar("Preencha descrição, valor e vencimento."); return; }
     
-    // Converte a máscara "1.200,50" para float "1200.50" pro banco
     const valFloat = parseFloat(valString.replace(/\./g, '').replace(',', '.'));
     if (valFloat <= 0) { dispararAlertaPagar("O valor deve ser maior que zero."); return; }
 
@@ -111,14 +118,34 @@ async function salvarContaPagarBD() {
     }
 }
 
-// ---- BAIXA DE CONTA (PAGAMENTO) ----
+// ---- EDIÇÃO ----
+function abrirEdicaoPagar(dadosCodificados) {
+    const conta = JSON.parse(decodeURIComponent(dadosCodificados));
+    contaPagarEmEdicaoId = conta.id;
+    
+    document.getElementById('titulo-tela-pagar').innerText = 'Editar Despesa';
+    
+    document.getElementById('pag-desc').value = conta.descricao || '';
+    document.getElementById('pag-cat').value = conta.categoria || 'Outros';
+    
+    const inputVal = document.getElementById('pag-val');
+    inputVal.value = (conta.valor * 100).toString();
+    mascaraMoeda(inputVal);
+    
+    document.getElementById('pag-venc').value = conta.data_vencimento || '';
+    
+    document.getElementById('view-lista-pagar').classList.add('hidden');
+    document.getElementById('view-form-pagar').classList.remove('hidden');
+}
+
+// ---- BAIXA (PAGAMENTO) ----
 function abrirModalBaixaPagar(dadosCodificados) {
     const conta = JSON.parse(decodeURIComponent(dadosCodificados));
     idContaParaBaixar = conta.id;
     
     document.getElementById('baixa-pagar-desc').innerText = conta.descricao;
     document.getElementById('baixa-pagar-val').innerText = conta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    document.getElementById('baixa-pagar-data').value = new Date().toISOString().split('T')[0]; // Sugere hoje
+    document.getElementById('baixa-pagar-data').value = new Date().toISOString().split('T')[0];
     
     document.getElementById('modal-baixa-pagar').classList.remove('hidden');
 }
@@ -147,11 +174,47 @@ async function confirmarBaixaPagar() {
     }
 }
 
+// ---- REVERSÃO DE PAGAMENTO ----
+async function reverterBaixaPagar(id) {
+    try {
+        const { error } = await window.banco.from('contas_pagar').update({ status: 'Pendente', data_pagamento: null, forma_pagamento: null }).eq('id', id);
+        if (error) throw error;
+        
+        dispararAlertaPagar("Pagamento desfeito! A conta voltou para Pendentes.", "sucesso");
+        buscarContasPagarSupabase();
+    } catch (erro) {
+        dispararAlertaPagar("Falha ao reverter o pagamento.");
+    }
+}
+
+// ---- EXCLUSÃO ----
+function abrirModalExclusaoPagar(id) {
+    idParaExcluirPagar = id;
+    document.getElementById('modal-exclusao-pagar').classList.remove('hidden');
+}
+
+function fecharModalExclusaoPagar() {
+    idParaExcluirPagar = null;
+    document.getElementById('modal-exclusao-pagar').classList.add('hidden');
+}
+
+async function confirmarExclusaoPagar() {
+    if(!idParaExcluirPagar) return;
+    try {
+        const { error } = await window.banco.from('contas_pagar').delete().eq('id', idParaExcluirPagar);
+        if(error) throw error;
+        dispararAlertaPagar("Conta excluída com sucesso.", "sucesso");
+        fecharModalExclusaoPagar();
+        buscarContasPagarSupabase();
+    } catch(e) {
+        dispararAlertaPagar("Erro ao excluir conta.");
+    }
+}
+
 // RENDERIZAÇÃO
 function renderizarTabelaPagar() {
     const tbody = document.getElementById('tabela-pagar-real');
     
-    // Filtra pelo que está selecionado na aba
     let dadosFiltrados = cacheContasPagar.filter(c => c.status === abaAtivaPagar);
     
     if (dadosFiltrados.length === 0) {
@@ -164,7 +227,6 @@ function renderizarTabelaPagar() {
         const jsonCodificado = encodeURIComponent(JSON.stringify(conta));
         const valorBR = conta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
-        // Verifica atraso
         let statusBadge = '';
         let infoData = '';
 
@@ -183,14 +245,16 @@ function renderizarTabelaPagar() {
             }
         }
 
-        // Se estiver pago, não mostra botão de pagar, nem editar
         let botoesAcao = '';
         if(conta.status === 'Pendente') {
             botoesAcao = `
             <button onclick="abrirModalBaixaPagar('${jsonCodificado}')" class="bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600 px-3 py-2 rounded-lg transition text-xs font-bold shadow-sm" title="Informar Pagamento">Pagar</button>
-            <button onclick="" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
+            <button onclick="abrirEdicaoPagar('${jsonCodificado}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+            <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
         } else {
-             botoesAcao = `<span class="text-[10px] font-bold text-slate-400 uppercase"><i class="ph-bold ph-lock-key"></i> Liquidado</span>`;
+             botoesAcao = `
+             <button onclick="reverterBaixaPagar(${conta.id})" class="bg-amber-500 text-white hover:bg-amber-600 border border-amber-600 px-3 py-2 rounded-lg transition text-xs font-bold shadow-sm flex items-center gap-1" title="Desfazer Pagamento"><i class="ph-bold ph-arrow-u-up-left"></i> Reverter</button>
+             <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
         }
 
         return `
