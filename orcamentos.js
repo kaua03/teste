@@ -14,8 +14,7 @@ let osParaDestravarDados = null;
 
 let globalClientes = [];
 let globalVeiculos = [];
-
-let currentOSFinanceiro = []; // Armazena as parcelas vivas que vieram do banco
+let currentOSFinanceiro = []; // Memória viva das parcelas do banco
 
 async function initOrcamentos() {
     await carregarListasBD();
@@ -65,204 +64,31 @@ function dispararAlerta(msg, tipo = 'erro') {
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
 
-// -----------------------------------------------------------------------------------
-// SISTEMA DE ABAS (DADOS DA O.S vs GESTÃO FINANCEIRA)
-// -----------------------------------------------------------------------------------
-function mudarAbaOS(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('conteudo-aba-dados');
-    const contFin = document.getElementById('conteudo-aba-fin');
-
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        renderizarAbaFinanceiro();
-    }
-}
-
-// Renderiza os inputs ativáveis na Aba Financeiro baseados no banco real (currentOSFinanceiro)
-function renderizarAbaFinanceiro() {
-    const container = document.getElementById('lista-financeiro-vinculado');
-    let somaFinanceiro = 0;
-
-    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
-    
-    if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 shadow-inner">
-                <i class="ph-fill ph-wallet text-5xl text-slate-300 mb-4"></i>
-                <p class="text-sm font-bold text-slate-500 mb-2">Ainda não há lançamentos para esta O.S.</p>
-                <p class="text-xs text-slate-400 mb-6">Volte para a listagem e clique no ícone "R$" para gerar o faturamento completo, ou adicione manualmente abaixo.</p>
-                <button onclick="adicionarNovaParcelaManual()" class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-md transition-transform transform active:scale-95 flex items-center justify-center mx-auto gap-2"><i class="ph-bold ph-plus text-lg"></i> Adicionar Lançamento Manual</button>
-            </div>
-        `;
-        document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
-        atualizarPlacarAuditoria(0);
-        return;
-    }
-
-    let html = '';
-    currentOSFinanceiro.forEach(rec => {
-        somaFinanceiro += rec.valor;
-        const isPago = rec.status === 'Pago';
-        const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
-        const badgeStatus = isPago ? 
-            `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded text-[10px] font-black uppercase shadow-sm"><i class="ph-bold ph-check"></i> Liquidado</span>` : 
-            `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[10px] font-black uppercase shadow-sm"><i class="ph-bold ph-clock"></i> Pendente</span>`;
-            
-        // Regra de Ouro: Se tá PAGO/LIQUIDADO, congela os inputs e esconde o botão Salvar/Excluir
-        const inputState = isPago ? 'disabled class="w-full border-transparent bg-transparent text-emerald-900"' : 'class="w-full border border-slate-200 p-2.5 rounded-xl text-slate-700 outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"';
-        const btnActions = isPago ? '' : `
-            <div class="flex gap-1">
-                <button onclick="salvarEdicaoParcelaManual(${rec.id})" class="bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-500 hover:text-white p-2 rounded-xl transition shadow-sm" title="Salvar Alteração"><i class="ph-bold ph-floppy-disk text-lg"></i></button>
-                <button onclick="excluirParcelaManual(${rec.id})" class="bg-red-50 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-            </div>`;
-
-        html += `
-        <div class="p-5 rounded-2xl border ${corCard} shadow-sm flex flex-col lg:flex-row gap-4 lg:items-center relative transition-colors group">
-            <div class="flex-1 w-full">
-                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
-                <input type="text" id="edit-rec-desc-${rec.id}" value="${rec.descricao}" ${inputState} ${isPago ? 'style="font-weight: 800; font-size: 13px;"' : 'style="font-weight: 600; font-size: 13px;"'}>
-            </div>
-            <div class="w-full lg:w-36">
-                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Vencimento</label>
-                <input type="date" id="edit-rec-data-${rec.id}" value="${rec.data_vencimento}" ${inputState} style="font-weight: 700; font-size: 13px;">
-            </div>
-            <div class="w-full lg:w-36">
-                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Forma</label>
-                <select id="edit-rec-forma-${rec.id}" ${inputState} style="font-weight: 700; font-size: 13px;">
-                    <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
-                    <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
-                    <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>C. Débito</option>
-                    <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>C. Crédito</option>
-                    <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
-                    <option value="Transferência" ${rec.forma_pagamento === 'Transferência' ? 'selected' : ''}>Transferência</option>
-                </select>
-            </div>
-            <div class="w-full lg:w-32">
-                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Valor</label>
-                <input type="text" id="edit-rec-val-${rec.id}" onkeyup="mascaraMoeda(this)" value="${valorParaInput(rec.valor)}" ${inputState} ${isPago ? 'style="font-weight: 900; font-size: 16px;"' : 'style="font-weight: 900; font-size: 16px; color: #020617;"'}>
-            </div>
-            
-            <div class="flex flex-row lg:flex-col gap-3 w-full lg:w-auto items-center lg:items-end justify-between lg:justify-center border-t border-slate-100 lg:border-none pt-4 lg:pt-0 mt-2 lg:mt-0">
-                ${badgeStatus}
-                ${btnActions}
-            </div>
-        </div>`;
-    });
-
-    html += `
-        <div class="mt-4 flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-             <p class="text-xs text-slate-500 font-medium">As alterações feitas acima são atualizadas no banco de dados automaticamente.</p>
-            <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
-        </div>
-    `;
-
-    container.innerHTML = html;
-    document.getElementById('fin-aba-soma').innerText = formataDinheiro(somaFinanceiro);
-    atualizarPlacarAuditoria(somaFinanceiro);
-}
-
-function atualizarPlacarAuditoria(somaFinanceiro) {
-    const elSomaBox = document.getElementById('fin-aba-soma-box');
-    const elSomaLabel = document.getElementById('fin-aba-soma-label');
-    const elSomaValor = document.getElementById('fin-aba-soma');
-    const elAlerta = document.getElementById('fin-aba-alerta');
-    
-    // Se a soma não bater e o financeiro existir (se for zero, significa que não faturou, aí não apita o vermelho)
-    if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
-        elSomaBox.className = 'p-5 rounded-2xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600';
-        elAlerta.classList.remove('hidden');
-    } else {
-        elSomaBox.className = 'p-5 rounded-2xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700';
-        elAlerta.classList.add('hidden');
-    }
-}
-
-// AÇÕES DO FINANCEIRO (DENTRO DA ABA)
-async function salvarEdicaoParcelaManual(id) {
-    const desc = document.getElementById(`edit-rec-desc-${id}`).value;
-    const data = document.getElementById(`edit-rec-data-${id}`).value;
-    const val = reverterMoeda(document.getElementById(`edit-rec-val-${id}`).value);
-    const forma = document.getElementById(`edit-rec-forma-${id}`).value;
-
-    try {
-        const { error } = await window.banco.from('contas_receber').update({ descricao: desc, data_vencimento: data, valor: val, forma_pagamento: forma }).eq('id', id);
-        if (error) throw error;
-        dispararAlerta("Lançamento financeiro atualizado!", "sucesso");
-        await recarregarFinanceiroDaOS(); // Recarrega do banco pra atualizar a soma da auditoria
-    } catch(e) { dispararAlerta("Erro ao salvar o lançamento."); }
-}
-
-async function excluirParcelaManual(id) {
-    if(!confirm("Tem certeza que deseja excluir esta parcela da O.S?")) return;
-    try {
-        const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
-        if (error) throw error;
-        dispararAlerta("Parcela excluída com sucesso.", "sucesso");
-        await recarregarFinanceiroDaOS();
-    } catch(e) { dispararAlerta("Erro ao excluir."); }
-}
-
-async function adicionarNovaParcelaManual() {
-    const cliente = document.getElementById('db-cliente-nome').value;
-    if(!cliente) { dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
-    
-    // O sistema sugere o valor exato que falta para a conta bater!
-    let somaAtual = 0;
-    currentOSFinanceiro.forEach(r => somaAtual += r.valor);
-    let valorSugerido = valoresFinais.total - somaAtual;
-    if(valorSugerido < 0) valorSugerido = 0;
-
-    const novaParcela = {
-        descricao: `Complemento O.S #${osEmEdicaoNumero} - ${cliente}`,
-        categoria: 'Serviços O.S',
-        valor: parseFloat(valorSugerido.toFixed(2)),
-        data_vencimento: formatarDataISO(new Date()),
-        status: 'Pendente',
-        forma_pagamento: 'Pix'
-    };
-
-    try {
-        const { error } = await window.banco.from('contas_receber').insert([novaParcela]);
-        if (error) throw error;
-        dispararAlerta("Novo lançamento criado. Você pode editá-lo agora.", "sucesso");
-        await recarregarFinanceiroDaOS();
-    } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
-}
-
-async function recarregarFinanceiroDaOS() {
-    if(!osEmEdicaoNumero) return;
-    const { data: finRecords } = await window.banco.from('contas_receber')
-        .select('*').like('descricao', `%O.S #${osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
-    currentOSFinanceiro = finRecords || [];
-    renderizarAbaFinanceiro();
-}
-
-
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const btnSalvar = document.getElementById('btn-salvar-db');
     const badgeFechada = document.getElementById('badge-os-fechada');
+    const abaFinBtn = document.getElementById('aba-fin');
     
     if (status === 'Fechado') {
         if(btnSalvar) btnSalvar.classList.add('hidden');
         if(badgeFechada) badgeFechada.classList.remove('hidden');
         congelarCamposOS(true);
+        abaFinBtn.style.display = 'flex';
         return;
     }
 
     congelarCamposOS(false);
     if(btnSalvar) btnSalvar.classList.remove('hidden');
     if(badgeFechada) badgeFechada.classList.add('hidden');
+    
+    // Mostra a aba Financeiro só se estiver Finalizado ou Fechado ou já tiver financeiro salvo
+    if (status === 'Finalizado' || currentOSFinanceiro.length > 0) {
+        abaFinBtn.style.display = 'flex';
+    } else {
+        abaFinBtn.style.display = 'none';
+        mudarAbaOS('dados'); 
+    }
 }
 
 function congelarCamposOS(travar) {
@@ -286,7 +112,7 @@ function alternarSubTelaOrcamento(modo) {
     if (modo === 'novo') {
         osEmEdicaoId = null; 
         osEmEdicaoNumero = null;
-        currentOSFinanceiro = []; // Limpa o cofre ao abrir OS nova
+        currentOSFinanceiro = [];
         document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
         
         document.getElementById('db-cliente-nome').value = '';
@@ -302,7 +128,7 @@ function alternarSubTelaOrcamento(modo) {
         
         calcularTotais();
         verificarStatusFinanceiro(); 
-        mudarAbaOS('dados'); // Força abrir na primeira aba
+        mudarAbaOS('dados');
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -391,7 +217,6 @@ function removerItemDB(id) { itensTemporarios = itensTemporarios.filter(i => i.i
 function editarItem(id) {
     const item = itensTemporarios.find(i => i.id_temp === id);
     if (!item) return;
-
     document.getElementById('item-tipo').value = item.tipo || 'Peça';
     document.getElementById('item-nome').value = item.descricao;
     document.getElementById('item-desc').value = item.detalhe || '';
@@ -426,12 +251,7 @@ function calcularTotais() {
     valoresFinais.pecas = sumPecas; valoresFinais.servicos = sumServicos; valoresFinais.desconto = descValor; valoresFinais.total = totalBruto - descValor;
     atualizarInterfaceItensETotais();
     
-    // ATUALIZA A AUDITORIA EM TEMPO REAL
-    if(currentOSFinanceiro.length > 0) {
-        let soma = 0;
-        currentOSFinanceiro.forEach(r => soma+=r.valor);
-        atualizarPlacarAuditoria(soma);
-    }
+    if(currentOSFinanceiro.length > 0) checarSomaFinanceiroEdit();
 }
 
 function atualizarInterfaceItensETotais() {
@@ -480,21 +300,15 @@ function processarImagens(event) {
         reader.readAsDataURL(file);
     });
 }
-
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     previewContainer.innerHTML = '';
-    
     if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
-    
     const isFechado = document.getElementById('db-status').value === 'Fechado';
-
     imagensUploadArray.forEach(base64Str => {
         const imgBox = document.createElement('div');
         imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
-        
         let trashIcon = isFechado ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
-        
         imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
         previewContainer.appendChild(imgBox);
     });
@@ -511,7 +325,300 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-// SALVA APENAS OS DADOS DA O.S (O FINANCEIRO É SALVO NA ABA ESPECÍFICA)
+// =====================================================================
+// ROTINA DE ABAS E GESTÃO FINANCEIRA
+// =====================================================================
+function mudarAbaOS(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('conteudo-aba-dados');
+    const contFin = document.getElementById('conteudo-aba-fin');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        renderizarAbaFinanceiro();
+    }
+}
+
+function renderizarAbaFinanceiro() {
+    if (!osEmEdicaoId) {
+        document.getElementById('fin-bloqueado-box').classList.remove('hidden');
+        document.getElementById('fin-liberado-box').classList.add('hidden');
+        return;
+    }
+    
+    document.getElementById('fin-bloqueado-box').classList.add('hidden');
+    document.getElementById('fin-liberado-box').classList.remove('hidden');
+    
+    const boxGerador = document.getElementById('fin-gerador-box');
+    const boxEditor = document.getElementById('fin-editor-box');
+    const btnRefazer = document.getElementById('btn-refazer-fin');
+    const subtitulo = document.getElementById('fin-aba-subtitulo');
+    
+    if (currentOSFinanceiro.length === 0) {
+        // TELA DE GERADOR (PRIMEIRO FATURAMENTO)
+        boxGerador.classList.remove('hidden');
+        boxEditor.classList.add('hidden');
+        btnRefazer.classList.add('hidden');
+        subtitulo.innerText = "Defina como o cliente vai pagar para fechar a O.S.";
+        
+        document.getElementById('tab-fin-tipo').value = 'avista';
+        mudarTipoFaturamentoTab();
+        document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
+        document.getElementById('fin-aba-alerta').classList.add('hidden');
+        document.getElementById('fin-aba-soma-box').className = 'p-5 rounded-2xl border transition-colors shadow-inner border-slate-200 bg-slate-50 text-slate-400';
+    } else {
+        // TELA DE EDITOR (MOSTRA AS PARCELAS DO BANCO)
+        boxGerador.classList.add('hidden');
+        boxEditor.classList.remove('hidden');
+        subtitulo.innerText = "Edite as parcelas e Salve a O.S.";
+        
+        const hasPago = currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
+        if (hasPago) {
+            btnRefazer.classList.add('hidden'); 
+        } else {
+            btnRefazer.classList.remove('hidden'); 
+        }
+        
+        const listaDiv = document.getElementById('lista-financeiro-vinculado');
+        let html = '';
+        
+        const isOSFechada = document.getElementById('db-status').value === 'Fechado';
+
+        currentOSFinanceiro.forEach((rec, idx) => {
+            const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
+            
+            const trancaInput = (isPago || isOSFechada) ? 'disabled class="w-full bg-transparent border-none text-slate-900"' : 'class="w-full border border-slate-300 p-2.5 rounded-xl text-sm font-black text-slate-700 outline-none focus:border-blue-500 bg-white"';
+            const trancaData = (isPago || isOSFechada) ? 'disabled class="w-full bg-transparent border-none text-slate-900"' : 'class="w-full border border-slate-300 p-2.5 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 bg-white"';
+            
+            let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
+            
+            const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada' : `Parcela ${idx+1}`;
+
+            html += `
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${badgeTipo}</span>
+                    ${iconeStatus}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Vencimento / Pagto</label>
+                        <input type="date" id="edit-rec-data-${idx}" value="${rec.data_vencimento}" ${trancaData}>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
+                        <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this)" onblur="checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaInput} ${isPago||isOSFechada ? 'style="font-size: 16px; font-weight: 900;"' : ''}>
+                    </div>
+                </div>
+            </div>`;
+        });
+        
+        listaDiv.innerHTML = html;
+        checarSomaFinanceiroEdit();
+    }
+}
+
+window.checarSomaFinanceiroEdit = function() {
+    let soma = 0;
+    currentOSFinanceiro.forEach((rec, idx) => {
+        soma += reverterMoeda(document.getElementById(`edit-rec-val-${idx}`).value) || 0;
+    });
+    
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(soma);
+    
+    const dif = Math.abs(valoresFinais.total - soma);
+    if (dif > 0.05) {
+        document.getElementById('fin-aba-soma-box').className = 'p-5 rounded-2xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600';
+        document.getElementById('fin-aba-alerta').classList.remove('hidden');
+    } else {
+        document.getElementById('fin-aba-soma-box').className = 'p-5 rounded-2xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700';
+        document.getElementById('fin-aba-alerta').classList.add('hidden');
+    }
+}
+
+async function limparFinanceiroAtual() {
+    if(!confirm("Atenção: Isso apagará todas as parcelas atuais desta O.S e fará você gerar do zero. Continuar?")) return;
+    try {
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
+        currentOSFinanceiro = [];
+        renderizarAbaFinanceiro();
+        dispararAlerta("Financeiro limpo. Pode gerar novamente.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
+}
+
+// ----------------------------------------------------
+// GERADOR TAB
+function mudarTipoFaturamentoTab() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    const boxEntrada = document.getElementById('tab-box-entrada');
+    const boxParcelamento = document.getElementById('tab-box-parcelamento');
+    const inputEntrada = document.getElementById('tab-fin-entrada');
+
+    let d = new Date(); d.setMonth(d.getMonth() + 1);
+    const dataMesQueVem = formatarDataISO(d);
+
+    if (tipo === 'avista') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
+        inputEntrada.value = formataDinheiro(valoresFinais.total); inputEntrada.readOnly = true;
+        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
+    } else if (tipo === 'entrada_parcela') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.readOnly = false; inputEntrada.value = ''; 
+        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    } else if (tipo === 'parcelado') {
+        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.value = '0,00';
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    }
+    gerarLinhasParcelasTab();
+}
+
+function gerarLinhasParcelasTab() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let entrada = (tipo === 'avista') ? valoresFinais.total : ((tipo === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    let restante = valoresFinais.total - entrada; if(restante < 0) restante = 0;
+
+    const divSimulacao = document.getElementById('tab-fin-simulacao');
+    if (tipo === 'avista' || restante === 0) {
+        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
+        document.getElementById('tab-fin-parcelas').disabled = true;
+        
+        document.getElementById('fin-aba-soma').innerText = formataDinheiro(entrada);
+        document.getElementById('fin-aba-soma-box').className = 'p-5 rounded-2xl border shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700';
+        document.getElementById('fin-aba-alerta').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('tab-fin-parcelas').disabled = false;
+    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
+    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
+    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
+    
+    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+    let centavosTotal = Math.round(restante * 100);
+    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
+    let restoCentavos = centavosTotal % parcelas;
+
+    for(let i=1; i<=parcelas; i++) {
+        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = formatarDataISO(d);
+
+        html += `
+        <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200">
+            <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
+            <input type="text" id="tab-parc-val-${i}" onkeyup="mascaraMoeda(this)" onblur="ajustarParcelasManualmenteTab(${i})" value="${valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
+            <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+            <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+                <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Pix">Pix</option>
+            </select>
+        </div>`;
+    }
+    divSimulacao.innerHTML = html;
+    
+    // Atualiza Auditoria da Aba Tab
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(valoresFinais.total);
+    document.getElementById('fin-aba-soma-box').className = 'p-5 rounded-2xl border shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700';
+    document.getElementById('fin-aba-alerta').classList.add('hidden');
+}
+
+window.ajustarParcelasManualmenteTab = function(index) {
+    const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+    const entrada = (document.getElementById('tab-fin-tipo').value === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
+    const restante = valoresFinais.total - entrada;
+    
+    let somaAnteriores = 0;
+    for(let i=1; i<=index; i++) { somaAnteriores += reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0; }
+    
+    let restanteParaDistribuir = restante - somaAnteriores;
+    if (restanteParaDistribuir < 0) {
+        document.getElementById(`tab-parc-val-${index}`).value = valorParaInput(restante - (somaAnteriores - reverterMoeda(document.getElementById(`tab-parc-val-${index}`).value)));
+        restanteParaDistribuir = 0;
+    }
+    
+    const parcelasRestantes = parcelas - index;
+    if (parcelasRestantes > 0) {
+        let centavosRestantes = Math.round(restanteParaDistribuir * 100);
+        let centavosPorParcela = Math.floor(centavosRestantes / parcelasRestantes);
+        let restoCentavos = centavosRestantes % parcelasRestantes;
+
+        for(let i = index + 1; i <= parcelas; i++) {
+            let valorParc = (centavosPorParcela + ((i - index) <= restoCentavos ? 1 : 0)) / 100;
+            document.getElementById(`tab-parc-val-${i}`).value = valorParaInput(valorParc);
+        }
+    }
+}
+
+async function processarLancarFinanceiroTab() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    const total = valoresFinais.total;
+    const entrada = (tipo === 'avista') ? total : ((tipo === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    const formaEntrada = document.getElementById('tab-fin-forma-entrada').value;
+    const dataAtualStr = formatarDataISO(new Date()); 
+    const parcelas = (tipo === 'avista') ? 0 : Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+    const cliente = document.getElementById('db-cliente-nome').value;
+
+    let somaParcelas = 0;
+    if(total - entrada > 0 && tipo !== 'avista') {
+        for(let i=1; i<=parcelas; i++) somaParcelas += reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0;
+        if (Math.abs(somaParcelas - (total - entrada)) > 0.05) { dispararAlerta("As parcelas não batem com o saldo."); return; }
+    }
+    
+    const btnSalvar = document.getElementById('btn-salvar-fin-tab');
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
+    btnSalvar.disabled = true;
+
+    let records = [];
+    if(entrada > 0) {
+        records.push({
+            descricao: `Acerto Imediato O.S #${osEmEdicaoNumero} - ${cliente}`,
+            categoria: 'Serviços O.S', valor: entrada,
+            data_vencimento: dataAtualStr, status: 'Pago', data_pagamento: dataAtualStr, forma_pagamento: formaEntrada
+        });
+    }
+
+    if (total - entrada > 0 && parcelas > 0) {
+        for(let i=1; i<=parcelas; i++) {
+            records.push({
+                descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
+                categoria: 'Serviços O.S',
+                valor: reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value),
+                data_vencimento: document.getElementById(`tab-parc-data-${i}`).value,
+                status: 'Pendente', forma_pagamento: document.getElementById(`tab-parc-forma-${i}`).value
+            });
+        }
+    }
+
+    try {
+        const clienteObj = globalClientes.find(c => c.nome === cliente) || {};
+        const veiculoObj = globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
+        
+        const { error: errOS } = await window.banco.from('orcamentos').update({ status: 'Fechado', itens: payloadJSONB }).eq('id', osEmEdicaoId);
+        if(errOS) throw errOS;
+
+        if (records.length > 0) await window.banco.from('contas_receber').insert(records);
+        
+        dispararAlerta("O.S Faturada com sucesso!", "sucesso");
+        alternarSubTelaOrcamento('lista');
+    } catch (e) { dispararAlerta("Erro ao faturar."); } 
+    finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Confirmar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
+}
+
+// ----------------------------------------------------
+// O BOTÃO AZUL PRINCIPAL (SALVA A O.S E O EDITOR FINANCEIRO)
+// ----------------------------------------------------
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -521,6 +628,19 @@ async function salvarOrcamentoReal() {
     if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
     if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
+    // VALIDAÇÃO DA AUDITORIA FINANCEIRA (SE EXISTIR E ESTIVER EDITANDO)
+    if (currentOSFinanceiro.length > 0) {
+        let soma = 0;
+        currentOSFinanceiro.forEach((rec, idx) => {
+            soma += reverterMoeda(document.getElementById(`edit-rec-val-${idx}`).value) || 0;
+        });
+        if (Math.abs(valoresFinais.total - soma) > 0.05) {
+            dispararAlerta("A soma do Financeiro Atual não bate com a O.S. Ajuste os valores das parcelas antes de salvar!", "erro");
+            mudarAbaOS('fin'); // Joga ele na cara do problema
+            return;
+        }
+    }
+
     const btnSalvar = document.getElementById('btn-salvar-db');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO...';
     btnSalvar.disabled = true;
@@ -528,58 +648,42 @@ async function salvarOrcamentoReal() {
     try {
         const clienteObj = globalClientes.find(c => c.nome === nome) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
-
-        const payloadJSONB = { 
-            lista_itens: itensTemporarios, 
-            resumo: valoresFinais,
-            cliente_dados: clienteObj,
-            veiculo_dados: veiculoObj
-        };
-        
-        // Mantém a compatibilidade com o PDF gerando o JSON de financeiro em tempo real do currentOSFinanceiro
-        if (currentOSFinanceiro.length > 0) {
-            let snap = { entrada: 0, forma_entrada: '', data_entrada: '', parcelas: [] };
-            currentOSFinanceiro.forEach(rec => {
-                if(rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
-                    snap.entrada += rec.valor;
-                    snap.forma_entrada = rec.forma_pagamento;
-                    snap.data_entrada = rec.data_vencimento;
-                } else {
-                    snap.parcelas.push({ numero: snap.parcelas.length + 1, valor: rec.valor, data_vencimento: rec.data_vencimento, forma_pagamento: rec.forma_pagamento });
-                }
-            });
-            payloadJSONB.financeiro = snap;
-        }
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
         
         if (osEmEdicaoId) {
             const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
             if (error) throw error;
             
-            // Verificação Passiva para Alertar o usuário (Não bloqueia mais o salvamento)
-            let somaF = 0;
-            currentOSFinanceiro.forEach(r => somaF += r.valor);
-            if (currentOSFinanceiro.length > 0 && Math.abs(valoresFinais.total - somaF) > 0.05) {
-                dispararAlerta("O.S salva! Mas atenção: O Valor da O.S e o Financeiro estão diferentes. Ajuste as parcelas na aba 'Gestão Financeira' para corrigir.", "erro");
-            } else {
-                dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+            // SE A O.S JÁ TEM FINANCEIRO, ELE ATUALIZA AS PARCELAS QUE NÃO ESTÃO PAGAS!
+            if (currentOSFinanceiro.length > 0) {
+                for(let i=0; i<currentOSFinanceiro.length; i++) {
+                    const rec = currentOSFinanceiro[i];
+                    if (rec.status !== 'Pago' && rec.categoria !== 'Adiantamento') {
+                        const val = reverterMoeda(document.getElementById(`edit-rec-val-${i}`).value);
+                        const dat = document.getElementById(`edit-rec-data-${i}`).value;
+                        await window.banco.from('contas_receber').update({ valor: val, data_vencimento: dat }).eq('id', rec.id);
+                    }
+                }
             }
+            
+            dispararAlerta("O.S e Financeiro atualizados com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         } else {
-            const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
+            const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]);
             if (error) throw error;
-            dispararAlerta("O.S salva com sucesso!", "sucesso");
+            dispararAlerta("O.S salva! Vá em 'Gestão Financeira' para faturar.", "sucesso");
             alternarSubTelaOrcamento('lista');
         }
     } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
 }
 
-async function abrirEdicaoOS(dadosCodificados) {
+async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados') {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
     osEmEdicaoNumero = orc.numero_os; 
     
-    document.getElementById('titulo-tela-os').innerText = `Edição da O.S. #${orc.numero_os}`;
+    document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
     
     const selectCliente = document.getElementById('db-cliente-nome');
     if (!Array.from(selectCliente.options).some(opt => opt.value === orc.cliente_nome)) { selectCliente.innerHTML += `<option value="${orc.cliente_nome}">${orc.cliente_nome}</option>`; }
@@ -591,46 +695,41 @@ async function abrirEdicaoOS(dadosCodificados) {
 
     const selStatus = document.getElementById('db-status');
     selStatus.disabled = false; 
-    
     if(orc.status === 'Fechado') {
         const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
         if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
     }
-
     selStatus.value = orc.status;
     
     document.getElementById('db-obs').value = orc.observacao || '';
     itensTemporarios = orc.itens?.lista_itens || [];
     imagensUploadArray = orc.anexos || [];
     
-    if(imagensUploadArray.length > 0) { 
-        document.getElementById('preview-anexos').classList.remove('hidden'); 
-        renderizarPreviewFotos(); 
-    }
+    if(imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); renderizarPreviewFotos(); }
 
     const descValor = orc.itens?.resumo?.desconto || 0;
     if (descValor > 0) {
         document.getElementById('desc-tipo').value = 'val';
         const descInput = document.getElementById('desc-val');
-        descInput.value = (descValor * 100).toString(); 
-        mascaraMoeda(descInput);
+        descInput.value = (descValor * 100).toString(); mascaraMoeda(descInput);
     } else { document.getElementById('desc-val').value = ''; }
 
     calcularTotais();
     verificarStatusFinanceiro(); 
     
-    // A MÁGICA: Bate no banco e traz o financeiro real vivo!
+    // PUXA O FINANCEIRO REAL DO BANCO
     await recarregarFinanceiroDaOS();
     
-    mudarAbaOS('dados');
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
+    
+    mudarAbaOS(abaAlvo); // Redireciona pra aba correta
 }
 
+function abrirFaturamentoDireto(dadosCodificados) {
+    abrirEdicaoOS(dadosCodificados, 'fin');
+}
 
-// ----------------------------------------------------
-// O CLIQUE MÁGICO DE DESTRAVAR NA LISTA
-// ----------------------------------------------------
 function abrirModalDestravar(id, orcJSONCodificado) {
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
@@ -638,43 +737,31 @@ function abrirModalDestravar(id, orcJSONCodificado) {
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
 }
 
-function fecharModalDestravar() {
-    document.getElementById('modal-senha-destravar').classList.add('hidden');
-}
+function fecharModalDestravar() { document.getElementById('modal-senha-destravar').classList.add('hidden'); }
 
 async function processarDestravarOS() {
     const senhaDigitada = document.getElementById('input-senha-reabrir').value;
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    
     if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
-    if(senhaDigitada !== usuarioLogado.senha) {
-        dispararAlerta("Senha incorreta. Acesso negado.");
-        return;
-    }
+    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
     try {
         const novoStatus = 'Em Aberto';
         const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', osParaDestravarId);
         if (error) throw error;
         
-        dispararAlerta("O.S Destravada! Você já pode editar os dados.", "sucesso");
         fecharModalDestravar();
-        
         osParaDestravarDados.status = novoStatus;
-        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)));
+        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados');
         
-    } catch(e) {
-        dispararAlerta("Erro ao destravar a O.S no banco.");
-    }
+    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
 }
-
 
 function abrirModalExclusao(id, numero_os) {
     idParaExcluir = id;
-    const spanNum = document.getElementById('exc-os-num');
-    if (spanNum) spanNum.innerText = `#${numero_os}`;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
     document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
 }
 
@@ -685,13 +772,11 @@ async function confirmarExclusao() {
     try {
         const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
         if (error) throw error;
-        
         await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
-        
-        dispararAlerta("Ordem de serviço apagada com sucesso.", "sucesso");
+        dispararAlerta("Ordem de serviço apagada.", "sucesso");
         fecharModalExclusao();
         buscarOrcamentosSupabase();
-    } catch (erro) { dispararAlerta("Falha ao excluir a O.S no banco de dados."); }
+    } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
 
 function obterCorStatus(status) {
@@ -702,8 +787,7 @@ function obterCorStatus(status) {
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     if (!dados || dados.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
-        return; 
+        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; return; 
     }
     
     tbody.innerHTML = dados.map(orc => {
@@ -712,15 +796,14 @@ function renderizarTabelaReal(dados) {
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
-        // A MÁGICA DOS 4 BOTÕES ALINHADOS
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
         let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
-            btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Desbloquear e Editar"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<div class="w-9 h-9"></div>`; 
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -929,303 +1012,6 @@ async function processarSalvamentoModal() {
         else dispararAlerta("Falha ao salvar no banco de dados.");
     } finally {
         btnSalvar.innerHTML = textoOriginal;
-        btnSalvar.disabled = false;
-    }
-}
-
-/** * ========================================================
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (GERAR DO ZERO)
- * ========================================================
- */
-function prepararFaturamento(dadosCodificados) {
-    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    const itensVerificacao = orc.itens?.lista_itens || [];
-    
-    if (itensVerificacao.length === 0) {
-        dispararAlerta("Esta O.S. não possui itens. Adicione serviços ou peças antes de faturar.");
-        return;
-    }
-
-    osEmEdicaoId = orc.id;
-    osEmEdicaoNumero = orc.numero_os;
-    
-    itensTemporarios = orc.itens?.lista_itens || [];
-    valoresFinais = orc.itens?.resumo || { pecas: 0, servicos: 0, desconto: 0, total: orc.valor_total };
-    imagensUploadArray = orc.anexos || [];
-
-    document.getElementById('db-cliente-nome').value = orc.cliente_nome || '';
-    document.getElementById('db-veiculo-placa').value = orc.veiculo_placa || '';
-    
-    document.getElementById('fin-total-os').innerText = formataDinheiro(valoresFinais.total);
-    document.getElementById('fin-tipo-faturamento').value = 'avista';
-    
-    mudarTipoFaturamento();
-    document.getElementById('cabecalho-lista-os').classList.add('invisible');
-    document.getElementById('modal-financeiro').classList.remove('hidden');
-}
-
-function fecharModalFinanceiro() {
-    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
-    document.getElementById('modal-financeiro').classList.add('hidden');
-}
-
-function mudarTipoFaturamento() {
-    const tipo = document.getElementById('fin-tipo-faturamento').value;
-    const boxEntrada = document.getElementById('box-fin-entrada');
-    const boxParcelamento = document.getElementById('box-fin-parcelamento');
-    const inputEntrada = document.getElementById('fin-entrada');
-
-    let d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    const dataMesQueVem = formatarDataISO(d);
-
-    if (tipo === 'avista') {
-        boxEntrada.classList.remove('hidden');
-        boxParcelamento.classList.add('hidden');
-        inputEntrada.value = formataDinheiro(valoresFinais.total);
-        inputEntrada.readOnly = true;
-        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed');
-        inputEntrada.classList.remove('bg-white');
-    } else if (tipo === 'entrada_parcela') {
-        boxEntrada.classList.remove('hidden');
-        boxParcelamento.classList.remove('hidden');
-        inputEntrada.readOnly = false;
-        inputEntrada.value = ''; 
-        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed');
-        inputEntrada.classList.add('bg-white');
-        
-        document.getElementById('fin-vencimento-base').value = dataMesQueVem;
-    } else if (tipo === 'parcelado') {
-        boxEntrada.classList.add('hidden');
-        boxParcelamento.classList.remove('hidden');
-        inputEntrada.value = '0,00';
-        
-        document.getElementById('fin-vencimento-base').value = dataMesQueVem;
-    }
-    
-    gerarLinhasParcelas();
-}
-
-function aoMudarFormaPagamentoPrincipal() {
-    gerarLinhasParcelas();
-}
-
-function gerarLinhasParcelas() {
-    const tipo = document.getElementById('fin-tipo-faturamento').value;
-    const total = valoresFinais.total;
-    
-    let entrada = 0;
-    if (tipo === 'avista') entrada = total;
-    else if (tipo === 'entrada_parcela') entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
-    else if (tipo === 'parcelado') entrada = 0;
-
-    let restante = total - entrada;
-    if(restante < 0) restante = 0;
-
-    const elRestante = document.getElementById('fin-restante');
-    if (elRestante) elRestante.innerText = formataDinheiro(restante);
-
-    const divSimulacao = document.getElementById('fin-simulacao');
-
-    if (tipo === 'avista' || restante === 0) {
-        if(tipo !== 'avista') {
-             divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
-        } else {
-             divSimulacao.innerHTML = '';
-        }
-        document.getElementById('fin-parcelas').disabled = true;
-        return;
-    }
-
-    document.getElementById('fin-parcelas').disabled = false;
-    
-    const numDigitado = parseInt(document.getElementById('fin-parcelas').value);
-    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
-    
-    const dataBaseStr = document.getElementById('fin-vencimento-base').value;
-    
-    let html = '';
-    let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
-    
-    let centavosTotal = Math.round(restante * 100);
-    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
-    let restoCentavos = centavosTotal % parcelas;
-
-    for(let i=1; i<=parcelas; i++) {
-        let valorParcCentavos = centavosPorParcela + (i <= restoCentavos ? 1 : 0);
-        let valorParc = valorParcCentavos / 100;
-
-        let d = new Date(dataBase);
-        d.setMonth(d.getMonth() + (i - 1)); 
-        let dateVal = formatarDataISO(d);
-
-        html += `
-        <div class="flex flex-col md:flex-row gap-2 items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm transition-all hover:border-emerald-300">
-            <span class="font-black text-[10px] md:text-xs text-blue-600 w-full md:w-[70px] uppercase tracking-wider">Parcela ${i}/${parcelas}</span>
-            <input type="text" id="parc-val-${i}" onkeyup="mascaraMoeda(this)" onblur="ajustarParcelasManualmente(${i})" value="${valorParaInput(valorParc)}" class="w-full md:w-28 border border-slate-300 p-2 rounded-lg text-sm font-black text-slate-800 outline-none focus:border-emerald-500" title="Valor da Parcela">
-            <input type="date" id="parc-data-${i}" value="${dateVal}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500" title="Data de Vencimento">
-            <select id="parc-forma-${i}" class="w-full md:flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer" title="Método de Pagamento">
-                <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
-                <option value="Cartão de Débito">Cartão de Débito</option>
-                <option value="Pix">Pix</option>
-                <option value="Boleto">Boleto</option>
-                <option value="Dinheiro">Dinheiro Físico</option>
-                <option value="Transferência">Transferência Bancária</option>
-            </select>
-        </div>`;
-    }
-    divSimulacao.innerHTML = html;
-}
-
-window.ajustarParcelasManualmente = function(index) {
-    const numDigitado = parseInt(document.getElementById('fin-parcelas').value);
-    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
-    
-    const elRestanteStr = document.getElementById('fin-restante').innerText;
-    const restante = reverterMoeda(elRestanteStr) || 0;
-    
-    let somaAnteriores = 0;
-    for(let i=1; i<=index; i++) {
-        somaAnteriores += reverterMoeda(document.getElementById(`parc-val-${i}`).value) || 0;
-    }
-    
-    let restanteParaDistribuir = restante - somaAnteriores;
-    
-    if (restanteParaDistribuir < 0) {
-        const limiteMaximoDaParcela = restante - (somaAnteriores - reverterMoeda(document.getElementById(`parc-val-${index}`).value));
-        document.getElementById(`parc-val-${index}`).value = valorParaInput(limiteMaximoDaParcela);
-        restanteParaDistribuir = 0;
-    }
-    
-    const parcelasRestantes = parcelas - index;
-    if (parcelasRestantes > 0) {
-        let centavosRestantes = Math.round(restanteParaDistribuir * 100);
-        let centavosPorParcela = Math.floor(centavosRestantes / parcelasRestantes);
-        let restoCentavos = centavosRestantes % parcelasRestantes;
-
-        for(let i = index + 1; i <= parcelas; i++) {
-            let posicaoAjuste = i - index;
-            let valorParcCentavos = centavosPorParcela + (posicaoAjuste <= restoCentavos ? 1 : 0);
-            let valorParc = valorParcCentavos / 100;
-            document.getElementById(`parc-val-${i}`).value = valorParaInput(valorParc);
-        }
-    }
-}
-
-async function processarLancarFinanceiro() {
-    const tipo = document.getElementById('fin-tipo-faturamento').value;
-    const total = valoresFinais.total;
-    
-    let entrada = 0;
-    if (tipo === 'avista') entrada = total;
-    else if (tipo === 'entrada_parcela') entrada = reverterMoeda(document.getElementById('fin-entrada').value) || 0;
-    else if (tipo === 'parcelado') entrada = 0;
-
-    const formaEntrada = document.getElementById('fin-forma-entrada').value;
-    const dataAtualStr = formatarDataISO(new Date()); 
-    const restante = total - entrada;
-    
-    const numDigitado = parseInt(document.getElementById('fin-parcelas').value);
-    const parcelas = (tipo === 'avista') ? 0 : Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
-    
-    const cliente = document.getElementById('db-cliente-nome').value;
-
-    if(total <= 0) { dispararAlerta("O valor total da O.S é zero."); return; }
-    
-    let somaParcelas = 0;
-    if(restante > 0 && tipo !== 'avista') {
-        for(let i=1; i<=parcelas; i++) {
-            somaParcelas += reverterMoeda(document.getElementById(`parc-val-${i}`).value) || 0;
-        }
-        if (Math.abs(somaParcelas - restante) > 0.05) {
-            dispararAlerta("A soma das parcelas não bate com o valor restante a parcelar. Verifique os valores.");
-            return;
-        }
-    }
-    
-    const btnSalvar = document.getElementById('btn-salvar-fin');
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Faturando...';
-    btnSalvar.disabled = true;
-
-    let infoFinanceiraParaPDF = {
-        tipo: tipo,
-        entrada: entrada,
-        forma_entrada: formaEntrada,
-        data_entrada: dataAtualStr,
-        parcelas: []
-    };
-
-    let records = [];
-
-    await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
-
-    if(entrada > 0) {
-        records.push({
-            descricao: `Acerto O.S #${osEmEdicaoNumero} - ${cliente}`,
-            categoria: 'Serviços O.S',
-            valor: entrada,
-            data_vencimento: dataAtualStr,
-            status: 'Pago', 
-            data_pagamento: dataAtualStr,
-            forma_pagamento: formaEntrada
-        });
-    }
-
-    if (restante > 0 && parcelas > 0 && tipo !== 'avista') {
-        for(let i=1; i<=parcelas; i++) {
-            const dataParc = document.getElementById(`parc-data-${i}`).value;
-            const formaParc = document.getElementById(`parc-forma-${i}`).value;
-            const valorParc = reverterMoeda(document.getElementById(`parc-val-${i}`).value);
-
-            infoFinanceiraParaPDF.parcelas.push({
-                numero: i,
-                valor: valorParc,
-                data_vencimento: dataParc,
-                forma_pagamento: formaParc
-            });
-
-            records.push({
-                descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
-                categoria: 'Serviços O.S',
-                valor: parseFloat(valorParc.toFixed(2)),
-                data_vencimento: dataParc,
-                status: 'Pendente',
-                forma_pagamento: formaParc
-            });
-        }
-    }
-
-    try {
-        const clienteObj = globalClientes.find(c => c.nome === cliente) || {};
-        const veiculoObj = globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
-
-        const payloadJSONB = { 
-            lista_itens: itensTemporarios, 
-            resumo: valoresFinais,
-            cliente_dados: clienteObj,
-            veiculo_dados: veiculoObj,
-            financeiro: infoFinanceiraParaPDF 
-        };
-
-        const { error: errOS } = await window.banco.from('orcamentos').update({ 
-            itens: payloadJSONB,
-            status: 'Fechado' 
-        }).eq('id', osEmEdicaoId);
-        if(errOS) throw errOS;
-
-        if (records.length > 0) {
-            const { error: errFin } = await window.banco.from('contas_receber').insert(records);
-            if (errFin) throw errFin;
-        }
-        
-        dispararAlerta("O.S Faturada com sucesso!", "sucesso");
-        fecharModalFinanceiro();
-        buscarOrcamentosSupabase(); 
-        
-    } catch (erro) {
-        dispararAlerta("Falha ao integrar o financeiro no banco de dados.");
-    } finally {
-        btnSalvar.innerHTML = '<i class="ph-bold ph-lock-key text-lg"></i> Confirmar Faturamento';
         btnSalvar.disabled = false;
     }
 }
