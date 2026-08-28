@@ -13,7 +13,8 @@ let idParaExcluir = null;
 let globalClientes = [];
 let globalVeiculos = [];
 
-// A LÓGICA DO LOADER FOI TOTALMENTE DELETADA DAQUI! O ROUTER FAZ TUDO SOZINHO AGORA.
+const SENHA_GERENCIAL = "admin123";
+
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
@@ -357,7 +358,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente. Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
+                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas do Financeiro já gerado. Por favor, volte na lista, clique no ícone "R$" e fature a O.S. novamente!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -515,7 +516,6 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
-        // A MÁGICA: O botão Faturar R$ aparece se Finalizado. Senão, um div vazio w-9 h-9 segura o alinhamento perfeito!
         let btnFaturar = `<div class="w-9 h-9"></div>`; 
         if (orc.status === 'Finalizado') {
             btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
@@ -762,13 +762,10 @@ function prepararFaturamento(dadosCodificados) {
     
     mudarTipoFaturamento();
     
-    // Oculta o título do fundo para não vazar a escrita
-    document.getElementById('cabecalho-lista-os').classList.add('invisible');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
-    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
