@@ -1,8 +1,16 @@
 // ========================================================
-// AutoManager - Roteador Master (SPA)
+// AutoManager - Roteador Master (SPA Ghost Render)
 // ========================================================
 
 async function navegarPara(tela) {
+    const visor = document.getElementById('visor-da-tv');
+    
+    // 1. APAGA A LUZ: Deixa o visor invisível imediatamente (sem Loader feio)
+    if (visor) {
+        visor.classList.remove('opacity-100');
+        visor.classList.add('opacity-0');
+    }
+
     try {
         const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
         const usuarioLogado = usuarioLogadoStr ? JSON.parse(usuarioLogadoStr) : null;
@@ -20,6 +28,7 @@ async function navegarPara(tela) {
         const navMob = document.getElementById('nav-mobile');
         const mainWrap = document.getElementById('main-wrapper');
 
+        // Layout Auth
         if (tela === 'login') {
             if (sidebar) sidebar.style.display = 'none';
             if (header) header.style.display = 'none';
@@ -42,6 +51,7 @@ async function navegarPara(tela) {
             }
         }
 
+        // Estilo dos Botões
         document.querySelectorAll('.nav-btn').forEach(btn => {
             if (btn.dataset.target === tela) {
                 btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
@@ -62,18 +72,14 @@ async function navegarPara(tela) {
             }
         });
 
-        const visor = document.getElementById('visor-da-tv');
-        
-        // Aplica opacidade zero antes de trocar o HTML para não piscar
-        visor.style.opacity = '0';
-
+        // 2. BUSCA O HTML NO ESCURO
         const response = await fetch(tela + '.html');
         if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
         const html = await response.text();
         
         visor.innerHTML = html;
 
-        // O await segura o fluxo até que o banco de dados responda!
+        // 3. SEGURA A EXECUÇÃO ATÉ O BANCO DE DADOS TERMINAR
         if (tela === 'dashboard' && typeof initDashboard === 'function') await initDashboard();
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') await initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') await initClientes();
@@ -81,12 +87,14 @@ async function navegarPara(tela) {
         if (tela === 'contas_pagar' && typeof initContasPagar === 'function') await initContasPagar();
         if (tela === 'contas_receber' && typeof initContasReceber === 'function') await initContasReceber();
 
-        // Só depois de todas as tabelas preenchidas, ele mostra a tela de uma vez!
-        visor.style.opacity = '1';
+        // 4. ACENDE A LUZ: Tudo pronto, mostra a tela suavemente!
+        setTimeout(() => {
+            visor.classList.remove('opacity-0');
+            visor.classList.add('opacity-100');
+        }, 50);
 
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
-        const visor = document.getElementById('visor-da-tv');
         visor.innerHTML = `
             <div class="flex flex-col items-center justify-center h-full text-slate-400">
                 <i class="ph-bold ph-warning-circle text-5xl mb-4 text-red-400"></i>
@@ -94,6 +102,7 @@ async function navegarPara(tela) {
                 <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
             </div>
         `;
-        visor.style.opacity = '1';
+        visor.classList.remove('opacity-0');
+        visor.classList.add('opacity-100');
     }
 }
