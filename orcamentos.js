@@ -13,12 +13,24 @@ let idParaExcluir = null;
 let globalClientes = [];
 let globalVeiculos = [];
 
-const SENHA_GERENCIAL = "admin123";
-
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
+    
+    // TELA DE CARREGAMENTO INTELIGENTE
+    const loader = document.getElementById('loading-screen');
+    if(loader) { loader.classList.remove('hidden'); loader.style.opacity = '1'; }
+    
     await carregarListasBD();
-    buscarOrcamentosSupabase();
+    await buscarOrcamentosSupabase();
+    
+    if(loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.classList.add('hidden'), 300);
+    }
+    
+    // Força ir para a lista (útil caso o usuário dê F5 estando na tela de edição)
+    document.getElementById('view-novo-orcamento').classList.add('hidden');
+    document.getElementById('view-lista-orcamentos').classList.remove('hidden');
 }
 
 async function carregarListasBD() {
@@ -72,13 +84,11 @@ function dispararAlerta(msg, tipo = 'erro') {
 
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
-    const btnFin = document.getElementById('btn-gerar-financeiro');
     const btnSalvar = document.getElementById('btn-salvar-db');
     const btnDestravar = document.getElementById('btn-destravar-os');
     const badgeFechada = document.getElementById('badge-os-fechada');
     
     if (status === 'Fechado') {
-        if(btnFin) btnFin.classList.add('hidden');
         if(btnSalvar) btnSalvar.classList.add('hidden');
         if(btnDestravar) btnDestravar.classList.remove('hidden');
         if(badgeFechada) badgeFechada.classList.remove('hidden');
@@ -90,14 +100,6 @@ function verificarStatusFinanceiro() {
     if(btnSalvar) btnSalvar.classList.remove('hidden');
     if(btnDestravar) btnDestravar.classList.add('hidden');
     if(badgeFechada) badgeFechada.classList.add('hidden');
-
-    if (btnFin) {
-        if(status === 'Finalizado') {
-            btnFin.classList.remove('hidden');
-        } else {
-            btnFin.classList.add('hidden');
-        }
-    }
 }
 
 function congelarCamposOS(travar) {
@@ -365,7 +367,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) é diferente do Financeiro já gerado (R$ ${totalFinanceiroSalvo.toFixed(2)}). Por favor, clique em FATURAR e gere as parcelas novamente!`);
+                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente (R$ ${totalFinanceiroSalvo.toFixed(2)}). Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -390,15 +392,8 @@ async function salvarOrcamentoReal() {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
             
-            if(status === 'Finalizado') {
-                dispararAlerta("O.S salva! Você já pode Gerar o Financeiro.", "sucesso");
-                const osJson = encodeURIComponent(JSON.stringify(novaOS));
-                abrirEdicaoOS(osJson); 
-                return; 
-            } else {
-                dispararAlerta("O.S gerada com sucesso!", "sucesso");
-                alternarSubTelaOrcamento('lista');
-            }
+            dispararAlerta("O.S salva! Você já pode ir na lista e Faturar o Financeiro.", "sucesso");
+            alternarSubTelaOrcamento('lista');
         }
     } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
@@ -504,6 +499,10 @@ async function confirmarExclusao() {
     try {
         const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
         if (error) throw error;
+        
+        // APAGA O FINANCEIRO SE CANCELAR A O.S
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
+        
         dispararAlerta("Ordem de serviço apagada com sucesso.", "sucesso");
         fecharModalExclusao();
         buscarOrcamentosSupabase();
@@ -522,16 +521,23 @@ function renderizarTabelaReal(dados) {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
-        const iconVisualizar = orc.status === 'Fechado' ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
+        const isFechado = orc.status === 'Fechado';
+        const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
+        
+        let btnFaturar = '';
+        if (!isFechado) {
+            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-2 rounded-lg transition" title="Faturar O.S (Receber)"><i class="ph-bold ph-money text-lg"></i></button>`;
+        }
         
         return `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
-            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status === 'Fechado' ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
+            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${isFechado ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
+                    ${btnFaturar}
                     <button onclick="abrirEdicaoOS('${orcJSON}')" class="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg transition" title="Visualizar/Editar"><i class="ph-bold ${iconVisualizar} text-lg"></i></button>
                     <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
                     <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 p-2 rounded-lg transition" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
@@ -734,16 +740,28 @@ async function processarSalvamentoModal() {
     }
 }
 
-/** 
- * ========================================================
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (ERP MODE)
+/** * ========================================================
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
  * ========================================================
  */
-function abrirModalFinanceiro() {
-    if(!osEmEdicaoId) {
-        dispararAlerta("Por favor, salve a O.S primeiro antes de gerar o financeiro.");
+function prepararFaturamento(dadosCodificados) {
+    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
+    const itensVerificacao = orc.itens?.lista_itens || [];
+    
+    if (itensVerificacao.length === 0) {
+        dispararAlerta("Esta O.S. não possui itens. Adicione serviços ou peças antes de faturar.");
         return;
     }
+
+    osEmEdicaoId = orc.id;
+    osEmEdicaoNumero = orc.numero_os;
+    
+    itensTemporarios = orc.itens?.lista_itens || [];
+    valoresFinais = orc.itens?.resumo || { pecas: 0, servicos: 0, desconto: 0, total: orc.valor_total };
+    imagensUploadArray = orc.anexos || [];
+
+    document.getElementById('db-cliente-nome').value = orc.cliente_nome || '';
+    document.getElementById('db-veiculo-placa').value = orc.veiculo_placa || '';
     
     document.getElementById('fin-total-os').innerText = formataDinheiro(valoresFinais.total);
     document.getElementById('fin-tipo-faturamento').value = 'avista';
@@ -797,7 +815,6 @@ function aoMudarFormaPagamentoPrincipal() {
     gerarLinhasParcelas();
 }
 
-// MOTOR DE CÁLCULO DE PARCELAS CONTÁBEIS (Distribui os centavos)
 function gerarLinhasParcelas() {
     const tipo = document.getElementById('fin-tipo-faturamento').value;
     const total = valoresFinais.total;
@@ -835,13 +852,11 @@ function gerarLinhasParcelas() {
     let html = '';
     let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
     
-    // A Mágica Matemática: Calcula os centavos para distribuir nas primeiras parcelas
     let centavosTotal = Math.round(restante * 100);
     let centavosPorParcela = Math.floor(centavosTotal / parcelas);
     let restoCentavos = centavosTotal % parcelas;
 
     for(let i=1; i<=parcelas; i++) {
-        // Se a parcela atual for menor ou igual ao resto, ela ganha 1 centavo a mais
         let valorParcCentavos = centavosPorParcela + (i <= restoCentavos ? 1 : 0);
         let valorParc = valorParcCentavos / 100;
 
@@ -889,7 +904,6 @@ window.ajustarParcelasManualmente = function(index) {
     
     const parcelasRestantes = parcelas - index;
     if (parcelasRestantes > 0) {
-        // Redividir o restante entre as próximas parcelas mantendo a precisão dos centavos
         let centavosRestantes = Math.round(restanteParaDistribuir * 100);
         let centavosPorParcela = Math.floor(centavosRestantes / parcelasRestantes);
         let restoCentavos = centavosRestantes % parcelasRestantes;
@@ -1009,11 +1023,9 @@ async function processarLancarFinanceiro() {
             if (errFin) throw errFin;
         }
         
-        document.getElementById('db-status').value = 'Fechado';
-        verificarStatusFinanceiro(); 
-
         dispararAlerta("O.S Faturada com sucesso!", "sucesso");
         fecharModalFinanceiro();
+        buscarOrcamentosSupabase(); 
         
     } catch (erro) {
         dispararAlerta("Falha ao integrar o financeiro no banco de dados.");
