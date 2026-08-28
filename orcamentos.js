@@ -13,12 +13,9 @@ let idParaExcluir = null;
 let globalClientes = [];
 let globalVeiculos = [];
 
-const SENHA_GERENCIAL = "admin123";
-
+// A LÓGICA DO LOADER FOI TOTALMENTE DELETADA DAQUI! O ROUTER FAZ TUDO SOZINHO AGORA.
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
-    
-    // As chamadas ao banco correm aqui de forma invisível. O router.js segura a tela pra gente.
     await carregarListasBD();
     await buscarOrcamentosSupabase();
     
@@ -321,7 +318,6 @@ function renderizarPreviewFotos() {
 }
 function removerImagemArray(strToRem) { imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); renderizarPreviewFotos(); }
 
-// BUSCA AS O.S E LIMPA TELA SE VAZIO.
 async function buscarOrcamentosSupabase() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
@@ -361,7 +357,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente (R$ ${totalFinanceiroSalvo.toFixed(2)}). Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
+                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente. Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -385,7 +381,6 @@ async function salvarOrcamentoReal() {
         } else {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
-            
             dispararAlerta("O.S salva com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         }
@@ -456,7 +451,6 @@ async function processarDestravarOS() {
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
     
     if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
     if(senhaDigitada !== usuarioLogado.senha) {
@@ -521,6 +515,7 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
+        // A MÁGICA: O botão Faturar R$ aparece se Finalizado. Senão, um div vazio w-9 h-9 segura o alinhamento perfeito!
         let btnFaturar = `<div class="w-9 h-9"></div>`; 
         if (orc.status === 'Finalizado') {
             btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
@@ -640,8 +635,6 @@ function abrirModalCadastro(tipo) {
             </div>
         </div>`;
     }
-    
-    // Trava o fundo da tela apenas ao abrir este modal lateral
     document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
 }
@@ -768,10 +761,14 @@ function prepararFaturamento(dadosCodificados) {
     document.getElementById('fin-tipo-faturamento').value = 'avista';
     
     mudarTipoFaturamento();
+    
+    // Oculta o título do fundo para não vazar a escrita
+    document.getElementById('cabecalho-lista-os').classList.add('invisible');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
+    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
