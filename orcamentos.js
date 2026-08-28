@@ -16,7 +16,6 @@ let globalVeiculos = [];
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     
-    // TELA DE CARREGAMENTO INTELIGENTE
     const loader = document.getElementById('loading-screen');
     if(loader) { loader.classList.remove('hidden'); loader.style.opacity = '1'; }
     
@@ -28,7 +27,6 @@ async function initOrcamentos() {
         setTimeout(() => loader.classList.add('hidden'), 300);
     }
     
-    // Força ir para a lista (útil caso o usuário dê F5 estando na tela de edição)
     document.getElementById('view-novo-orcamento').classList.add('hidden');
     document.getElementById('view-lista-orcamentos').classList.remove('hidden');
 }
@@ -367,7 +365,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente (R$ ${totalFinanceiroSalvo.toFixed(2)}). Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
+                    dispararAlerta(`ALERTA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas do Financeiro já gerado. Por favor, volte na lista, clique no ícone "R$" e fature a O.S. novamente!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -392,7 +390,7 @@ async function salvarOrcamentoReal() {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
             
-            dispararAlerta("O.S salva! Você já pode ir na lista e Faturar o Financeiro.", "sucesso");
+            dispararAlerta("O.S salva com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         }
     } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
@@ -500,7 +498,6 @@ async function confirmarExclusao() {
         const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
         if (error) throw error;
         
-        // APAGA O FINANCEIRO SE CANCELAR A O.S
         await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
         
         dispararAlerta("Ordem de serviço apagada com sucesso.", "sucesso");
@@ -524,9 +521,10 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
+        // A REGRA DE OURO: BOTÃO R$ SÓ SE FOR FINALIZADO!
         let btnFaturar = '';
-        if (!isFechado) {
-            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-2 rounded-lg transition" title="Faturar O.S (Receber)"><i class="ph-bold ph-money text-lg"></i></button>`;
+        if (orc.status === 'Finalizado') {
+            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-2 rounded-lg transition" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -643,10 +641,14 @@ function abrirModalCadastro(tipo) {
             </div>
         </div>`;
     }
+    document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
+    document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
     modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { 
+    document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); 
+    document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden');
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -767,10 +769,14 @@ function prepararFaturamento(dadosCodificados) {
     document.getElementById('fin-tipo-faturamento').value = 'avista';
     
     mudarTipoFaturamento();
+    
+    // Oculta o título do fundo para não vazar a escrita
+    document.getElementById('cabecalho-lista-os').classList.add('invisible');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
+    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
