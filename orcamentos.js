@@ -9,20 +9,17 @@ let imagensUploadArray = [];
 let osEmEdicaoId = null; 
 let osEmEdicaoNumero = null; 
 let idParaExcluir = null;
-
 let osParaDestravarId = null;
 let osParaDestravarDados = null; 
 
 let globalClientes = [];
 let globalVeiculos = [];
 
-window.finDataEdit = null; // Guarda o financeiro em edição na tela
+let currentOSFinanceiro = []; // Armazena as parcelas vivas que vieram do banco
 
 async function initOrcamentos() {
-    console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
     await buscarOrcamentosSupabase();
-    
     document.getElementById('view-novo-orcamento').classList.add('hidden');
     document.getElementById('view-lista-orcamentos').classList.remove('hidden');
 }
@@ -30,7 +27,6 @@ async function initOrcamentos() {
 async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
-    
     globalClientes = cli || [];
     globalVeiculos = vei || [];
 
@@ -40,20 +36,13 @@ async function carregarListasBD() {
     if (selCli) selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
     if (selVei) selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
 
-    globalClientes.forEach(c => {
-        if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
-    });
-
-    globalVeiculos.forEach(v => {
-        const textoCor = v.cor ? ` - ${v.cor}` : '';
-        if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${textoCor}</option>`;
-    });
+    globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
+    globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
 }
 
 function vincularClienteViceVersa(gatilho) {
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
-
     if (gatilho === 'cliente' && selCli && selCli.value) {
         const veiEncontrado = globalVeiculos.find(v => v.dono_nome === selCli.value);
         if (veiEncontrado && selVei) selVei.value = veiEncontrado.placa;
@@ -75,6 +64,189 @@ function dispararAlerta(msg, tipo = 'erro') {
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
+
+// -----------------------------------------------------------------------------------
+// SISTEMA DE ABAS (DADOS DA O.S vs GESTÃO FINANCEIRA)
+// -----------------------------------------------------------------------------------
+function mudarAbaOS(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('conteudo-aba-dados');
+    const contFin = document.getElementById('conteudo-aba-fin');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        renderizarAbaFinanceiro();
+    }
+}
+
+// Renderiza os inputs ativáveis na Aba Financeiro baseados no banco real (currentOSFinanceiro)
+function renderizarAbaFinanceiro() {
+    const container = document.getElementById('lista-financeiro-vinculado');
+    let somaFinanceiro = 0;
+
+    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
+    
+    if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 shadow-inner">
+                <i class="ph-fill ph-wallet text-5xl text-slate-300 mb-4"></i>
+                <p class="text-sm font-bold text-slate-500 mb-2">Ainda não há lançamentos para esta O.S.</p>
+                <p class="text-xs text-slate-400 mb-6">Volte para a listagem e clique no ícone "R$" para gerar o faturamento completo, ou adicione manualmente abaixo.</p>
+                <button onclick="adicionarNovaParcelaManual()" class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-500 shadow-md transition-transform transform active:scale-95 flex items-center justify-center mx-auto gap-2"><i class="ph-bold ph-plus text-lg"></i> Adicionar Lançamento Manual</button>
+            </div>
+        `;
+        document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
+        atualizarPlacarAuditoria(0);
+        return;
+    }
+
+    let html = '';
+    currentOSFinanceiro.forEach(rec => {
+        somaFinanceiro += rec.valor;
+        const isPago = rec.status === 'Pago';
+        const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
+        const badgeStatus = isPago ? 
+            `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded text-[10px] font-black uppercase shadow-sm"><i class="ph-bold ph-check"></i> Liquidado</span>` : 
+            `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[10px] font-black uppercase shadow-sm"><i class="ph-bold ph-clock"></i> Pendente</span>`;
+            
+        // Regra de Ouro: Se tá PAGO/LIQUIDADO, congela os inputs e esconde o botão Salvar/Excluir
+        const inputState = isPago ? 'disabled class="w-full border-transparent bg-transparent text-emerald-900"' : 'class="w-full border border-slate-200 p-2.5 rounded-xl text-slate-700 outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"';
+        const btnActions = isPago ? '' : `
+            <div class="flex gap-1">
+                <button onclick="salvarEdicaoParcelaManual(${rec.id})" class="bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-500 hover:text-white p-2 rounded-xl transition shadow-sm" title="Salvar Alteração"><i class="ph-bold ph-floppy-disk text-lg"></i></button>
+                <button onclick="excluirParcelaManual(${rec.id})" class="bg-red-50 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white p-2 rounded-xl transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+            </div>`;
+
+        html += `
+        <div class="p-5 rounded-2xl border ${corCard} shadow-sm flex flex-col lg:flex-row gap-4 lg:items-center relative transition-colors group">
+            <div class="flex-1 w-full">
+                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Descrição</label>
+                <input type="text" id="edit-rec-desc-${rec.id}" value="${rec.descricao}" ${inputState} ${isPago ? 'style="font-weight: 800; font-size: 13px;"' : 'style="font-weight: 600; font-size: 13px;"'}>
+            </div>
+            <div class="w-full lg:w-36">
+                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Vencimento</label>
+                <input type="date" id="edit-rec-data-${rec.id}" value="${rec.data_vencimento}" ${inputState} style="font-weight: 700; font-size: 13px;">
+            </div>
+            <div class="w-full lg:w-36">
+                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Forma</label>
+                <select id="edit-rec-forma-${rec.id}" ${inputState} style="font-weight: 700; font-size: 13px;">
+                    <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
+                    <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                    <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>C. Débito</option>
+                    <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>C. Crédito</option>
+                    <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
+                    <option value="Transferência" ${rec.forma_pagamento === 'Transferência' ? 'selected' : ''}>Transferência</option>
+                </select>
+            </div>
+            <div class="w-full lg:w-32">
+                <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Valor</label>
+                <input type="text" id="edit-rec-val-${rec.id}" onkeyup="mascaraMoeda(this)" value="${valorParaInput(rec.valor)}" ${inputState} ${isPago ? 'style="font-weight: 900; font-size: 16px;"' : 'style="font-weight: 900; font-size: 16px; color: #020617;"'}>
+            </div>
+            
+            <div class="flex flex-row lg:flex-col gap-3 w-full lg:w-auto items-center lg:items-end justify-between lg:justify-center border-t border-slate-100 lg:border-none pt-4 lg:pt-0 mt-2 lg:mt-0">
+                ${badgeStatus}
+                ${btnActions}
+            </div>
+        </div>`;
+    });
+
+    html += `
+        <div class="mt-4 flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+             <p class="text-xs text-slate-500 font-medium">As alterações feitas acima são atualizadas no banco de dados automaticamente.</p>
+            <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(somaFinanceiro);
+    atualizarPlacarAuditoria(somaFinanceiro);
+}
+
+function atualizarPlacarAuditoria(somaFinanceiro) {
+    const elSomaBox = document.getElementById('fin-aba-soma-box');
+    const elSomaLabel = document.getElementById('fin-aba-soma-label');
+    const elSomaValor = document.getElementById('fin-aba-soma');
+    const elAlerta = document.getElementById('fin-aba-alerta');
+    
+    // Se a soma não bater e o financeiro existir (se for zero, significa que não faturou, aí não apita o vermelho)
+    if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
+        elSomaBox.className = 'p-5 rounded-2xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600';
+        elAlerta.classList.remove('hidden');
+    } else {
+        elSomaBox.className = 'p-5 rounded-2xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700';
+        elAlerta.classList.add('hidden');
+    }
+}
+
+// AÇÕES DO FINANCEIRO (DENTRO DA ABA)
+async function salvarEdicaoParcelaManual(id) {
+    const desc = document.getElementById(`edit-rec-desc-${id}`).value;
+    const data = document.getElementById(`edit-rec-data-${id}`).value;
+    const val = reverterMoeda(document.getElementById(`edit-rec-val-${id}`).value);
+    const forma = document.getElementById(`edit-rec-forma-${id}`).value;
+
+    try {
+        const { error } = await window.banco.from('contas_receber').update({ descricao: desc, data_vencimento: data, valor: val, forma_pagamento: forma }).eq('id', id);
+        if (error) throw error;
+        dispararAlerta("Lançamento financeiro atualizado!", "sucesso");
+        await recarregarFinanceiroDaOS(); // Recarrega do banco pra atualizar a soma da auditoria
+    } catch(e) { dispararAlerta("Erro ao salvar o lançamento."); }
+}
+
+async function excluirParcelaManual(id) {
+    if(!confirm("Tem certeza que deseja excluir esta parcela da O.S?")) return;
+    try {
+        const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
+        if (error) throw error;
+        dispararAlerta("Parcela excluída com sucesso.", "sucesso");
+        await recarregarFinanceiroDaOS();
+    } catch(e) { dispararAlerta("Erro ao excluir."); }
+}
+
+async function adicionarNovaParcelaManual() {
+    const cliente = document.getElementById('db-cliente-nome').value;
+    if(!cliente) { dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
+    
+    // O sistema sugere o valor exato que falta para a conta bater!
+    let somaAtual = 0;
+    currentOSFinanceiro.forEach(r => somaAtual += r.valor);
+    let valorSugerido = valoresFinais.total - somaAtual;
+    if(valorSugerido < 0) valorSugerido = 0;
+
+    const novaParcela = {
+        descricao: `Complemento O.S #${osEmEdicaoNumero} - ${cliente}`,
+        categoria: 'Serviços O.S',
+        valor: parseFloat(valorSugerido.toFixed(2)),
+        data_vencimento: formatarDataISO(new Date()),
+        status: 'Pendente',
+        forma_pagamento: 'Pix'
+    };
+
+    try {
+        const { error } = await window.banco.from('contas_receber').insert([novaParcela]);
+        if (error) throw error;
+        dispararAlerta("Novo lançamento criado. Você pode editá-lo agora.", "sucesso");
+        await recarregarFinanceiroDaOS();
+    } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
+}
+
+async function recarregarFinanceiroDaOS() {
+    if(!osEmEdicaoNumero) return;
+    const { data: finRecords } = await window.banco.from('contas_receber')
+        .select('*').like('descricao', `%O.S #${osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
+    currentOSFinanceiro = finRecords || [];
+    renderizarAbaFinanceiro();
+}
+
 
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
@@ -105,9 +277,6 @@ function congelarCamposOS(travar) {
     
     const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
     botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
-    
-    const camposFinEdit = document.querySelectorAll('#conteudo-financeiro-vinculado input');
-    camposFinEdit.forEach(el => el.disabled = travar);
 }
 
 function alternarSubTelaOrcamento(modo) {
@@ -117,7 +286,7 @@ function alternarSubTelaOrcamento(modo) {
     if (modo === 'novo') {
         osEmEdicaoId = null; 
         osEmEdicaoNumero = null;
-        window.finDataEdit = null;
+        currentOSFinanceiro = []; // Limpa o cofre ao abrir OS nova
         document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
         
         document.getElementById('db-cliente-nome').value = '';
@@ -131,10 +300,9 @@ function alternarSubTelaOrcamento(modo) {
         const preview = document.getElementById('preview-anexos');
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
-        document.getElementById('box-financeiro-vinculado').classList.add('hidden');
-        
         calcularTotais();
         verificarStatusFinanceiro(); 
+        mudarAbaOS('dados'); // Força abrir na primeira aba
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
@@ -258,8 +426,12 @@ function calcularTotais() {
     valoresFinais.pecas = sumPecas; valoresFinais.servicos = sumServicos; valoresFinais.desconto = descValor; valoresFinais.total = totalBruto - descValor;
     atualizarInterfaceItensETotais();
     
-    // ATUALIZA A AUDITORIA DO PAINEL LATERAL EM TEMPO REAL
-    if(typeof checarSomaFinanceiroEdit === 'function') checarSomaFinanceiroEdit();
+    // ATUALIZA A AUDITORIA EM TEMPO REAL
+    if(currentOSFinanceiro.length > 0) {
+        let soma = 0;
+        currentOSFinanceiro.forEach(r => soma+=r.valor);
+        atualizarPlacarAuditoria(soma);
+    }
 }
 
 function atualizarInterfaceItensETotais() {
@@ -296,6 +468,7 @@ function atualizarInterfaceItensETotais() {
     document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
+    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 }
 
 function processarImagens(event) {
@@ -338,34 +511,7 @@ async function buscarOrcamentosSupabase() {
     }
 }
 
-// ----------------------------------------------------
-// A LÓGICA DE AUDITORIA DE PREÇOS NO PAINEL LATERAL
-// ----------------------------------------------------
-window.checarSomaFinanceiroEdit = function() {
-    if (!window.finDataEdit) return;
-    
-    let soma = 0;
-    if (window.finDataEdit.entrada > 0) {
-        soma += reverterMoeda(document.getElementById('edit-fin-entrada-val').value) || 0;
-    }
-    if (window.finDataEdit.parcelas) {
-        window.finDataEdit.parcelas.forEach((p, idx) => {
-            soma += reverterMoeda(document.getElementById(`edit-fin-parc-val-${idx}`).value) || 0;
-        });
-    }
-    
-    const statusEl = document.getElementById('status-soma-fin');
-    if(statusEl) {
-        statusEl.innerText = `Soma: ${formataDinheiro(soma)}`;
-        const dif = Math.abs(valoresFinais.total - soma);
-        if (dif > 0.05) {
-            statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded shadow-sm bg-red-100 text-red-600 transition-colors';
-        } else {
-            statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded shadow-sm bg-emerald-100 text-emerald-600 transition-colors';
-        }
-    }
-}
-
+// SALVA APENAS OS DADOS DA O.S (O FINANCEIRO É SALVO NA ABA ESPECÍFICA)
 async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
@@ -383,89 +529,44 @@ async function salvarOrcamentoReal() {
         const clienteObj = globalClientes.find(c => c.nome === nome) || {};
         const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
 
-        let finDataAtualizado = null;
-        let financeiroDeveSerAtualizado = false;
-
-        // Se o painel lateral financeiro estava na tela, vamos ler o que o gestor alterou nele
-        if (window.finDataEdit) {
-            let novaEntrada = 0;
-            if (window.finDataEdit.entrada > 0) {
-                novaEntrada = reverterMoeda(document.getElementById('edit-fin-entrada-val').value);
-                window.finDataEdit.entrada = novaEntrada;
-                window.finDataEdit.data_entrada = document.getElementById('edit-fin-entrada-data').value;
-            }
-            
-            let somaParcelas = novaEntrada;
-            if (window.finDataEdit.parcelas && window.finDataEdit.parcelas.length > 0) {
-                window.finDataEdit.parcelas.forEach((p, idx) => {
-                    p.valor = reverterMoeda(document.getElementById(`edit-fin-parc-val-${idx}`).value);
-                    p.data_vencimento = document.getElementById(`edit-fin-parc-data-${idx}`).value;
-                    somaParcelas += p.valor;
-                });
-            }
-
-            if (Math.abs(valoresFinais.total - somaParcelas) > 0.05) {
-                dispararAlerta("A soma do financeiro não bate com o valor final da O.S. Ajuste os valores no painel 'Financeiro Atual' antes de salvar.", "erro");
-                btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
-                btnSalvar.disabled = false;
-                return; 
-            }
-            
-            finDataAtualizado = window.finDataEdit;
-            financeiroDeveSerAtualizado = true;
-        }
-
         const payloadJSONB = { 
             lista_itens: itensTemporarios, 
             resumo: valoresFinais,
             cliente_dados: clienteObj,
             veiculo_dados: veiculoObj
         };
-        if(finDataAtualizado) payloadJSONB.financeiro = finDataAtualizado; 
+        
+        // Mantém a compatibilidade com o PDF gerando o JSON de financeiro em tempo real do currentOSFinanceiro
+        if (currentOSFinanceiro.length > 0) {
+            let snap = { entrada: 0, forma_entrada: '', data_entrada: '', parcelas: [] };
+            currentOSFinanceiro.forEach(rec => {
+                if(rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
+                    snap.entrada += rec.valor;
+                    snap.forma_entrada = rec.forma_pagamento;
+                    snap.data_entrada = rec.data_vencimento;
+                } else {
+                    snap.parcelas.push({ numero: snap.parcelas.length + 1, valor: rec.valor, data_vencimento: rec.data_vencimento, forma_pagamento: rec.forma_pagamento });
+                }
+            });
+            payloadJSONB.financeiro = snap;
+        }
         
         if (osEmEdicaoId) {
             const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
             if (error) throw error;
             
-            // ATUALIZAÇÃO CASCATA NO BANCO FINANCEIRO
-            if (financeiroDeveSerAtualizado) {
-                await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
-                
-                let records = [];
-                if(finDataAtualizado.entrada > 0) {
-                    records.push({
-                        descricao: `Acerto O.S #${osEmEdicaoNumero} - ${nome}`,
-                        categoria: 'Serviços O.S',
-                        valor: finDataAtualizado.entrada,
-                        data_vencimento: finDataAtualizado.data_entrada,
-                        status: 'Pago', 
-                        data_pagamento: finDataAtualizado.data_entrada,
-                        forma_pagamento: finDataAtualizado.forma_entrada
-                    });
-                }
-                if (finDataAtualizado.parcelas && finDataAtualizado.parcelas.length > 0) {
-                    finDataAtualizado.parcelas.forEach(p => {
-                        records.push({
-                            descricao: `Parcela ${p.numero}/${finDataAtualizado.parcelas.length} O.S #${osEmEdicaoNumero} - ${nome}`,
-                            categoria: 'Serviços O.S',
-                            valor: parseFloat(p.valor.toFixed(2)),
-                            data_vencimento: p.data_vencimento,
-                            status: 'Pendente',
-                            forma_pagamento: p.forma_pagamento
-                        });
-                    });
-                }
-                if (records.length > 0) {
-                    await window.banco.from('contas_receber').insert(records);
-                }
+            // Verificação Passiva para Alertar o usuário (Não bloqueia mais o salvamento)
+            let somaF = 0;
+            currentOSFinanceiro.forEach(r => somaF += r.valor);
+            if (currentOSFinanceiro.length > 0 && Math.abs(valoresFinais.total - somaF) > 0.05) {
+                dispararAlerta("O.S salva! Mas atenção: O Valor da O.S e o Financeiro estão diferentes. Ajuste as parcelas na aba 'Gestão Financeira' para corrigir.", "erro");
+            } else {
+                dispararAlerta("O.S atualizada com sucesso!", "sucesso");
             }
-            
-            dispararAlerta("O.S atualizada com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         } else {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
-            
             dispararAlerta("O.S salva com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         }
@@ -473,7 +574,7 @@ async function salvarOrcamentoReal() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
 }
 
-function abrirEdicaoOS(dadosCodificados) {
+async function abrirEdicaoOS(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
     osEmEdicaoNumero = orc.numero_os; 
@@ -515,57 +616,13 @@ function abrirEdicaoOS(dadosCodificados) {
         mascaraMoeda(descInput);
     } else { document.getElementById('desc-val').value = ''; }
 
-    // RENDERIZA A NOVA ABA DE FINANCEIRO VINCULADO PARA EDIÇÃO
-    window.finDataEdit = null;
-    const finData = orc.itens?.financeiro;
-    const boxFin = document.getElementById('box-financeiro-vinculado');
-    const contFin = document.getElementById('conteudo-financeiro-vinculado');
-    
-    if (finData && (finData.entrada > 0 || (finData.parcelas && finData.parcelas.length > 0))) {
-        window.finDataEdit = JSON.parse(JSON.stringify(finData)); 
-        boxFin.classList.remove('hidden');
-        let htmlFin = '';
-        
-        if (window.finDataEdit.entrada > 0) {
-            htmlFin += `
-            <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex flex-col gap-2 shadow-sm">
-                <span class="text-[10px] font-bold text-emerald-700 uppercase">Entrada / Acerto (${window.finDataEdit.forma_entrada})</span>
-                <div class="flex gap-2">
-                    <input type="text" id="edit-fin-entrada-val" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(window.finDataEdit.entrada)}" class="w-full border border-emerald-200 p-2 rounded-lg text-sm font-black text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-200 transition">
-                    <input type="date" id="edit-fin-entrada-data" value="${window.finDataEdit.data_entrada}" class="w-full border border-emerald-200 p-2 rounded-lg text-sm font-bold text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-200 transition">
-                </div>
-            </div>`;
-        }
-        
-        if (window.finDataEdit.parcelas && window.finDataEdit.parcelas.length > 0) {
-            htmlFin += `<div class="mt-3 space-y-2">`;
-            window.finDataEdit.parcelas.forEach((p, idx) => {
-                htmlFin += `
-                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col gap-2 shadow-sm">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Parcela ${p.numero}/${window.finDataEdit.parcelas.length} (${p.forma_pagamento})</span>
-                    <div class="flex gap-2">
-                        <input type="text" id="edit-fin-parc-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(p.valor)}" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-black text-slate-700 outline-none focus:border-blue-500 transition">
-                        <input type="date" id="edit-fin-parc-data-${idx}" value="${p.data_vencimento}" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition">
-                    </div>
-                </div>`;
-            });
-            htmlFin += `</div>`;
-        }
-        
-        if(orc.status !== 'Fechado') {
-            htmlFin += `<div class="mt-4 text-[10px] text-amber-600 font-bold bg-amber-50 p-3 rounded-lg border border-amber-200 flex gap-2 items-center leading-relaxed"><i class="ph-bold ph-warning text-2xl shrink-0"></i> <div>O.S possui financeiro atrelado. Se você alterar peças e valores, ajuste as parcelas acima para a conta bater!</div></div>`;
-        }
-        
-        contFin.innerHTML = htmlFin;
-        checarSomaFinanceiroEdit();
-    } else {
-        boxFin.classList.add('hidden');
-        contFin.innerHTML = '';
-    }
-
     calcularTotais();
     verificarStatusFinanceiro(); 
     
+    // A MÁGICA: Bate no banco e traz o financeiro real vivo!
+    await recarregarFinanceiroDaOS();
+    
+    mudarAbaOS('dados');
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
@@ -605,7 +662,6 @@ async function processarDestravarOS() {
         dispararAlerta("O.S Destravada! Você já pode editar os dados.", "sucesso");
         fecharModalDestravar();
         
-        // Pula direto para dentro da O.S!
         osParaDestravarDados.status = novoStatus;
         abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)));
         
@@ -656,7 +712,7 @@ function renderizarTabelaReal(dados) {
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
-        // A MÁGICA: Os botões ficam 100% alinhados como 4 blocos fixos
+        // A MÁGICA DOS 4 BOTÕES ALINHADOS
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
         let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
@@ -687,7 +743,6 @@ function renderizarTabelaReal(dados) {
 
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
-    
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
     const conteudo = document.getElementById('modal-conteudo');
@@ -696,7 +751,6 @@ function abrirModalCadastro(tipo) {
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
         btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
-        
         conteudo.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="md:col-span-2">
@@ -744,7 +798,6 @@ function abrirModalCadastro(tipo) {
         
         let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
         const clienteOS = document.getElementById('db-cliente-nome').value;
-        
         globalClientes.forEach(c => {
             const selected = (c.nome === clienteOS) ? 'selected' : '';
             optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
@@ -881,7 +934,7 @@ async function processarSalvamentoModal() {
 }
 
 /** * ========================================================
- * LÓGICA DO MODAL FINANCEIRO INTELIGENTE
+ * LÓGICA DO MODAL FINANCEIRO INTELIGENTE (GERAR DO ZERO)
  * ========================================================
  */
 function prepararFaturamento(dadosCodificados) {
@@ -907,10 +960,12 @@ function prepararFaturamento(dadosCodificados) {
     document.getElementById('fin-tipo-faturamento').value = 'avista';
     
     mudarTipoFaturamento();
+    document.getElementById('cabecalho-lista-os').classList.add('invisible');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
+    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
