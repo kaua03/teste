@@ -3,14 +3,6 @@
 // ========================================================
 
 async function navegarPara(tela) {
-    const loader = document.getElementById('global-loader');
-    
-    // Liga a Tela de Carregamento imediatamente
-    if(loader) {
-        loader.classList.remove('hidden');
-        loader.style.opacity = '1';
-    }
-
     try {
         const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
         const usuarioLogado = usuarioLogadoStr ? JSON.parse(usuarioLogadoStr) : null;
@@ -19,7 +11,6 @@ async function navegarPara(tela) {
             tela = 'login'; 
         }
 
-        // SALVA A TELA ATUAL NA MEMÓRIA (Se não for o login)
         if (tela !== 'login') {
             localStorage.setItem('lastRoute', tela);
         }
@@ -40,7 +31,6 @@ async function navegarPara(tela) {
             if (navMob) navMob.style.display = '';
             if (mainWrap) mainWrap.classList.add('md:ml-20');
             
-            // Injeta dados do usuário no Menu Superior
             if(usuarioLogado) {
                 const avatar = document.getElementById('user-avatar');
                 if(avatar) avatar.innerText = usuarioLogado.nome.charAt(0).toUpperCase();
@@ -72,12 +62,18 @@ async function navegarPara(tela) {
             }
         });
 
+        const visor = document.getElementById('visor-da-tv');
+        
+        // Aplica opacidade zero antes de trocar o HTML para não piscar
+        visor.style.opacity = '0';
+
         const response = await fetch(tela + '.html');
         if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
         const html = await response.text();
-        document.getElementById('visor-da-tv').innerHTML = html;
+        
+        visor.innerHTML = html;
 
-        // O AWAIT AQUI SEGURA O LOADING ATÉ O BANCO DE DADOS TERMINAR (Elimina as tabelas vazias)
+        // O await segura o fluxo até que o banco de dados responda!
         if (tela === 'dashboard' && typeof initDashboard === 'function') await initDashboard();
         if (tela === 'orcamentos' && typeof initOrcamentos === 'function') await initOrcamentos();
         if (tela === 'clientes' && typeof initClientes === 'function') await initClientes();
@@ -85,20 +81,19 @@ async function navegarPara(tela) {
         if (tela === 'contas_pagar' && typeof initContasPagar === 'function') await initContasPagar();
         if (tela === 'contas_receber' && typeof initContasReceber === 'function') await initContasReceber();
 
+        // Só depois de todas as tabelas preenchidas, ele mostra a tela de uma vez!
+        visor.style.opacity = '1';
+
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
-        document.getElementById('visor-da-tv').innerHTML = `
+        const visor = document.getElementById('visor-da-tv');
+        visor.innerHTML = `
             <div class="flex flex-col items-center justify-center h-full text-slate-400">
                 <i class="ph-bold ph-warning-circle text-5xl mb-4 text-red-400"></i>
                 <h2 class="text-xl font-bold text-slate-700">Erro 404</h2>
                 <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
             </div>
         `;
-    } finally {
-        // Desliga a Tela de Carregamento suavemente ao final do processo
-        if(loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.classList.add('hidden'), 300);
-        }
+        visor.style.opacity = '1';
     }
 }
