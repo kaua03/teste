@@ -1,7 +1,5 @@
-<!-- orcamentos.html -->
 <div class="max-w-7xl mx-auto w-full pb-28 md:pb-4 flex flex-col relative font-sans min-h-screen">
     
-    <!-- TELA DE CARREGAMENTO -->
     <div id="loading-screen" class="absolute inset-0 bg-slate-50 z-[2000] flex flex-col items-center justify-center transition-opacity duration-300 rounded-2xl hidden">
         <div class="relative w-20 h-20 mb-4">
             <div class="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
@@ -12,7 +10,6 @@
         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Sincronizando Banco de Dados</p>
     </div>
 
-    <!-- LISTAGEM DE ORDENS DE SERVIÇO -->
     <div id="view-lista-orcamentos" class="space-y-6 block fade-in">
         <div id="cabecalho-lista-os" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 transition-all duration-200">
             <div>
@@ -37,14 +34,12 @@
                         </tr>
                     </thead>
                     <tbody id="tabela-orcamentos-real" class="text-xs md:text-sm divide-y divide-slate-100">
-                        <!-- Carregado via JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- TELA DE EDIÇÃO COM SISTEMA DE ABAS -->
     <div id="view-novo-orcamento" class="hidden fade-in">
         
         <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
@@ -65,16 +60,13 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            <!-- COLUNA ESQUERDA (MÚTAVEL) -->
             <div class="xl:col-span-2 flex flex-col gap-6 relative">
                 
-                <!-- O MENU DE ABAS -->
                 <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
                     <button id="aba-dados" onclick="mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
                     <button id="aba-fin" onclick="mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
                 </div>
 
-                <!-- ABA 1: DADOS DA O.S -->
                 <div id="conteudo-aba-dados" class="space-y-6 fade-in block">
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                         <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
@@ -133,10 +125,8 @@
                     </div>
                 </div>
                 
-                <!-- ABA 2: FINANCEIRO (EMBUTIDO NA O.S) -->
                 <div id="conteudo-aba-fin" class="hidden fade-in space-y-6 pb-10 w-full">
                     
-                    <!-- BLOQUEADO: Se O.S é nova e nunca foi salva -->
                     <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
                         <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100"><i class="ph-fill ph-lock-key text-4xl text-slate-300"></i></div>
                         <h3 class="text-lg font-black text-slate-700 mb-1">O.S. não registrada</h3>
@@ -154,8 +144,7 @@
                                 <button id="btn-refazer-fin" onclick="limparFinanceiroAtual()" class="hidden text-[10px] uppercase tracking-wider font-black text-red-500 bg-red-50 px-3 py-2 rounded-xl border border-red-200 hover:bg-red-100 transition shadow-sm"><i class="ph-bold ph-trash mr-1"></i> Apagar Lançamentos</button>
                             </div>
 
-                            <!-- MODO GERADOR (Se não tem financeiro ainda) -->
-                            <div id="fin-gerador-box" class="space-y-6 hidden">
+                            <div id="fin-gerador-box" class="space-y-6">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
                                     <select id="tab-fin-tipo" onchange="mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
@@ -200,30 +189,25 @@
                                 <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
                             </div>
 
-                            <!-- MODO EDITOR (Se o financeiro já foi gerado e ele reabriu) -->
                             <div id="fin-editor-box" class="hidden space-y-4 w-full">
                                 <div id="lista-financeiro-vinculado" class="space-y-3 w-full">
-                                    <!-- Injetado via JS -->
-                                </div>
+                                    </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- COLUNA DIREITA ESTÁTICA (RESUMO, DESCONTO, STATUS E AUDITORIA) -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
-                <!-- PAINEL DE AUDITORIA FINANCEIRA LATERAL (SÓ APARECE QUANDO ESTÁ NA ABA FINANCEIRO) -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-wallet text-emerald-500 mr-2 text-lg"></i> Auditoria de Caixa</h3>
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-wallet text-emerald-500 mr-2 text-lg"></i> Auditoria Financeira</h3>
                     </div>
                     <div class="space-y-4">
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S (Serviços)</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
                             <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
                         </div>
                         
@@ -283,7 +267,6 @@
     </div>
 </div>
 
-<!-- MODAL DE EXCLUSÃO PROFISSIONAL -->
 <div id="modal-confirmacao-exclusao" class="hidden fixed inset-0 bg-slate-900/80 z-[1000] flex items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
@@ -298,13 +281,12 @@
     </div>
 </div>
 
-<!-- MODAL DE AUTENTICAÇÃO (DESTRAVAR O.S FECHADA) -->
 <div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/90 z-[1500] flex items-center justify-center p-4 fade-in">
     <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
             <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
             <h3 class="text-xl font-black text-white mb-2">Reabrir O.S Faturada?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição. Se você adicionar peças ou alterar o valor total, você deve ajustar as parcelas na aba "Gestão Financeira" para a conta bater. <br><br><b>Digite a senha gerencial:</b></p>
+            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição. Se você adicionar peças, você deve ajustar as parcelas na aba "Gestão Financeira" para salvar. <br><br><b>Digite a senha gerencial:</b></p>
             <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
         </div>
         <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
@@ -314,7 +296,6 @@
     </div>
 </div>
 
-<!-- MODAL DE CADASTRO RÁPIDO -->
 <div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/80 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
@@ -329,67 +310,7 @@
     </div>
 </div>
 
-<!-- MOTOR DE IMPRESSÃO DE PDF -->
 <div style="position: fixed; top: 0; left: 200vw; width: 800px; opacity: 0; pointer-events: none; z-index: -9999; background-color: white;">
     <div id="pdf-template-real" style="padding: 30px 40px; color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-        <div style="border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #000000; text-transform: uppercase; letter-spacing: -0.5px;">AUTOMANAGER OFICINA</h1>
-                <p style="font-size: 9px; color: #4B5563; margin: 2px 0 0 0; font-weight: bold; text-transform: uppercase;">Serviços Automotivos Avançados</p>
-                <p style="font-size: 9px; color: #6B7280; margin: 1px 0 0 0;">CNPJ: 00.000.000/0001-00 | Rua Fictícia, 123 - Centro</p>
-            </div>
-            <div style="text-align: right;">
-                <h2 style="font-size: 18px; font-weight: 900; color: #000000; margin: 0; letter-spacing: -0.5px;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
-                <p style="font-size: 10px; margin: 4px 0 0 0; color: #000000;"><span style="font-weight: bold;">Abertura:</span> <span id="pdf-data-abertura"></span></p>
-                <p style="font-size: 10px; margin: 1px 0 0 0; color: #000000;"><span style="font-weight: bold;">Emissão:</span> <span id="pdf-data-emissao"></span></p>
-                <p style="font-size: 10px; margin: 1px 0 0 0; color: #000000;"><span style="font-weight: bold;">Status:</span> <span id="pdf-status"></span></p>
-            </div>
         </div>
-        <div style="border: 1px solid #000000; padding: 10px; margin-bottom: 20px; font-size: 11px; line-height: 1.6; color: #000000; background-color: #F9FAFB;">
-            <div style="display: flex; flex-wrap: wrap; margin-bottom: 4px;">
-                <div style="width: 50%;"><span style="font-weight: 900;">NOME:</span> <span id="pdf-cli-nome" style="text-transform: uppercase;"></span></div>
-                <div style="width: 25%;"><span style="font-weight: 900;">CPF:</span> <span id="pdf-cli-doc"></span></div>
-                <div style="width: 25%;"><span style="font-weight: 900;">CELULAR:</span> <span id="pdf-cli-tel"></span></div>
-            </div>
-            <div style="margin-bottom: 4px;"><span style="font-weight: 900;">ENDEREÇO:</span> <span id="pdf-cli-end" style="text-transform: uppercase;"></span></div>
-            <div style="border-top: 1px dashed #9CA3AF; margin: 8px 0;"></div>
-            <div style="display: flex; flex-wrap: wrap;">
-                <div style="width: 50%;"><span style="font-weight: 900;">VEÍCULO:</span> <span id="pdf-vei-mod" style="text-transform: uppercase;"></span></div>
-                <div style="width: 25%;"><span style="font-weight: 900;">PLACA:</span> <span id="pdf-vei-placa" style="font-weight: 900; text-transform: uppercase;"></span></div>
-                <div style="width: 25%;"><span style="font-weight: 900;">COR/ANO:</span> <span id="pdf-vei-det" style="text-transform: uppercase;"></span></div>
-            </div>
-        </div>
-        <div id="pdf-container-itens"></div>
-        <div style="display: flex; gap: 20px; margin-top: 15px;">
-            <div style="flex: 2;">
-                <div id="pdf-container-obs" style="display: none; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB; height: 100%;">
-                    <h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Observações da O.S.</h3>
-                    <p id="pdf-obs-texto" style="font-size: 11px; color: #000000; margin: 0; line-height: 1.4;"></p>
-                </div>
-            </div>
-            <div style="flex: 1;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #000000;">
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; color: #000000;">Total Peças</td><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-pecas">R$ 0,00</td></tr>
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; color: #000000;">Total Serviços</td><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-servicos">R$ 0,00</td></tr>
-                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #000000; color: #000000; font-weight: bold;">Desconto</td><td style="padding: 6px 10px; border-bottom: 1px solid #000000; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-desc">- R$ 0,00</td></tr>
-                    <tr style="background-color: #E5E7EB;"><td style="padding: 8px 10px; font-weight: 900; font-size: 12px; color: #000000;">VALOR TOTAL</td><td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 15px; color: #000000;" id="pdf-tot-final">R$ 0,00</td></tr>
-                </table>
-            </div>
-        </div>
-        
-        <div id="pdf-container-financeiro" style="display: none; margin-top: 15px; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB;"></div>
-
-        <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
-            <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #000000; height: 40px; margin-bottom: 5px;"></div>
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
-            </div>
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                <div style="display: flex; align-items: flex-end; justify-content: center; height: 40px; margin-bottom: 5px; gap: 6px;">
-                    <div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div><div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div><div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div><div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div><div style="width: 45px; border-bottom: 1px solid #000000; height: 1px;"></div>
-                </div>
-                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
-            </div>
-        </div>
-    </div>
 </div>
