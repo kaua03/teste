@@ -43,7 +43,7 @@
             </div>
             <div id="badge-os-fechada" class="hidden bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
                 <i class="ph-fill ph-lock-key text-lg"></i>
-                <span class="text-xs font-black uppercase tracking-wider">O.S. Fechada (Apenas Leitura)</span>
+                <span class="text-xs font-black uppercase tracking-wider">O.S. Fechada e Faturada</span>
             </div>
         </div>
 
@@ -79,7 +79,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col md:flex-row gap-3">
-                            <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
+                            <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional). Ex: Original Bosch..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
                             <input type="hidden" id="item-id-edit" value="">
                             <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
                         </div>
@@ -107,6 +107,7 @@
             </div>
 
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
+                
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
                     <div class="space-y-3">
@@ -118,9 +119,12 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-100 hidden" id="box-financeiro-vinculado">
-                    <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-wallet text-emerald-500 mr-2 text-lg"></i> Financeiro Atual</h3>
-                    <div id="conteudo-financeiro-vinculado" class="space-y-2">
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden" id="box-financeiro-vinculado">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-wallet text-emerald-500 mr-2 text-lg"></i> Financeiro Atual</h3>
+                        <span id="status-soma-fin" class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-500 shadow-sm">Soma: R$ 0,00</span>
+                    </div>
+                    <div id="conteudo-financeiro-vinculado" class="space-y-3">
                         </div>
                 </div>
 
@@ -177,7 +181,7 @@
         <div class="p-6 text-center">
             <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
             <h3 class="text-xl font-black text-white mb-2">Reabrir O.S Faturada?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6">A O.S será aberta em modo de Edição (Em Aberto). Se o valor final mudar após salvar, <b>o financeiro antigo será estornado automaticamente.</b> <br><br><b>Digite a senha gerencial:</b></p>
+            <p class="text-xs text-slate-400 font-medium mb-6">A O.S será aberta em modo de edição. Você poderá ajustar os valores financeiros diretamente na O.S. <br><br><b>Digite a senha gerencial:</b></p>
             <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
         </div>
         <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
@@ -201,7 +205,7 @@
     </div>
 </div>
 
-<div id="modal-financeiro" class="hidden fixed inset-0 bg-slate-900/95 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
+<div id="modal-financeiro" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
     <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-emerald-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
             <h3 class="font-bold text-lg tracking-tight flex items-center"><i class="ph-bold ph-hand-coins mr-2 text-2xl"></i> Faturar O.S. e Definir Acerto</h3>
@@ -261,10 +265,8 @@
                     </div>
                 </div>
                 
-                <div id="fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner max-h-64 overflow-y-auto space-y-2 mt-2">
-                </div>
+                <div id="fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner max-h-64 overflow-y-auto space-y-2 mt-2"></div>
             </div>
-
         </div>
         
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
@@ -272,6 +274,3 @@
         </div>
     </div>
 </div>
-
-<div style="position: fixed; top: 0; left: 200vw; width: 800px; opacity: 0; pointer-events: none; z-index: -9999; background-color: white;">
-    </div>
