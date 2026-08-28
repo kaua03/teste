@@ -9,11 +9,10 @@ let imagensUploadArray = [];
 let osEmEdicaoId = null; 
 let osEmEdicaoNumero = null; 
 let idParaExcluir = null;
+let osParaDestravarId = null;
 
 let globalClientes = [];
 let globalVeiculos = [];
-
-const SENHA_GERENCIAL = "admin123";
 
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
@@ -76,12 +75,10 @@ function dispararAlerta(msg, tipo = 'erro') {
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const btnSalvar = document.getElementById('btn-salvar-db');
-    const btnDestravar = document.getElementById('btn-destravar-os');
     const badgeFechada = document.getElementById('badge-os-fechada');
     
     if (status === 'Fechado') {
         if(btnSalvar) btnSalvar.classList.add('hidden');
-        if(btnDestravar) btnDestravar.classList.remove('hidden');
         if(badgeFechada) badgeFechada.classList.remove('hidden');
         congelarCamposOS(true);
         return;
@@ -89,7 +86,6 @@ function verificarStatusFinanceiro() {
 
     congelarCamposOS(false);
     if(btnSalvar) btnSalvar.classList.remove('hidden');
-    if(btnDestravar) btnDestravar.classList.add('hidden');
     if(badgeFechada) badgeFechada.classList.add('hidden');
 }
 
@@ -358,7 +354,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas do Financeiro já gerado. Por favor, volte na lista, clique no ícone "R$" e fature a O.S. novamente!`);
+                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S não bate com as parcelas geradas anteriormente. Fature a O.S. novamente para corrigir!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -382,6 +378,7 @@ async function salvarOrcamentoReal() {
         } else {
             const { data: novaOS, error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]).select().single();
             if (error) throw error;
+            
             dispararAlerta("O.S salva com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         }
@@ -438,7 +435,11 @@ function abrirEdicaoOS(dadosCodificados) {
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
 }
 
-function abrirModalDestravar() {
+// ----------------------------------------------------
+// O CADEADO DE DESTRAVAR AGORA FICA NA LISTA PRINCIPAL
+// ----------------------------------------------------
+function abrirModalDestravar(id) {
+    osParaDestravarId = id; // Usa a variável correta vinda da tabela
     document.getElementById('input-senha-reabrir').value = '';
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
 }
@@ -455,19 +456,17 @@ async function processarDestravarOS() {
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
     if(senhaDigitada !== usuarioLogado.senha) {
-        dispararAlerta("Senha de usuário incorreta. Acesso negado.");
+        dispararAlerta("Senha incorreta. Acesso negado.");
         return;
     }
     
     try {
-        const { error } = await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        const { error } = await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osParaDestravarId);
         if (error) throw error;
         
-        document.getElementById('db-status').value = 'Finalizado';
-        verificarStatusFinanceiro(); 
-        
-        dispararAlerta("O.S Destravada com Sucesso!", "sucesso");
+        dispararAlerta("O.S Destravada! Agora você pode editá-la.", "sucesso");
         fecharModalDestravar();
+        buscarOrcamentosSupabase(); // Atualiza a lista na hora, liberando o Lápis de edição.
     } catch(e) {
         dispararAlerta("Erro ao destravar a O.S no banco.");
     }
@@ -513,12 +512,18 @@ function renderizarTabelaReal(dados) {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
-        const isFechado = orc.status === 'Fechado';
-        const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
-        let btnFaturar = `<div class="w-9 h-9"></div>`; 
-        if (orc.status === 'Finalizado') {
-            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
+        // A MÁGICA DOS 4 BOTÕES ALINHADOS
+        let btnAcao1 = `<div class="w-9 h-9"></div>`; 
+        let iconeVisualizar = 'ph-pencil-simple text-blue-500';
+        
+        if (orc.status === 'Fechado') {
+            // Se tá Fechado, exibe Cadeado pra Destravar e o Lápis fica cinza indicando "Só Leitura"
+            btnAcao1 = `<button onclick="abrirModalDestravar('${orc.id}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            iconeVisualizar = 'ph-magnifying-glass text-slate-500';
+        } else if (orc.status === 'Finalizado') {
+            // Se tá Finalizado, exibe botão verde pra Faturar
+            btnAcao1 = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -526,11 +531,11 @@ function renderizarTabelaReal(dados) {
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
-            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${isFechado ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
+            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${orc.status === 'Fechado' ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                    ${btnFaturar}
-                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ${iconVisualizar} text-lg"></i></button>
+                    ${btnAcao1}
+                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ${iconeVisualizar} text-lg"></i></button>
                     <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
                     <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
@@ -761,7 +766,6 @@ function prepararFaturamento(dadosCodificados) {
     document.getElementById('fin-tipo-faturamento').value = 'avista';
     
     mudarTipoFaturamento();
-    
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
@@ -1018,9 +1022,6 @@ async function processarLancarFinanceiro() {
             if (errFin) throw errFin;
         }
         
-        document.getElementById('db-status').value = 'Fechado';
-        verificarStatusFinanceiro(); 
-
         dispararAlerta("O.S Faturada com sucesso!", "sucesso");
         fecharModalFinanceiro();
         buscarOrcamentosSupabase(); 
