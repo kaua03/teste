@@ -3,6 +3,14 @@
 // ========================================================
 
 async function navegarPara(tela) {
+    const loader = document.getElementById('global-loader');
+    
+    // Liga a Tela de Carregamento imediatamente
+    if(loader) {
+        loader.classList.remove('hidden');
+        loader.style.opacity = '1';
+    }
+
     try {
         const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
         const usuarioLogado = usuarioLogadoStr ? JSON.parse(usuarioLogadoStr) : null;
@@ -69,12 +77,13 @@ async function navegarPara(tela) {
         const html = await response.text();
         document.getElementById('visor-da-tv').innerHTML = html;
 
-        if (tela === 'dashboard' && typeof initDashboard === 'function') initDashboard();
-        if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
-        if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
-        if (tela === 'veiculos' && typeof initVeiculos === 'function') initVeiculos();
-        if (tela === 'contas_pagar' && typeof initContasPagar === 'function') initContasPagar();
-        if (tela === 'contas_receber' && typeof initContasReceber === 'function') initContasReceber();
+        // O AWAIT AQUI SEGURA O LOADING ATÉ O BANCO DE DADOS TERMINAR (Elimina as tabelas vazias)
+        if (tela === 'dashboard' && typeof initDashboard === 'function') await initDashboard();
+        if (tela === 'orcamentos' && typeof initOrcamentos === 'function') await initOrcamentos();
+        if (tela === 'clientes' && typeof initClientes === 'function') await initClientes();
+        if (tela === 'veiculos' && typeof initVeiculos === 'function') await initVeiculos();
+        if (tela === 'contas_pagar' && typeof initContasPagar === 'function') await initContasPagar();
+        if (tela === 'contas_receber' && typeof initContasReceber === 'function') await initContasReceber();
 
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
@@ -85,5 +94,11 @@ async function navegarPara(tela) {
                 <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
             </div>
         `;
+    } finally {
+        // Desliga a Tela de Carregamento suavemente ao final do processo
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.classList.add('hidden'), 300);
+        }
     }
 }
