@@ -19,8 +19,8 @@
         .group:hover .sidebar-text { display: inline-block; opacity: 1; }
         .pb-safe { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
         
-        /* Ajuste fino na animação para ficar mais suave na troca fantasma */
-        .fade-in { animation: fadeIn 0.15s ease-out forwards; }
+        /* O fade-in agora é usado apenas para modais internos */
+        .fade-in { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -67,7 +67,8 @@
             </div>
         </header>
 
-        <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe fade-in bg-slate-50/50"></main>
+        <!-- A MÁGICA: Classes transition-opacity duration-200 controlam o Ghost Render -->
+        <main id="visor-da-tv" class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-safe bg-slate-50/50 transition-opacity duration-200 opacity-0"></main>
     </div>
 
     <nav id="nav-mobile" class="md:hidden fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center h-[4.5rem] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-2 overflow-x-auto">
@@ -93,8 +94,7 @@
 
     <script>
         function toggleUserMenu() {
-            const drop = document.getElementById('user-dropdown');
-            drop.classList.toggle('hidden');
+            document.getElementById('user-dropdown').classList.toggle('hidden');
         }
 
         document.addEventListener('click', (e) => {
