@@ -18,16 +18,9 @@ const SENHA_GERENCIAL = "admin123";
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     
-    const loader = document.getElementById('loading-screen');
-    if(loader) { loader.classList.remove('hidden'); loader.style.opacity = '1'; }
-    
+    // As chamadas ao banco correm aqui de forma invisível. O router.js segura a tela pra gente.
     await carregarListasBD();
     await buscarOrcamentosSupabase();
-    
-    if(loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.classList.add('hidden'), 300);
-    }
     
     document.getElementById('view-novo-orcamento').classList.add('hidden');
     document.getElementById('view-lista-orcamentos').classList.remove('hidden');
@@ -328,13 +321,14 @@ function renderizarPreviewFotos() {
 }
 function removerImagemArray(strToRem) { imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); renderizarPreviewFotos(); }
 
+// BUSCA AS O.S E LIMPA TELA SE VAZIO.
 async function buscarOrcamentosSupabase() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
-        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão.</td></tr>`;
+        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 }
 
@@ -462,6 +456,7 @@ async function processarDestravarOS() {
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
     
     if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
     if(senhaDigitada !== usuarioLogado.senha) {
@@ -514,7 +509,11 @@ function obterCorStatus(status) {
 
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (dados.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; return; }
+    if (!dados || dados.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
+        return; 
+    }
+    
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
@@ -522,7 +521,6 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
-        // A MÁGICA: O botão Faturar R$ aparece se Finalizado. Senão, um div vazio w-9 h-9 segura o alinhamento!
         let btnFaturar = `<div class="w-9 h-9"></div>`; 
         if (orc.status === 'Finalizado') {
             btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
@@ -642,14 +640,14 @@ function abrirModalCadastro(tipo) {
             </div>
         </div>`;
     }
-    document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
+    
+    // Trava o fundo da tela apenas ao abrir este modal lateral
+    document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { 
-    document.getElementById('visor-da-tv').classList.add('overflow-y-auto'); 
-    document.getElementById('visor-da-tv').classList.remove('overflow-y-hidden');
+    document.body.style.overflow = 'auto'; 
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -1026,6 +1024,9 @@ async function processarLancarFinanceiro() {
             if (errFin) throw errFin;
         }
         
+        document.getElementById('db-status').value = 'Fechado';
+        verificarStatusFinanceiro(); 
+
         dispararAlerta("O.S Faturada com sucesso!", "sucesso");
         fecharModalFinanceiro();
         buscarOrcamentosSupabase(); 
