@@ -13,6 +13,8 @@ let idParaExcluir = null;
 let globalClientes = [];
 let globalVeiculos = [];
 
+const SENHA_GERENCIAL = "admin123";
+
 async function initOrcamentos() {
     console.log("🟢 Módulo Orçamentos Inicializado.");
     
@@ -365,7 +367,7 @@ async function salvarOrcamentoReal() {
                 }
                 
                 if (Math.abs(valoresFinais.total - totalFinanceiroSalvo) > 0.05) {
-                    dispararAlerta(`ALERTA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas do Financeiro já gerado. Por favor, volte na lista, clique no ícone "R$" e fature a O.S. novamente!`);
+                    dispararAlerta(`ALERTA DE AUDITORIA: O valor atual da O.S (R$ ${valoresFinais.total.toFixed(2)}) não bate com as parcelas geradas anteriormente (R$ ${totalFinanceiroSalvo.toFixed(2)}). Você deve voltar para a lista e FATURAR a O.S. novamente para corrigir!`);
                     btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.';
                     btnSalvar.disabled = false;
                     return; 
@@ -460,7 +462,6 @@ async function processarDestravarOS() {
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
     
     if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
     if(senhaDigitada !== usuarioLogado.senha) {
@@ -521,10 +522,10 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         const iconVisualizar = isFechado ? 'ph-lock-key text-slate-500' : 'ph-pencil-simple text-blue-500';
         
-        // A REGRA DE OURO: BOTÃO R$ SÓ SE FOR FINALIZADO!
-        let btnFaturar = '';
+        // A MÁGICA: O botão Faturar R$ aparece se Finalizado. Senão, um div vazio w-9 h-9 segura o alinhamento!
+        let btnFaturar = `<div class="w-9 h-9"></div>`; 
         if (orc.status === 'Finalizado') {
-            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-2 rounded-lg transition" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnFaturar = `<button onclick="prepararFaturamento('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar e Fechar O.S"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -536,9 +537,9 @@ function renderizarTabelaReal(dados) {
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                     ${btnFaturar}
-                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="bg-white hover:bg-slate-50 border border-slate-200 p-2 rounded-lg transition" title="Visualizar/Editar"><i class="ph-bold ${iconVisualizar} text-lg"></i></button>
-                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 p-2 rounded-lg transition" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="abrirEdicaoOS('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ${iconVisualizar} text-lg"></i></button>
+                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -769,14 +770,10 @@ function prepararFaturamento(dadosCodificados) {
     document.getElementById('fin-tipo-faturamento').value = 'avista';
     
     mudarTipoFaturamento();
-    
-    // Oculta o título do fundo para não vazar a escrita
-    document.getElementById('cabecalho-lista-os').classList.add('invisible');
     document.getElementById('modal-financeiro').classList.remove('hidden');
 }
 
 function fecharModalFinanceiro() {
-    document.getElementById('cabecalho-lista-os').classList.remove('invisible');
     document.getElementById('modal-financeiro').classList.add('hidden');
 }
 
