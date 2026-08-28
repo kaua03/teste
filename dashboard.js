@@ -76,8 +76,8 @@ async function compilarDadosReais() {
         // ============================================
         document.getElementById('dash-fat').innerText = faturamentoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         document.getElementById('dash-rec').innerText = aReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('dash-os').innerText = `${osAbertas} O.S.`;
-        document.getElementById('dash-inad').innerText = `${contasAtrasadas} Notas`;
+        document.getElementById('dash-os').innerText = `${osAbertas} `;
+        document.getElementById('dash-inad').innerText = `${contasAtrasadas} `;
 
         // ============================================
         // PROCESSANDO GRÁFICO DE FLUXO (ÚLTIMOS 6 MESES)
