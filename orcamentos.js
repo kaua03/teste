@@ -16,6 +16,10 @@ let globalClientes = [];
 let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 
+// Controladores de Estado da Tela
+window.isVisualizacaoModo = false;
+window.isOSDestravada = false;
+
 // ========================================================
 // FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS DE CARREGAMENTO)
 // ========================================================
@@ -179,20 +183,32 @@ function renderizarAbaFinanceiro() {
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
-        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
-        subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
         
-        document.getElementById('tab-fin-tipo').value = 'avista';
-        mudarTipoFaturamentoTab();
+        if (window.isVisualizacaoModo) {
+            boxGerador.classList.add('hidden'); // Nem deixa gerar no modo visualização
+            subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
+        } else {
+            subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
+            document.getElementById('tab-fin-tipo').value = 'avista';
+            mudarTipoFaturamentoTab();
+        }
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+        
     } else {
         // TELA DE EDITOR 
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
-        if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
-        subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
+        
+        if (window.isVisualizacaoModo) {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+            subtitulo.innerText = "Lançamentos financeiros atrelados à O.S.";
+        } else {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
+            subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
+        }
         
         const hasPago = currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
-        if (hasPago) {
+        if (hasPago || window.isVisualizacaoModo) {
             if(btnRefazer) btnRefazer.classList.add('hidden'); 
         } else {
             if(btnRefazer) btnRefazer.classList.remove('hidden'); 
@@ -200,18 +216,20 @@ function renderizarAbaFinanceiro() {
         
         const listaDiv = document.getElementById('lista-financeiro-vinculado');
         let html = '';
-        const isOSFechada = document.getElementById('db-status').value === 'Fechado';
+        
+        // Regra de Trava do Financeiro
+        const isTravadoGlobal = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
         currentOSFinanceiro.forEach((rec, idx) => {
             const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
-            const trancaGeral = isOSFechada ? 'disabled' : '';
+            const trancaGeral = isTravadoGlobal ? 'disabled' : '';
             const trancaParaPago = isPago ? 'disabled' : trancaGeral;
             
             let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
             
             const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
             const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
-            const trancaClasses = isPago ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
+            const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
 
             html += `
             <div class="p-4 rounded-xl border ${corCard} shadow-sm flex flex-col gap-4">
@@ -228,7 +246,7 @@ function renderizarAbaFinanceiro() {
                         <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Forma de Pagto.</label>
                         <select id="edit-rec-forma-${idx}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses} cursor-pointer">
                             <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
-                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
+                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
                             <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
                             <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
                             <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
@@ -240,11 +258,11 @@ function renderizarAbaFinanceiro() {
                         <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
-                ${!isPago && !isOSFechada ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
             </div>`;
         });
         
-        if (!isOSFechada) {
+        if (!isTravadoGlobal) {
             html += `
             <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
                  <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
@@ -262,30 +280,30 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
     
+    // Se a diferença for maior que 5 centavos (para arredondamentos), ele GRITA em vermelho e bloqueia
     if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
         if(elAlerta) elAlerta.classList.remove('hidden');
-        if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
+        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
     } else {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
         if(elAlerta) elAlerta.classList.add('hidden');
-        if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
     }
 }
 
 // -----------------------------------------------------------------------------------
-// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES (INTELIGENTE)
+// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES 
 // -----------------------------------------------------------------------------------
 window.checarSomaGeradorTab = function() {
     const activeEl = document.activeElement;
     
-    // Se o usuário está digitando a ENTRADA, nós recalculamos o resto automaticamente para ajudar.
-    if (activeEl && activeEl.id === 'tab-fin-entrada') {
+    // Auto-calcula tudo se ele estiver digitando a Entrada ou Nº de parcelas
+    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
         gerarLinhasParcelasTab();
         return;
     }
 
-    // Caso ele esteja editando direto uma parcela, ele não quer que recalcule, ele quer auditar!
     const tipo = document.getElementById('tab-fin-tipo').value;
     let soma = 0;
     
@@ -371,7 +389,6 @@ window.gerarLinhasParcelasTab = function() {
     let centavosPorParcela = Math.floor(centavosTotal / parcelas);
     let restoCentavos = centavosTotal % parcelas;
 
-    // Se estivermos recriando o HTML e for uma digitação na entrada, para não perder o cursor
     const activeEl = document.activeElement;
     const apenasAtualizar = (activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas);
 
@@ -586,21 +603,31 @@ function verificarStatusFinanceiro() {
     const badgeFechada = document.getElementById('badge-os-fechada');
     const abaFinBtn = document.getElementById('aba-fin');
     
-    if (status === 'Fechado') {
-        if(badgeFechada) badgeFechada.classList.remove('hidden');
-        congelarCamposOS(true);
-        abaFinBtn.classList.remove('hidden');
-        return;
-    }
+    // A Máquina de Estados que você pediu
+    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
-    congelarCamposOS(false);
-    if(badgeFechada) badgeFechada.classList.add('hidden');
+    if (isTravadoLocalmente) {
+        if(badgeFechada) {
+            badgeFechada.classList.remove('hidden');
+            if (window.isVisualizacaoModo) {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
+                badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            } else {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-lock-key text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Fechada / Leitura</span>';
+                badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            }
+        }
+        congelarCamposOS(true);
+    } else {
+        congelarCamposOS(false);
+        if(badgeFechada) badgeFechada.classList.add('hidden');
+    }
     
-    if (status === 'Finalizado' || currentOSFinanceiro.length > 0) {
+    if (status === 'Finalizado' || status === 'Fechado' || currentOSFinanceiro.length > 0) {
         abaFinBtn.classList.remove('hidden');
     } else {
         abaFinBtn.classList.add('hidden');
-        mudarAbaOS('dados'); 
+        if(!window.isVisualizacaoModo) mudarAbaOS('dados'); 
     }
 }
 
@@ -610,6 +637,7 @@ function congelarCamposOS(travar) {
 
     const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
     botoesAcao.forEach(btn => btn.disabled = travar);
+    
     if(travar) {
         document.getElementById('btn-salvar-db').classList.add('opacity-50', 'cursor-not-allowed');
     } else {
@@ -631,8 +659,10 @@ function alternarSubTelaOrcamento(modo) {
         osEmEdicaoId = null; 
         osEmEdicaoNumero = null;
         currentOSFinanceiro = []; 
-        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
         
+        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
         document.getElementById('db-cliente-nome').value = '';
         document.getElementById('db-veiculo-placa').value = '';
         document.getElementById('db-status').value = 'Em Aberto';
@@ -653,6 +683,8 @@ function alternarSubTelaOrcamento(modo) {
     } else {
         viewNovo.classList.add('hidden');
         viewLista.classList.remove('hidden');
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
         buscarOrcamentosSupabase();
     }
 }
@@ -740,13 +772,13 @@ function atualizarInterfaceItensETotais() {
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
-        const isFechado = document.getElementById('db-status').value === 'Fechado';
+        const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
         
         divLista.innerHTML = itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
             
-            let acoes = isFechado ? '' : `
+            let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
                 <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
                 <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
@@ -766,22 +798,17 @@ function atualizarInterfaceItensETotais() {
         }).join('');
     }
     
-    // Atualiza a Caixa Preta (Aba 1)
     document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
     document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
     
-    // Atualiza o painel limpo da Aba Financeiro
     const finPecas = document.getElementById('fin-resumo-pecas');
     if(finPecas) finPecas.innerText = formataDinheiro(valoresFinais.pecas);
-    
     const finServicos = document.getElementById('fin-resumo-servicos');
     if(finServicos) finServicos.innerText = formataDinheiro(valoresFinais.servicos);
-    
     const finDesc = document.getElementById('fin-resumo-desc');
     if(finDesc) finDesc.innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
-    
     const finTotalOs = document.getElementById('fin-aba-total-os');
     if(finTotalOs) finTotalOs.innerText = formataDinheiro(valoresFinais.total);
 }
@@ -802,13 +829,13 @@ function renderizarPreviewFotos() {
     
     if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
     
-    const isFechado = document.getElementById('db-status').value === 'Fechado';
+    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
     imagensUploadArray.forEach(base64Str => {
         const imgBox = document.createElement('div');
         imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
         
-        let trashIcon = isFechado ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
         
         imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
         previewContainer.appendChild(imgBox);
@@ -843,6 +870,17 @@ async function salvarOrcamentoReal() {
     if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
     if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
+    // BLINDAGEM: Se estivermos salvando uma O.S e os valores não baterem com o financeiro, avisamos mas salvamos (se o usuário for pra aba finanças consertar depois). 
+    // Porém, não deixamos alterar a matemática lá.
+    if (currentOSFinanceiro.length > 0) {
+        let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
+        if (Math.abs(valoresFinais.total - somaF) > 0.05) {
+            dispararAlerta("O valor da O.S mudou. Ajuste as parcelas na aba 'Gestão Financeira' para a conta fechar!", "erro");
+            mudarAbaOS('fin');
+            return;
+        }
+    }
+
     const btnSalvar = document.getElementById('btn-salvar-db');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO...';
     btnSalvar.disabled = true;
@@ -853,7 +891,6 @@ async function salvarOrcamentoReal() {
         const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
 
         if (osEmEdicaoId) {
-            
             const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
             if (oldOrc && oldOrc.itens && oldOrc.itens.financeiro) {
                 payloadJSONB.financeiro = oldOrc.itens.financeiro;
@@ -862,16 +899,7 @@ async function salvarOrcamentoReal() {
             const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
             if (error) throw error;
             
-            if (currentOSFinanceiro.length > 0) {
-                let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
-                if (Math.abs(valoresFinais.total - somaF) > 0.05) {
-                    dispararAlerta("O.S atualizada! ATENÇÃO: O valor mudou. Acesse a aba 'Gestão Financeira' para corrigir as parcelas.", "erro");
-                } else {
-                    dispararAlerta("O.S atualizada com sucesso!", "sucesso");
-                }
-            } else {
-                dispararAlerta("O.S atualizada com sucesso!", "sucesso");
-            }
+            dispararAlerta("O.S atualizada com sucesso!", "sucesso");
             alternarSubTelaOrcamento('lista');
         } else {
             const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]);
@@ -883,10 +911,12 @@ async function salvarOrcamentoReal() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
 }
 
-async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados') {
+async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
     osEmEdicaoNumero = orc.numero_os; 
+    window.isVisualizacaoModo = isVisualizacao;
+    if (isVisualizacao) window.isOSDestravada = false;
     
     document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
     
@@ -930,8 +960,13 @@ async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados') {
     mudarAbaOS(abaAlvo); 
 }
 
+// O MODO LEITURA AO CLICAR NA O.S
+window.abrirVisualizacaoOS = function(dadosCodificados) {
+    abrirEdicaoOS(dadosCodificados, 'dados', true);
+}
+
 function abrirFaturamentoDireto(dadosCodificados) {
-    abrirEdicaoOS(dadosCodificados, 'fin');
+    abrirEdicaoOS(dadosCodificados, 'fin', false);
 }
 
 function abrirModalDestravar(id, orcJSONCodificado) {
@@ -951,16 +986,10 @@ async function processarDestravarOS() {
 
     if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
-    try {
-        const novoStatus = 'Em Aberto';
-        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', osParaDestravarId);
-        if (error) throw error;
-        
-        fecharModalDestravar();
-        osParaDestravarDados.status = novoStatus;
-        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados');
-        dispararAlerta("O.S destravada para edição.", "sucesso");
-    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
+    fecharModalDestravar();
+    window.isOSDestravada = true;
+    abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
+    dispararAlerta("O.S destravada para edição temporária.", "sucesso");
 }
 
 function abrirModalExclusao(id, numero_os) {
@@ -1002,7 +1031,7 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Visualizar/Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
@@ -1012,12 +1041,12 @@ function renderizarTabelaReal(dados) {
         }
         
         return `
-        <tr class="hover:bg-slate-50 transition-colors">
+        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="abrirVisualizacaoOS('${orcJSON}')">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
             <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${isFechado ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
-            <td class="p-4 md:p-5 text-center">
+            <td class="p-4 md:p-5 text-center" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-center gap-1.5">
                     ${btnAcao1}
                     ${btnAcao2}
@@ -1221,7 +1250,10 @@ async function processarSalvamentoModal() {
     }
 }
 
-function gerarPDFSupabase(dadosCodificados) {
+// ----------------------------------------------------
+// MOTOR DE IMPRESSÃO
+// ----------------------------------------------------
+window.gerarPDFSupabase = function(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
     document.getElementById('pdf-id').innerText = orc.numero_os;
@@ -1297,7 +1329,9 @@ function gerarPDFSupabase(dadosCodificados) {
     }
 
     const fin = orc.itens?.financeiro;
-    if (fin) {
+    const containerFin = document.getElementById('pdf-container-financeiro');
+    
+    if (fin && containerFin) {
         let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
         htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
         if (fin.entrada > 0) {
@@ -1311,9 +1345,11 @@ function gerarPDFSupabase(dadosCodificados) {
             });
         }
         htmlFin += `</table>`;
-        let divFin = document.createElement('div');
-        divFin.innerHTML = htmlFin;
-        document.getElementById('pdf-template-real').appendChild(divFin);
+        
+        containerFin.innerHTML = htmlFin;
+        containerFin.style.display = 'block';
+    } else if (containerFin) {
+        containerFin.style.display = 'none';
     }
 
     const el = document.getElementById('pdf-template-real');
