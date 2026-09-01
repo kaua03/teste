@@ -87,7 +87,62 @@ window.obterCorStatus = function(status) {
 };
 
 // ========================================================
-// 2. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
+// 2. FUNÇÕES RESTAURADAS (CONTROLE DE ABAS E TRAVAS)
+// ========================================================
+window.mudarAbaOS = function(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        window.renderizarAbaFinanceiro();
+    }
+};
+
+window.recarregarFinanceiroDaOS = async function() {
+    if(!window.osEmEdicaoNumero) return;
+    const { data: finRecords } = await window.banco.from('contas_receber')
+        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
+    
+    window.currentOSFinanceiro = finRecords || [];
+    if (!document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
+        window.renderizarAbaFinanceiro();
+    }
+};
+
+window.congelarCamposOS = function(travar) {
+    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
+    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
+
+    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
+    botoesAcao.forEach(btn => btn.disabled = travar);
+    
+    const btnSalvarObj = document.getElementById('btn-salvar-db');
+    if(btnSalvarObj) {
+        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
+        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
+    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
+    
+    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
+    camposFinEdit.forEach(el => el.disabled = travar);
+};
+
+
+// ========================================================
+// 3. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
 // ========================================================
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
@@ -330,7 +385,7 @@ window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-s
 };
 
 // ========================================================
-// 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
+// 4. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
 // ========================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -353,6 +408,18 @@ window.carregarListasBD = async function() {
 
     window.globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
     window.globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
+};
+
+window.vincularClienteViceVersa = function(gatilho) {
+    const selCli = document.getElementById('db-cliente-nome');
+    const selVei = document.getElementById('db-veiculo-placa');
+    if (gatilho === 'cliente' && selCli && selCli.value) {
+        const veiEncontrado = window.globalVeiculos.find(v => v.dono_nome === selCli.value);
+        if (veiEncontrado && selVei) selVei.value = veiEncontrado.placa;
+    } else if (gatilho === 'veiculo' && selVei && selVei.value) {
+        const veiEncontrado = window.globalVeiculos.find(v => v.placa === selVei.value);
+        if (veiEncontrado && veiEncontrado.dono_nome && selCli) selCli.value = veiEncontrado.dono_nome;
+    }
 };
 
 window.buscarOrcamentosSupabase = async function() {
@@ -614,7 +681,7 @@ window.processarDestravarOS = async function() {
 };
 
 // ========================================================
-// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS)
+// 5. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS)
 // ========================================================
 window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
@@ -1068,7 +1135,7 @@ window.abrirModalCadastro = function(tipo) {
                 <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
                     ${optionsDono}
                 </select>
-                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selected na O.S.</p>
+                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2 md:col-span-1">
