@@ -87,62 +87,7 @@ window.obterCorStatus = function(status) {
 };
 
 // ========================================================
-// 2. FUNÇÕES RESTAURADAS (CONTROLE DE ABAS E TRAVAS)
-// ========================================================
-window.mudarAbaOS = function(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        window.renderizarAbaFinanceiro();
-    }
-};
-
-window.recarregarFinanceiroDaOS = async function() {
-    if(!window.osEmEdicaoNumero) return;
-    const { data: finRecords } = await window.banco.from('contas_receber')
-        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
-    
-    window.currentOSFinanceiro = finRecords || [];
-    if (!document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
-        window.renderizarAbaFinanceiro();
-    }
-};
-
-window.congelarCamposOS = function(travar) {
-    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
-    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
-
-    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
-    botoesAcao.forEach(btn => btn.disabled = travar);
-    
-    const btnSalvarObj = document.getElementById('btn-salvar-db');
-    if(btnSalvarObj) {
-        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
-        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-    
-    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
-    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
-    
-    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
-    camposFinEdit.forEach(el => el.disabled = travar);
-};
-
-
-// ========================================================
-// 3. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
+// 2. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
 // ========================================================
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
@@ -385,7 +330,7 @@ window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-s
 };
 
 // ========================================================
-// 4. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
+// 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
 // ========================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -408,18 +353,6 @@ window.carregarListasBD = async function() {
 
     window.globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
     window.globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
-};
-
-window.vincularClienteViceVersa = function(gatilho) {
-    const selCli = document.getElementById('db-cliente-nome');
-    const selVei = document.getElementById('db-veiculo-placa');
-    if (gatilho === 'cliente' && selCli && selCli.value) {
-        const veiEncontrado = window.globalVeiculos.find(v => v.dono_nome === selCli.value);
-        if (veiEncontrado && selVei) selVei.value = veiEncontrado.placa;
-    } else if (gatilho === 'veiculo' && selVei && selVei.value) {
-        const veiEncontrado = window.globalVeiculos.find(v => v.placa === selVei.value);
-        if (veiEncontrado && veiEncontrado.dono_nome && selCli) selCli.value = veiEncontrado.dono_nome;
-    }
 };
 
 window.buscarOrcamentosSupabase = async function() {
@@ -669,24 +602,23 @@ window.processarDestravarOS = async function() {
     if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
     try {
-        const novoStatus = 'Em Aberto';
-        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', window.osParaDestravarId);
-        if (error) throw error;
-        
+        // O DESTAVAMENTO NÃO ALTERA MAIS O BANCO! Apenas destrava a tela.
         window.fecharModalDestravar();
-        window.osParaDestravarDados.status = novoStatus;
+        window.isOSDestravada = true;
+        // Reabre a tela mantendo o JSON original que foi carregado no clique da engrenagem
         window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-        window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
+        window.dispararAlerta("O.S destravada temporariamente para edição. Lembre-se de Salvar.", "sucesso");
+    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S."); }
 };
 
 // ========================================================
-// 5. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS)
+// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS GERAIS)
 // ========================================================
 window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     window.osEmEdicaoId = orc.id;
     window.osEmEdicaoNumero = orc.numero_os; 
+    window.osParaDestravarDados = orc; // Guarda a OS inteira caso precise destravar depois
     window.isVisualizacaoModo = isVisualizacao;
     if (isVisualizacao) window.isOSDestravada = false;
     
@@ -732,6 +664,45 @@ window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVis
     window.mudarAbaOS(abaAlvo); 
 };
 
+window.mudarAbaOS = function(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+    
+    const boxAuditoria = document.getElementById('box-auditoria-financeira');
+    const boxDesconto = document.getElementById('box-desconto');
+    const boxStatusSelect = document.getElementById('box-status');
+    const boxBtnSalvar = document.getElementById('btn-salvar-db');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+        
+        boxAuditoria.classList.add('hidden');
+        boxDesconto.classList.remove('hidden');
+        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
+        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
+        
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        
+        boxAuditoria.classList.remove('hidden');
+        boxDesconto.classList.add('hidden');
+        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
+        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
+        
+        window.renderizarAbaFinanceiro();
+    }
+};
+
 window.abrirVisualizacaoOS = function(dadosCodificados) {
     window.abrirEdicaoOS(dadosCodificados, 'dados', true);
 };
@@ -740,133 +711,24 @@ window.abrirFaturamentoDireto = function(dadosCodificados) {
     window.abrirEdicaoOS(dadosCodificados, 'fin', false);
 };
 
-window.mudarTipoFaturamentoTab = function() {
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    const boxEntrada = document.getElementById('tab-box-entrada');
-    const boxParcelamento = document.getElementById('tab-box-parcelamento');
-    const inputEntrada = document.getElementById('tab-fin-entrada');
-
-    let d = new Date(); d.setMonth(d.getMonth() + 1);
-    const dataMesQueVem = window.formatarDataISO(d);
-
-    if (tipo === 'avista') {
-        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
-        inputEntrada.value = window.formataDinheiro(window.valoresFinais.total); inputEntrada.readOnly = true;
-        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
-    } else if (tipo === 'entrada_parcela') {
-        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
-        inputEntrada.readOnly = false; inputEntrada.value = ''; 
-        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
-        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
-    } else if (tipo === 'parcelado') {
-        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
-        inputEntrada.value = '0,00';
-        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
-    }
-    window.gerarLinhasParcelasTab();
+window.abrirModalDestravar = function(id, orcJSONCodificado) {
+    window.osParaDestravarId = id; 
+    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
+    document.getElementById('input-senha-reabrir').value = '';
+    document.getElementById('modal-senha-destravar').classList.remove('hidden');
 };
 
-window.gerarLinhasParcelasTab = function() {
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    let entrada = (tipo === 'avista') ? window.valoresFinais.total : ((tipo === 'parcelado') ? 0 : window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
-    let restante = window.valoresFinais.total - entrada; if(restante < 0) restante = 0;
+window.fecharModalDestravar = function() { document.getElementById('modal-senha-destravar').classList.add('hidden'); };
 
-    const divSimulacao = document.getElementById('tab-fin-simulacao');
-    if (tipo === 'avista' || restante === 0) {
-        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
-        document.getElementById('tab-fin-parcelas').disabled = true;
-        
-        document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(entrada);
-        window.atualizarPlacarAuditoria(entrada, 'btn-salvar-fin-tab');
-        return;
-    }
-
-    document.getElementById('tab-fin-parcelas').disabled = false;
-    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
-    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
-    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
-    
-    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
-    let centavosTotal = Math.round(restante * 100);
-    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
-    let restoCentavos = centavosTotal % parcelas;
-
-    const activeEl = document.activeElement;
-    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
-
-    let somaGerada = entrada;
-
-    for(let i=1; i<=parcelas; i++) {
-        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
-        somaGerada += valorParc;
-        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = window.formatarDataISO(d);
-
-        if (apenasAtualizar) {
-            const inputParc = document.getElementById(`tab-parc-val-${i}`);
-            if (inputParc) inputParc.value = window.valorParaInput(valorParc);
-        } else {
-            html += `
-            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
-                <input type="text" id="tab-parc-val-${i}" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" value="${window.valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
-                <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
-                <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
-                    <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
-                    <option value="Cartão de Débito">Cartão de Débito</option>
-                    <option value="Pix">Pix</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Dinheiro">Dinheiro Físico</option>
-                    <option value="Transferência">Transferência Bancária</option>
-                </select>
-            </div>`;
-        }
-    }
-    
-    if (!apenasAtualizar) {
-        divSimulacao.innerHTML = html;
-    }
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(somaGerada);
-    window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
+window.abrirModalExclusao = function(id, numero_os) {
+    window.idParaExcluir = id;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
 };
 
-window.checarSomaGeradorTab = function() {
-    const activeEl = document.activeElement;
-    
-    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
-        window.gerarLinhasParcelasTab();
-        return;
-    }
-
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    let soma = 0;
-    
-    if (tipo !== 'parcelado') {
-        soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
-    }
-    
-    if (tipo !== 'avista') {
-        const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
-        for(let i=1; i<=parcelas; i++) {
-            const inputParc = document.getElementById(`tab-parc-val-${i}`);
-            if(inputParc) soma += window.reverterMoeda(inputParc.value) || 0;
-        }
-    }
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
-    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
-};
-
-window.checarSomaFinanceiroEdit = function() {
-    let soma = 0;
-    window.currentOSFinanceiro.forEach((rec, idx) => {
-        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
-        if(inputVal) soma += window.reverterMoeda(inputVal.value);
-        else soma += rec.valor;
-    });
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
-    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
+window.fecharModalExclusao = function() { 
+    window.idParaExcluir = null; 
+    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
 };
 
 window.verificarStatusFinanceiro = function() {
@@ -874,6 +736,7 @@ window.verificarStatusFinanceiro = function() {
     const badgeFechada = document.getElementById('badge-os-fechada');
     const abaFinBtn = document.getElementById('aba-fin');
     
+    // A Máquina de Estados
     const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
     if (isTravadoLocalmente) {
@@ -899,26 +762,6 @@ window.verificarStatusFinanceiro = function() {
         abaFinBtn.classList.add('hidden');
         if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
     }
-};
-
-window.congelarCamposOS = function(travar) {
-    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
-    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
-
-    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
-    botoesAcao.forEach(btn => btn.disabled = travar);
-    
-    const btnSalvarObj = document.getElementById('btn-salvar-db');
-    if(btnSalvarObj) {
-        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
-        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-    
-    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
-    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
-    
-    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
-    camposFinEdit.forEach(el => el.disabled = travar);
 };
 
 window.alternarSubTelaOrcamento = function(modo) {
@@ -1042,28 +885,6 @@ window.calcularTotais = function() {
             window.checarSomaGeradorTab();
         }
     }
-};
-
-window.abrirModalDestravar = function(id, orcJSONCodificado) {
-    window.osParaDestravarId = id; 
-    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
-    document.getElementById('input-senha-reabrir').value = '';
-    document.getElementById('modal-senha-destravar').classList.remove('hidden');
-};
-
-window.fecharModalDestravar = function() { 
-    document.getElementById('modal-senha-destravar').classList.add('hidden'); 
-};
-
-window.abrirModalExclusao = function(id, numero_os) {
-    window.idParaExcluir = id;
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
-};
-
-window.fecharModalExclusao = function() { 
-    window.idParaExcluir = null; 
-    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
 };
 
 window.abrirModalCadastro = function(tipo) {
