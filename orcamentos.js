@@ -701,17 +701,16 @@ function abrirFaturamentoDireto(dadosCodificados) {
     abrirEdicaoOS(dadosCodificados, 'fin', false);
 }
 
-// ---- FUNÇÕES QUE FALTAVAM NO SEU CÓDIGO (ADICIONADAS AQUI) ----
-
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
     const btnFin = document.getElementById('aba-fin');
     const contDados = document.getElementById('aba-conteudo-dados');
     const contFin = document.getElementById('aba-conteudo-fin');
+    const status = document.getElementById('db-status').value;
 
     if (aba === 'dados') {
         btnDados.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm";
-        btnFin.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2" + (document.getElementById('db-status').value === 'Finalizado' || document.getElementById('db-status').value === 'Fechado' || currentOSFinanceiro.length > 0 ? '' : ' hidden');
+        btnFin.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2" + (status === 'Finalizado' || status === 'Fechado' ? '' : ' hidden');
         contDados.classList.remove('hidden');
         contDados.classList.add('block');
         contFin.classList.add('hidden');
@@ -764,8 +763,6 @@ function removerImagemArray(base64Str) {
     imagensUploadArray = imagensUploadArray.filter(img => img !== base64Str);
     renderizarPreviewFotos();
 }
-
-// ----------------------------------------------------------------
 
 function mudarTipoFaturamentoTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
@@ -920,7 +917,7 @@ function verificarStatusFinanceiro() {
         if(badgeFechada) badgeFechada.classList.add('hidden');
     }
     
-    if (status === 'Finalizado' || status === 'Fechado' || currentOSFinanceiro.length > 0) {
+    if (status === 'Finalizado' || status === 'Fechado') {
         abaFinBtn.classList.remove('hidden');
     } else {
         abaFinBtn.classList.add('hidden');
