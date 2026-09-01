@@ -601,10 +601,16 @@ window.processarDestravarOS = async function() {
 
     if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
-    window.fecharModalDestravar();
-    window.isOSDestravada = true; 
-    window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-    window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
+    try {
+        const novoStatus = 'Em Aberto';
+        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', window.osParaDestravarId);
+        if (error) throw error;
+        
+        window.fecharModalDestravar();
+        window.osParaDestravarDados.status = novoStatus;
+        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
+        window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
+    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
 // ========================================================
@@ -1062,7 +1068,7 @@ window.abrirModalCadastro = function(tipo) {
                 <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
                     ${optionsDono}
                 </select>
-                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
+                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selected na O.S.</p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2 md:col-span-1">
@@ -1271,7 +1277,6 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
     const containerFin = document.getElementById('pdf-container-financeiro');
     containerFin.innerHTML = '';
     
-    // Busca do banco de dados na hora de gerar o PDF (BLINDADO ASYNC)
     try {
         const { data: recordsFin } = await window.banco.from('contas_receber')
             .select('*').like('descricao', `%O.S #${orc.numero_os}%`).order('data_vencimento', { ascending: true });
@@ -1316,4 +1321,4 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
     });
 };
 
-console.log("🟢 Módulo Orçamentos Carregado 100%");
+console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso!");
