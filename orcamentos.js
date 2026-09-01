@@ -16,6 +16,73 @@ let globalClientes = [];
 let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 
+// ========================================================
+// FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS DE CARREGAMENTO)
+// ========================================================
+function formataDinheiro(v) {
+    const val = Number(v) || 0;
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function mascaraMoeda(campo) {
+    let valor = campo.value.replace(/\D/g, ''); 
+    if (valor === '') { campo.value = ''; return; }
+    valor = (parseInt(valor, 10) / 100).toFixed(2);
+    campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+}
+
+function formatarDataISO(dataObj) {
+    const ano = dataObj.getFullYear();
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+function valorParaInput(v) {
+    let val = Number(v) || 0;
+    val = val.toFixed(2);
+    val = val.replace('.', ',');
+    val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    return val;
+}
+
+function reverterMoeda(texto) {
+    if(!texto) return 0;
+    let limpo = texto.toString().replace(/[^\d,-]/g, '');
+    return parseFloat(limpo.replace(',', '.')) || 0;
+}
+
+function mascaraGeral(tipo, campo) {
+    let v = campo.value;
+    if (tipo === 'cpf') {
+        v = v.replace(/\D/g, ""); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); campo.value = v;
+    } else if (tipo === 'cep') {
+        v = v.replace(/\D/g, ""); v = v.replace(/^(\d{5})(\d)/, "$1-$2"); campo.value = v;
+    } else if (tipo === 'tel') {
+        v = v.replace(/\D/g, ""); v = v.replace(/^(\d{2})(\d)/g, "($1) $2"); v = v.replace(/(\d)(\d{4})$/, "$1-$2"); campo.value = v;
+    } else if (tipo === 'placa') {
+        v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
+        if (v.length > 4 && /[0-9]/.test(v[4])) { v = v.substring(0, 3) + '-' + v.substring(3); }
+        campo.value = v;
+    }
+}
+
+function dispararAlerta(msg, tipo = 'erro') {
+    const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
+    const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
+    const alertaAntigo = document.getElementById('alerta-toast-flutuante');
+    if (alertaAntigo) alertaAntigo.remove();
+    const toast = document.createElement('div');
+    toast.id = 'alerta-toast-flutuante';
+    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
+    toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast) toast.remove(); }, 4000);
+}
+
+// ========================================================
+// INICIALIZAÇÃO
+// ========================================================
 async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
@@ -51,38 +118,31 @@ function vincularClienteViceVersa(gatilho) {
     }
 }
 
-function dispararAlerta(msg, tipo = 'erro') {
-    const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
-    const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
-    const alertaAntigo = document.getElementById('alerta-toast-flutuante');
-    if (alertaAntigo) alertaAntigo.remove();
-    const toast = document.createElement('div');
-    toast.id = 'alerta-toast-flutuante';
-    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
-    toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
-    document.body.appendChild(toast);
-    setTimeout(() => { if (toast) toast.remove(); }, 4000);
-}
-
-// -----------------------------------------------------------------------------------
-// SISTEMA DE ABAS
-// -----------------------------------------------------------------------------------
+// ========================================================
+// SISTEMA DE ABAS DA O.S E RENDERIZAÇÃO FINANCEIRA
+// ========================================================
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
     const btnFin = document.getElementById('aba-fin');
     const contDados = document.getElementById('aba-conteudo-dados');
     const contFin = document.getElementById('aba-conteudo-fin');
+    const boxAuditoria = document.getElementById('box-auditoria-financeira');
+    const boxDesconto = document.getElementById('box-desconto');
 
     if (aba === 'dados') {
         btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
         btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
         contDados.classList.remove('hidden');
         contFin.classList.add('hidden');
+        boxAuditoria.classList.add('hidden');
+        boxDesconto.classList.remove('hidden');
     } else {
         btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
         btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
         contFin.classList.remove('hidden');
         contDados.classList.add('hidden');
+        boxAuditoria.classList.remove('hidden');
+        boxDesconto.classList.add('hidden');
         renderizarAbaFinanceiro();
     }
 }
@@ -107,9 +167,7 @@ function renderizarAbaFinanceiro() {
     const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
     const subtitulo = document.getElementById('fin-aba-subtitulo');
     
-    // Alimenta o total na aba financeira
-    const finTotalOs = document.getElementById('fin-aba-total-os');
-    if (finTotalOs) finTotalOs.innerText = formataDinheiro(valoresFinais.total);
+    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 
     if (!osEmEdicaoId) {
         boxBloqueado.classList.remove('hidden');
@@ -220,9 +278,9 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 }
 
 // -----------------------------------------------------------------------------------
-// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES (SEM AUTO-AJUSTE)
+// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES 
 // -----------------------------------------------------------------------------------
-window.checarSomaGeradorTab = function() {
+function checarSomaGeradorTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
     let soma = 0;
     
@@ -242,7 +300,7 @@ window.checarSomaGeradorTab = function() {
     atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
 }
 
-window.checarSomaFinanceiroEdit = function() {
+function checarSomaFinanceiroEdit() {
     let soma = 0;
     currentOSFinanceiro.forEach((rec, idx) => {
         const inputVal = document.getElementById(`edit-rec-val-${idx}`);
@@ -255,7 +313,7 @@ window.checarSomaFinanceiroEdit = function() {
 }
 
 // ----------------------------------------------------
-// GERADOR DE PARCELAS TAB
+// LÓGICA DO GERADOR DE PARCELAS TAB
 // ----------------------------------------------------
 function mudarTipoFaturamentoTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
@@ -331,6 +389,34 @@ function gerarLinhasParcelasTab() {
     
     document.getElementById('fin-aba-soma').innerText = formataDinheiro(valoresFinais.total);
     atualizarPlacarAuditoria(valoresFinais.total, 'btn-salvar-fin-tab');
+}
+
+function ajustarParcelasManualmenteTab(index) {
+    const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+    const entrada = (document.getElementById('tab-fin-tipo').value === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
+    const restante = valoresFinais.total - entrada;
+    
+    let somaAnteriores = 0;
+    for(let i=1; i<=index; i++) { somaAnteriores += reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0; }
+    
+    let restanteParaDistribuir = restante - somaAnteriores;
+    if (restanteParaDistribuir < 0) {
+        document.getElementById(`tab-parc-val-${index}`).value = valorParaInput(restante - (somaAnteriores - reverterMoeda(document.getElementById(`tab-parc-val-${index}`).value)));
+        restanteParaDistribuir = 0;
+    }
+    
+    const parcelasRestantes = parcelas - index;
+    if (parcelasRestantes > 0) {
+        let centavosRestantes = Math.round(restanteParaDistribuir * 100);
+        let centavosPorParcela = Math.floor(centavosRestantes / parcelasRestantes);
+        let restoCentavos = centavosRestantes % parcelasRestantes;
+
+        for(let i = index + 1; i <= parcelas; i++) {
+            let valorParc = (centavosPorParcela + ((i - index) <= restoCentavos ? 1 : 0)) / 100;
+            document.getElementById(`tab-parc-val-${i}`).value = valorParaInput(valorParc);
+        }
+    }
+    checarSomaGeradorTab();
 }
 
 async function processarLancarFinanceiroTab() {
@@ -501,9 +587,8 @@ async function limparFinanceiroAtual() {
 }
 
 // ----------------------------------------------------
-// COMPORTAMENTO DA O.S E REGRAS DE TRAVA
+// VERIFICAÇÕES DE STATUS DE TELA
 // ----------------------------------------------------
-
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const badgeFechada = document.getElementById('badge-os-fechada');
@@ -541,6 +626,9 @@ function congelarCamposOS(travar) {
     
     const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
     botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
+    
+    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
+    camposFinEdit.forEach(el => el.disabled = travar);
 }
 
 function alternarSubTelaOrcamento(modo) {
@@ -574,49 +662,6 @@ function alternarSubTelaOrcamento(modo) {
         viewNovo.classList.add('hidden');
         viewLista.classList.remove('hidden');
         buscarOrcamentosSupabase();
-    }
-}
-
-function mascaraMoeda(campo) {
-    let valor = campo.value.replace(/\D/g, ''); 
-    if (valor === '') { campo.value = ''; return; }
-    valor = (parseInt(valor, 10) / 100).toFixed(2);
-    campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-}
-
-function formatarDataISO(dataObj) {
-    const ano = dataObj.getFullYear();
-    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-    const dia = String(dataObj.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
-}
-
-function valorParaInput(v) {
-    let val = Number(v) || 0;
-    val = val.toFixed(2);
-    val = val.replace('.', ',');
-    val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-    return val;
-}
-
-function reverterMoeda(texto) {
-    if(!texto) return 0;
-    let limpo = texto.toString().replace(/[^\d,-]/g, '');
-    return parseFloat(limpo.replace(',', '.')) || 0;
-}
-
-function mascaraGeral(tipo, campo) {
-    let v = campo.value;
-    if (tipo === 'cpf') {
-        v = v.replace(/\D/g, ""); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); campo.value = v;
-    } else if (tipo === 'cep') {
-        v = v.replace(/\D/g, ""); v = v.replace(/^(\d{5})(\d)/, "$1-$2"); campo.value = v;
-    } else if (tipo === 'tel') {
-        v = v.replace(/\D/g, ""); v = v.replace(/^(\d{2})(\d)/g, "($1) $2"); v = v.replace(/(\d)(\d{4})$/, "$1-$2"); campo.value = v;
-    } else if (tipo === 'placa') {
-        v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
-        if (v.length > 4 && /[0-9]/.test(v[4])) { v = v.substring(0, 3) + '-' + v.substring(3); }
-        campo.value = v;
     }
 }
 
@@ -654,7 +699,6 @@ function removerItemDB(id) { itensTemporarios = itensTemporarios.filter(i => i.i
 function editarItem(id) {
     const item = itensTemporarios.find(i => i.id_temp === id);
     if (!item) return;
-
     document.getElementById('item-tipo').value = item.tipo || 'Peça';
     document.getElementById('item-nome').value = item.descricao;
     document.getElementById('item-desc').value = item.detalhe || '';
@@ -688,10 +732,8 @@ function calcularTotais() {
 
     valoresFinais.pecas = sumPecas; valoresFinais.servicos = sumServicos; valoresFinais.desconto = descValor; valoresFinais.total = totalBruto - descValor;
     
-    // ATUALIZA A TELA E AS DUAS ABAS
     atualizarInterfaceItensETotais();
     
-    // SÓ DISPARA O CHECADOR FINANCEIRO SE ESTIVER NA ABA FINANCEIRA
     if(!document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
         if(currentOSFinanceiro.length > 0) {
             checarSomaFinanceiroEdit();
@@ -732,13 +774,11 @@ function atualizarInterfaceItensETotais() {
         }).join('');
     }
     
-    // Atualiza a Caixa Preta (Aba 1)
     document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
     document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
     
-    // ATUALIZA O PAINEL LIMPO E A AUDITORIA (Aba 2)
     const finPecas = document.getElementById('fin-resumo-pecas');
     if(finPecas) finPecas.innerText = formataDinheiro(valoresFinais.pecas);
     
@@ -780,7 +820,11 @@ function renderizarPreviewFotos() {
         previewContainer.appendChild(imgBox);
     });
 }
-function removerImagemArray(strToRem) { imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); renderizarPreviewFotos(); }
+
+function removerImagemArray(strToRem) { 
+    imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); 
+    renderizarPreviewFotos(); 
+}
 
 // -----------------------------------------------------------------------------------
 // COMUNICAÇÃO COM O BANCO
@@ -791,7 +835,7 @@ async function buscarOrcamentosSupabase() {
         if (error) throw error;
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
-        console.error(erro);
+        console.error("Erro no Supabase:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 }
@@ -1183,13 +1227,9 @@ async function processarSalvamentoModal() {
     }
 }
 
-/**
- * MOTOR DE IMPRESSÃO
- */
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
+    
     document.getElementById('pdf-id').innerText = orc.numero_os;
     const dataAbertura = new Date(orc.data_criacao);
     const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
@@ -1244,11 +1284,11 @@ function gerarPDFSupabase(dadosCodificados) {
     
     if(pecas.length > 0) {
         htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #D1D5DB;">1. Peças e Componentes</td></tr>`;
-        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${format(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${formataDinheiro(i.subtotal)}</td></tr>`).join('');
     }
     if(servicos.length > 0) {
         htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-top: 1px solid #000000; border-bottom: 1px solid #D1D5DB;">2. Mão de Obra e Serviços</td></tr>`;
-        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${format(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${format(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${formataDinheiro(i.subtotal)}</td></tr>`).join('');
     }
     htmlTabela += `</tbody></table>`;
     document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
@@ -1268,12 +1308,12 @@ function gerarPDFSupabase(dadosCodificados) {
         htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
         if (fin.entrada > 0) {
             const dataEntradaBR = new Date(fin.data_entrada + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${format(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${formataDinheiro(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
         }
         if (fin.parcelas && fin.parcelas.length > 0) {
             fin.parcelas.forEach(p => {
                 const dataBR = new Date(p.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-                htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${p.numero}/${fin.parcelas.length}:</b> ${format(p.valor)} - Vencimento: ${dataBR} (Via ${p.forma_pagamento})</td></tr>`;
+                htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${p.numero}/${fin.parcelas.length}:</b> ${formataDinheiro(p.valor)} - Vencimento: ${dataBR} (Via ${p.forma_pagamento})</td></tr>`;
             });
         }
         htmlFin += `</table>`;
