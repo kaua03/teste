@@ -701,6 +701,72 @@ function abrirFaturamentoDireto(dadosCodificados) {
     abrirEdicaoOS(dadosCodificados, 'fin', false);
 }
 
+// ---- FUNÇÕES QUE FALTAVAM NO SEU CÓDIGO (ADICIONADAS AQUI) ----
+
+function mudarAbaOS(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+
+    if (aba === 'dados') {
+        btnDados.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm";
+        btnFin.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2" + (document.getElementById('db-status').value === 'Finalizado' || document.getElementById('db-status').value === 'Fechado' || currentOSFinanceiro.length > 0 ? '' : ' hidden');
+        contDados.classList.remove('hidden');
+        contDados.classList.add('block');
+        contFin.classList.add('hidden');
+    } else if (aba === 'fin') {
+        btnFin.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2";
+        btnDados.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm";
+        contFin.classList.remove('hidden');
+        contFin.classList.add('block');
+        contDados.classList.add('hidden');
+        renderizarAbaFinanceiro();
+    }
+}
+
+async function recarregarFinanceiroDaOS() {
+    if (!osEmEdicaoNumero) {
+        currentOSFinanceiro = [];
+        return;
+    }
+    try {
+        const { data, error } = await window.banco.from('contas_receber')
+            .select('*')
+            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
+            .order('data_vencimento', { ascending: true });
+
+        if (error) throw error;
+        currentOSFinanceiro = data || [];
+        renderizarAbaFinanceiro();
+    } catch (error) {
+        console.error("Erro ao carregar financeiro:", error);
+    }
+}
+
+function processarImagens(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagensUploadArray.push(e.target.result);
+            document.getElementById('preview-anexos').classList.remove('hidden');
+            renderizarPreviewFotos();
+        };
+        reader.readAsDataURL(file);
+    });
+    event.target.value = ''; // Limpa o input para poder enviar a mesma imagem novamente se precisar
+}
+
+function removerImagemArray(base64Str) {
+    imagensUploadArray = imagensUploadArray.filter(img => img !== base64Str);
+    renderizarPreviewFotos();
+}
+
+// ----------------------------------------------------------------
+
 function mudarTipoFaturamentoTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
     const boxEntrada = document.getElementById('tab-box-entrada');
