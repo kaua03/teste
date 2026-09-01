@@ -20,9 +20,9 @@
             <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64">
                     <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg"></i>
-                    <input type="text" id="input-pesquisa-os" onkeyup="window.filtrarTabelaOS()" placeholder="Buscar O.S, cliente, status..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white shadow-sm">
+                    <input type="text" id="input-pesquisa-os" onkeyup="filtrarTabelaOS()" placeholder="Buscar O.S, cliente, status..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white shadow-sm">
                 </div>
-                <button onclick="window.alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                <button onclick="alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
                     <i class="ph-bold ph-plus text-lg"></i> Nova O.S.
                 </button>
             </div>
@@ -51,7 +51,7 @@
         
         <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex items-center gap-4">
-                <button onclick="window.alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
                     <i class="ph-bold ph-arrow-left text-lg"></i>
                 </button>
                 <div>
@@ -64,8 +64,8 @@
         </div>
 
         <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
-            <button id="aba-dados" onclick="window.mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
-            <button id="aba-fin" onclick="window.mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
+            <button id="aba-dados" onclick="mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
+            <button id="aba-fin" onclick="mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -77,14 +77,14 @@
                         <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="window.abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                                <select id="db-cliente-nome" onchange="window.vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
                                     <option value="">Carregando Clientes...</option>
                                 </select>
                             </div>
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="window.abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                                <select id="db-veiculo-placa" onchange="window.vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
                                     <option value="">Carregando Veículos...</option>
                                 </select>
                             </div>
@@ -99,13 +99,13 @@
                                 <div class="flex-1"><input type="text" id="item-nome" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white"></div>
                                 <div class="flex gap-3">
                                     <input type="number" id="item-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center font-bold shadow-sm bg-white">
-                                    <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="window.mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
+                                    <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
                                 </div>
                             </div>
                             <div class="flex flex-col md:flex-row gap-3">
                                 <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
                                 <input type="hidden" id="item-id-edit" value="">
-                                <button onclick="window.adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
+                                <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
                             </div>
                         </div>
                         <div id="lista-itens-db" class="space-y-3 min-h-[100px]"><div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div></div>
@@ -122,7 +122,7 @@
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
                                 <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                     <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
-                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="window.processarImagens(event)" />
+                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="processarImagens(event)" />
                                 </label>
                             </div>
                             <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
@@ -145,7 +145,7 @@
                         <div id="fin-gerador-box" class="space-y-6">
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
-                                <select id="tab-fin-tipo" onchange="window.mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
+                                <select id="tab-fin-tipo" onchange="mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
                                     <option value="avista">Pagamento Total na Entrega (À Vista)</option>
                                     <option value="entrada_parcela">Dar uma Entrada + Parcelar o Saldo</option>
                                     <option value="parcelado">Parcelar o Valor Total (Sem Entrada)</option>
@@ -155,11 +155,11 @@
                             <div id="tab-box-entrada" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Recebido (R$)</label>
-                                    <input type="text" id="tab-fin-entrada" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm transition-colors">
+                                    <input type="text" id="tab-fin-entrada" onkeyup="mascaraMoeda(this); checarSomaGeradorTab()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm transition-colors">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagto.</label>
-                                    <select id="tab-fin-forma-entrada" onchange="window.checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
+                                    <select id="tab-fin-forma-entrada" onchange="checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
                                         <option value="Pix" selected>Pix</option>
                                         <option value="Dinheiro">Dinheiro Físico</option>
                                         <option value="Cartão de Débito">Cartão de Débito</option>
@@ -174,17 +174,17 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Parcelas</label>
-                                        <input type="number" id="tab-fin-parcelas" oninput="window.checarSomaGeradorTab()" value="1" min="1" max="120" class="w-full border border-slate-300 p-3 rounded-xl text-center text-lg bg-white outline-none focus:border-emerald-500 font-black text-slate-800 shadow-sm transition-colors">
+                                        <input type="number" id="tab-fin-parcelas" oninput="checarSomaGeradorTab()" value="1" min="1" max="120" class="w-full border border-slate-300 p-3 rounded-xl text-center text-lg bg-white outline-none focus:border-emerald-500 font-black text-slate-800 shadow-sm transition-colors">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1º Vencimento</label>
-                                        <input type="date" id="tab-fin-vencimento-base" onchange="window.checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
+                                        <input type="date" id="tab-fin-vencimento-base" onchange="checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
                                     </div>
                                 </div>
                                 <div id="tab-fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner space-y-2 mt-2 max-h-64 overflow-y-auto"></div>
                             </div>
                             
-                            <button onclick="window.processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
+                            <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
                         </div>
 
                         <div id="fin-editor-box" class="hidden space-y-4 w-full">
@@ -221,10 +221,10 @@
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
-                        <button id="btn-salvar-fin-edicao" onclick="window.salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                        <button id="btn-salvar-fin-edicao" onclick="salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
                             <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
                         </button>
-                        <button id="btn-estornar-fin" onclick="window.limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
+                        <button id="btn-estornar-fin" onclick="limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
                             <i class="ph-bold ph-trash text-lg"></i> Apagar Lançamentos
                         </button>
                     </div>
@@ -234,17 +234,17 @@
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
                     <div class="space-y-3">
                         <div class="flex gap-2">
-                            <select id="desc-tipo" onchange="window.calcularTotais()" class="w-1/3 border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="perc">%</option><option value="val">R$</option></select>
-                            <input type="text" id="desc-val" onkeyup="this.value = this.value.replace(/[^0-9,]/g, ''); window.calcularTotais()" placeholder="0,00" class="flex-1 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold">
+                            <select id="desc-tipo" onchange="calcularTotais()" class="w-1/3 border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="perc">%</option><option value="val">R$</option></select>
+                            <input type="text" id="desc-val" onkeyup="this.value = this.value.replace(/[^0-9,]/g, ''); calcularTotais()" placeholder="0,00" class="flex-1 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold">
                         </div>
-                        <select id="desc-alvo" onchange="window.calcularTotais()" class="w-full border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="total">No Total da O.S</option><option value="pecas">Somente nas Peças</option><option value="servicos">Somente nos Serviços</option></select>
+                        <select id="desc-alvo" onchange="calcularTotais()" class="w-full border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="total">No Total da O.S</option><option value="pecas">Somente nas Peças</option><option value="servicos">Somente nos Serviços</option></select>
                     </div>
                 </div>
 
                 <div id="box-caixa-preta" class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
                     <div class="mb-5" id="box-status">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
-                        <select id="db-status" onchange="window.verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
+                        <select id="db-status" onchange="verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
                             <option value="Em Aberto" selected>Em Aberto</option>
                             <option value="Aguardando Aprovação">Aguardando Aprovação</option>
                             <option value="Aguardando Peça">Aguardando Peça</option>
@@ -268,7 +268,7 @@
                         </div>
                     </div>
                     
-                    <button onclick="window.salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                    <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                 </div>
             </div>
         </div>
@@ -283,8 +283,8 @@
             <p class="text-sm text-slate-500 font-medium">Esta ação apagará permanentemente a ordem de serviço e todos os seus itens. <br>Não pode ser desfeita.</p>
         </div>
         <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button onclick="window.fecharModalExclusao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-            <button onclick="window.confirmarExclusao()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-warning"></i> Excluir</button>
+            <button onclick="fecharModalExclusao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+            <button onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-warning"></i> Excluir</button>
         </div>
     </div>
 </div>
@@ -298,8 +298,8 @@
             <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
         </div>
         <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
-            <button onclick="window.fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
-            <button onclick="window.processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
+            <button onclick="fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
+            <button onclick="processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
         </div>
     </div>
 </div>
@@ -308,12 +308,12 @@
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
             <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
-            <button onclick="window.fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+            <button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
         </div>
         <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-            <button onclick="window.fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
-            <button onclick="window.processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
+            <button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
+            <button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
         </div>
     </div>
 </div>
