@@ -175,7 +175,7 @@ function renderizarAbaFinanceiro() {
     boxLiberado.classList.remove('hidden'); 
 
     if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
-        // TELA DE GERADOR (PRIMEIRO FATURAMENTO)
+        // TELA DE GERADOR
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
@@ -185,7 +185,7 @@ function renderizarAbaFinanceiro() {
         document.getElementById('tab-fin-tipo').value = 'avista';
         mudarTipoFaturamentoTab();
     } else {
-        // TELA DE EDITOR (MOSTRA AS PARCELAS DO BANCO)
+        // TELA DE EDITOR 
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
         if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
@@ -237,7 +237,6 @@ function renderizarAbaFinanceiro() {
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
-                        <!-- AQUI ESTÁ A AUDITORIA REAL: Ao digitar ele chama checarSomaFinanceiroEdit() -->
                         <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
@@ -263,7 +262,6 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
     
-    // Se a diferença for maior que 5 centavos (para arredondamentos), ele GRITA em vermelho e bloqueia
     if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
         if(elAlerta) elAlerta.classList.remove('hidden');
@@ -276,9 +274,18 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 }
 
 // -----------------------------------------------------------------------------------
-// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES 
+// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES (INTELIGENTE)
 // -----------------------------------------------------------------------------------
 window.checarSomaGeradorTab = function() {
+    const activeEl = document.activeElement;
+    
+    // Se o usuário está digitando a ENTRADA, nós recalculamos o resto automaticamente para ajudar.
+    if (activeEl && activeEl.id === 'tab-fin-entrada') {
+        gerarLinhasParcelasTab();
+        return;
+    }
+
+    // Caso ele esteja editando direto uma parcela, ele não quer que recalcule, ele quer auditar!
     const tipo = document.getElementById('tab-fin-tipo').value;
     let soma = 0;
     
@@ -364,8 +371,7 @@ window.gerarLinhasParcelasTab = function() {
     let centavosPorParcela = Math.floor(centavosTotal / parcelas);
     let restoCentavos = centavosTotal % parcelas;
 
-    // Se estivermos recriando o HTML e for uma digitação na entrada, para não perder o cursor, 
-    // a gente não reescreve a div, apenas atualiza os valores dela via JS (se os campos já existirem)
+    // Se estivermos recriando o HTML e for uma digitação na entrada, para não perder o cursor
     const activeEl = document.activeElement;
     const apenasAtualizar = (activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas);
 
@@ -389,9 +395,9 @@ window.gerarLinhasParcelasTab = function() {
                     <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
                     <option value="Cartão de Débito">Cartão de Débito</option>
                     <option value="Pix">Pix</option>
+                    <option value="Boleto">Boleto</option>
                     <option value="Dinheiro">Dinheiro Físico</option>
                     <option value="Transferência">Transferência Bancária</option>
-                    <option value="Boleto">Boleto</option>
                 </select>
             </div>`;
         }
@@ -433,7 +439,7 @@ async function processarLancarFinanceiroTab() {
         });
     }
 
-    if (total - entrada > 0 && parcelas > 0) {
+    if (parcelas > 0) {
         for(let i=1; i<=parcelas; i++) {
             records.push({
                 descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
@@ -823,7 +829,7 @@ async function buscarOrcamentosSupabase() {
         if (error) throw error;
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
-        console.error(erro);
+        console.error("Erro no Supabase:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 }
