@@ -16,12 +16,12 @@ let globalClientes = [];
 let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 
-// Controladores de Estado da Tela
+// Máquina de Estados 
 window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
 
 // ========================================================
-// FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS DE CARREGAMENTO)
+// FUNÇÕES UTILITÁRIAS
 // ========================================================
 function formataDinheiro(v) {
     const val = Number(v) || 0;
@@ -123,7 +123,7 @@ function vincularClienteViceVersa(gatilho) {
 }
 
 // ========================================================
-// SISTEMA DE ABAS DA O.S E RENDERIZAÇÃO FINANCEIRA
+// SISTEMA DE ABAS E RENDERIZAÇÃO FINANCEIRA
 // ========================================================
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
@@ -179,23 +179,22 @@ function renderizarAbaFinanceiro() {
     boxLiberado.classList.remove('hidden'); 
 
     if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
-        // TELA DE GERADOR
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
         
         if (window.isVisualizacaoModo) {
-            boxGerador.classList.add('hidden'); // Nem deixa gerar no modo visualização
+            boxGerador.classList.add('hidden');
             subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
+            document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
+            atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
         } else {
             subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
             document.getElementById('tab-fin-tipo').value = 'avista';
             mudarTipoFaturamentoTab();
         }
-        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
-        
     } else {
-        // TELA DE EDITOR 
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
         
@@ -217,8 +216,8 @@ function renderizarAbaFinanceiro() {
         const listaDiv = document.getElementById('lista-financeiro-vinculado');
         let html = '';
         
-        // Regra de Trava do Financeiro
-        const isTravadoGlobal = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+        const statusAtual = document.getElementById('db-status').value;
+        const isTravadoGlobal = (statusAtual === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
         currentOSFinanceiro.forEach((rec, idx) => {
             const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
@@ -255,7 +254,7 @@ function renderizarAbaFinanceiro() {
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
-                        <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
+                        <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); window.checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
                 ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
@@ -271,16 +270,15 @@ function renderizarAbaFinanceiro() {
         }
 
         listaDiv.innerHTML = html;
-        checarSomaFinanceiroEdit();
+        window.checarSomaFinanceiroEdit();
     }
 }
 
-function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
+function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock) {
     const elSomaBox = document.getElementById('fin-aba-soma-box');
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
     
-    // Se a diferença for maior que 5 centavos (para arredondamentos), ele GRITA em vermelho e bloqueia
     if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
         if(elAlerta) elAlerta.classList.remove('hidden');
@@ -298,9 +296,8 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 window.checarSomaGeradorTab = function() {
     const activeEl = document.activeElement;
     
-    // Auto-calcula tudo se ele estiver digitando a Entrada ou Nº de parcelas
     if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
-        gerarLinhasParcelasTab();
+        window.gerarLinhasParcelasTab();
         return;
     }
 
@@ -361,7 +358,7 @@ function mudarTipoFaturamentoTab() {
         inputEntrada.value = '0,00';
         document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
     }
-    gerarLinhasParcelasTab();
+    window.gerarLinhasParcelasTab();
 }
 
 window.gerarLinhasParcelasTab = function() {
@@ -390,7 +387,7 @@ window.gerarLinhasParcelasTab = function() {
     let restoCentavos = centavosTotal % parcelas;
 
     const activeEl = document.activeElement;
-    const apenasAtualizar = (activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas);
+    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
 
     let somaGerada = entrada;
 
@@ -406,7 +403,7 @@ window.gerarLinhasParcelasTab = function() {
             html += `
             <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                 <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
-                <input type="text" id="tab-parc-val-${i}" onkeyup="mascaraMoeda(this); checarSomaGeradorTab()" value="${valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
+                <input type="text" id="tab-parc-val-${i}" onkeyup="mascaraMoeda(this); window.checarSomaGeradorTab()" value="${valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
                 <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
                 <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
                     <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
@@ -603,7 +600,7 @@ function verificarStatusFinanceiro() {
     const badgeFechada = document.getElementById('badge-os-fechada');
     const abaFinBtn = document.getElementById('aba-fin');
     
-    // A Máquina de Estados que você pediu
+    // A Máquina de Estados
     const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
     if (isTravadoLocalmente) {
@@ -638,10 +635,10 @@ function congelarCamposOS(travar) {
     const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
     botoesAcao.forEach(btn => btn.disabled = travar);
     
-    if(travar) {
-        document.getElementById('btn-salvar-db').classList.add('opacity-50', 'cursor-not-allowed');
-    } else {
-        document.getElementById('btn-salvar-db').classList.remove('opacity-50', 'cursor-not-allowed');
+    const btnSalvarObj = document.getElementById('btn-salvar-db');
+    if(btnSalvarObj) {
+        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
+        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
     }
     
     const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
@@ -760,9 +757,9 @@ function calcularTotais() {
     
     if(!document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
         if(currentOSFinanceiro.length > 0) {
-            checarSomaFinanceiroEdit();
+            window.checarSomaFinanceiroEdit();
         } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
-            checarSomaGeradorTab();
+            window.checarSomaGeradorTab();
         }
     }
 }
@@ -870,8 +867,7 @@ async function salvarOrcamentoReal() {
     if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
     if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
-    // BLINDAGEM: Se estivermos salvando uma O.S e os valores não baterem com o financeiro, avisamos mas salvamos (se o usuário for pra aba finanças consertar depois). 
-    // Porém, não deixamos alterar a matemática lá.
+    // BLINDAGEM MÁXIMA DA O.S SE TIVER FINANCEIRO: Não deixa salvar se a conta não fechar.
     if (currentOSFinanceiro.length > 0) {
         let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
         if (Math.abs(valoresFinais.total - somaF) > 0.05) {
@@ -960,7 +956,6 @@ async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados', isVisualizacao
     mudarAbaOS(abaAlvo); 
 }
 
-// O MODO LEITURA AO CLICAR NA O.S
 window.abrirVisualizacaoOS = function(dadosCodificados) {
     abrirEdicaoOS(dadosCodificados, 'dados', true);
 }
@@ -987,9 +982,9 @@ async function processarDestravarOS() {
     if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
     fecharModalDestravar();
-    window.isOSDestravada = true;
+    window.isOSDestravada = true; 
     abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
-    dispararAlerta("O.S destravada para edição temporária.", "sucesso");
+    dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
 }
 
 function abrirModalExclusao(id, numero_os) {
@@ -1051,208 +1046,13 @@ function renderizarTabelaReal(dados) {
                     ${btnAcao1}
                     ${btnAcao2}
                     <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="window.gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
     }).join('');
 }
 
-function abrirModalCadastro(tipo) {
-    modalTipoAberto = tipo;
-    const modal = document.getElementById('modal-cadastro-rapido'); 
-    const titulo = document.getElementById('modal-titulo'); 
-    const conteudo = document.getElementById('modal-conteudo');
-    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    
-    if (tipo === 'cliente') {
-        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
-        conteudo.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo <span class="text-red-500 text-sm">*</span></label>
-                <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
-                <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp <span class="text-red-500 text-sm">*</span></label>
-                <input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
-                <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-            </div>
-            <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
-                <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label>
-                <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
-            </div>
-            <div class="md:col-span-2 flex gap-2">
-                <div class="flex-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label>
-                    <input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-                </div>
-                <div class="w-20">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label>
-                    <input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
-                <input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label>
-                <input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-            </div>
-        </div>`;
-    } else {
-        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
-        
-        let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
-        const clienteOS = document.getElementById('db-cliente-nome').value;
-        globalClientes.forEach(c => {
-            const selected = (c.nome === clienteOS) ? 'selected' : '';
-            optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
-        });
-
-        conteudo.innerHTML = `
-        <div class="space-y-4">
-            <div class="border-b border-slate-100 pb-4 mb-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
-                <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
-                    ${optionsDono}
-                </select>
-                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="col-span-2 md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500 text-sm">*</span></label>
-                    <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
-                </div>
-                <div class="col-span-2 md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo <span class="text-red-500 text-sm">*</span></label>
-                    <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="col-span-2">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
-                    <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
-                    <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-            </div>
-        </div>`;
-    }
-    document.body.style.overflow = 'hidden'; 
-    modal.classList.remove('hidden');
-}
-
-function fecharModalCadastro() { 
-    document.body.style.overflow = 'auto'; 
-    document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
-}
-
-async function buscarCEP(cepInput) {
-    const cep = cepInput.replace(/\D/g, '');
-    if (cep.length !== 8) return;
-
-    const statusSpan = document.getElementById('cep-status');
-    if(statusSpan) {
-        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
-        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
-    }
-
-    try {
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const dados = await response.json();
-        
-        if (!dados.erro) {
-            document.getElementById('cad-rua').value = dados.logradouro;
-            document.getElementById('cad-bairro').value = dados.bairro;
-            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
-            document.getElementById('cad-num').focus();
-            
-            if(statusSpan) {
-                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
-                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
-                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
-            }
-        } else {
-            dispararAlerta("CEP não encontrado.");
-            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
-        }
-    } catch (e) { 
-        dispararAlerta("Falha ao buscar CEP.");
-        if(statusSpan) statusSpan.classList.add('hidden');
-    }
-}
-
-async function processarSalvamentoModal() {
-    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
-    btnSalvar.disabled = true;
-
-    try {
-        if (modalTipoAberto === 'cliente') {
-            const nome = document.getElementById('cad-nome').value;
-            const doc = document.getElementById('cad-doc').value;
-            const tel = document.getElementById('cad-tel').value;
-            const email = document.getElementById('cad-email').value;
-            const cep = document.getElementById('cad-cep').value;
-            const rua = document.getElementById('cad-rua').value;
-            const num = document.getElementById('cad-num').value;
-            const bairro = document.getElementById('cad-bairro').value;
-            const cidade = document.getElementById('cad-cidade').value;
-
-            if(!nome || !tel) { dispararAlerta("Nome e Celular são obrigatórios."); return; }
-            
-            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
-            if (error) throw error;
-            
-            await carregarListasBD(); 
-            document.getElementById('db-cliente-nome').value = nome; 
-            dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
-        } else {
-            const placa = document.getElementById('cad-placa').value;
-            const modelo = document.getElementById('cad-modelo').value;
-            const cor = document.getElementById('cad-cor').value;
-            const ano = document.getElementById('cad-ano').value;
-            
-            if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
-            
-            const dono = document.getElementById('cad-dono').value || '';
-            
-            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
-            if (error) throw error;
-            
-            await carregarListasBD(); 
-            document.getElementById('db-veiculo-placa').value = placa; 
-            if(dono) document.getElementById('db-cliente-nome').value = dono; 
-            
-            dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
-        }
-        fecharModalCadastro();
-    } catch (erro) {
-        if(erro.code === '23505') dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
-        else dispararAlerta("Falha ao salvar no banco de dados.");
-    } finally {
-        btnSalvar.innerHTML = textoOriginal;
-        btnSalvar.disabled = false;
-    }
-}
-
-// ----------------------------------------------------
-// MOTOR DE IMPRESSÃO
-// ----------------------------------------------------
 window.gerarPDFSupabase = function(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
@@ -1300,10 +1100,13 @@ window.gerarPDFSupabase = function(dadosCodificados) {
     const pdfVeiDetEl = document.getElementById('pdf-vei-det');
     if(pdfVeiDetEl) pdfVeiDetEl.innerText = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
 
-    const itensReais = orc.itens.lista_itens || [];
-    const resumo = orc.itens.resumo || { total: orc.valor_total, pecas: 0, servicos: 0, desconto: 0 };
+    const itensReais = orc.itens?.lista_itens || [];
+    let calcPecas = 0; let calcServicos = 0;
     const pecas = itensReais.filter(i => i.tipo === 'Peça');
     const servicos = itensReais.filter(i => i.tipo === 'Serviço');
+    itensReais.forEach(i => { if(i.tipo==='Peça') calcPecas+=i.subtotal; else calcServicos+=i.subtotal; });
+    const calcDesc = orc.itens?.resumo?.desconto || 0;
+    const calcTotal = (calcPecas + calcServicos) - calcDesc;
     
     let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">`;
     htmlTabela += `<thead style="background-color: #000000; color: white;"><tr><th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th><th style="padding: 6px 10px; width: 5%;">Qtd</th><th style="padding: 6px 10px; width: 45%;">Descrição Serviço / Peça</th><th style="padding: 6px 10px; text-align: right; width: 20%;">V. Unitário</th><th style="padding: 6px 10px; text-align: right; width: 20%; border-top-right-radius: 4px;">Subtotal</th></tr></thead><tbody>`;
@@ -1319,6 +1122,11 @@ window.gerarPDFSupabase = function(dadosCodificados) {
     htmlTabela += `</tbody></table>`;
     document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
 
+    document.getElementById('pdf-tot-pecas').innerText = formataDinheiro(calcPecas);
+    document.getElementById('pdf-tot-servicos').innerText = formataDinheiro(calcServicos);
+    document.getElementById('pdf-tot-desc').innerText = `- ${formataDinheiro(calcDesc)}`;
+    document.getElementById('pdf-tot-final').innerText = formataDinheiro(calcTotal);
+
     const boxObs = document.getElementById('pdf-container-obs');
     const pdfObsTextoEl = document.getElementById('pdf-obs-texto');
     if(orc.observacao && orc.observacao.trim() !== '') { 
@@ -1330,8 +1138,7 @@ window.gerarPDFSupabase = function(dadosCodificados) {
 
     const fin = orc.itens?.financeiro;
     const containerFin = document.getElementById('pdf-container-financeiro');
-    
-    if (fin && containerFin) {
+    if (fin && (fin.entrada > 0 || (fin.parcelas && fin.parcelas.length > 0))) {
         let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
         htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
         if (fin.entrada > 0) {
@@ -1345,10 +1152,10 @@ window.gerarPDFSupabase = function(dadosCodificados) {
             });
         }
         htmlFin += `</table>`;
-        
         containerFin.innerHTML = htmlFin;
         containerFin.style.display = 'block';
-    } else if (containerFin) {
+    } else {
+        containerFin.innerHTML = '';
         containerFin.style.display = 'none';
     }
 
