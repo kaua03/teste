@@ -16,12 +16,8 @@ let globalClientes = [];
 let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 
-// Máquina de Estados 
-window.isVisualizacaoModo = false;
-window.isOSDestravada = false;
-
 // ========================================================
-// FUNÇÕES UTILITÁRIAS
+// FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS)
 // ========================================================
 function formataDinheiro(v) {
     const val = Number(v) || 0;
@@ -123,7 +119,7 @@ function vincularClienteViceVersa(gatilho) {
 }
 
 // ========================================================
-// SISTEMA DE ABAS E RENDERIZAÇÃO FINANCEIRA
+// SISTEMA DE ABAS DA O.S E RENDERIZAÇÃO FINANCEIRA
 // ========================================================
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
@@ -179,6 +175,7 @@ function renderizarAbaFinanceiro() {
     boxLiberado.classList.remove('hidden'); 
 
     if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
+        // TELA DE GERADOR
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
@@ -195,6 +192,7 @@ function renderizarAbaFinanceiro() {
             mudarTipoFaturamentoTab();
         }
     } else {
+        // TELA DE EDITOR
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
         
@@ -227,7 +225,7 @@ function renderizarAbaFinanceiro() {
             let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
             
             const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
-            const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
+            const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50';
             const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
 
             html += `
@@ -274,7 +272,7 @@ function renderizarAbaFinanceiro() {
     }
 }
 
-function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock) {
+function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
     const elSomaBox = document.getElementById('fin-aba-soma-box');
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
@@ -600,7 +598,6 @@ function verificarStatusFinanceiro() {
     const badgeFechada = document.getElementById('badge-os-fechada');
     const abaFinBtn = document.getElementById('aba-fin');
     
-    // A Máquina de Estados
     const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
     if (isTravadoLocalmente) {
@@ -845,7 +842,7 @@ function removerImagemArray(strToRem) {
 }
 
 // -----------------------------------------------------------------------------------
-// COMUNICAÇÃO COM O BANCO
+// COMUNICAÇÃO COM O BANCO E LISTAGEM
 // -----------------------------------------------------------------------------------
 async function buscarOrcamentosSupabase() {
     try {
@@ -867,7 +864,6 @@ async function salvarOrcamentoReal() {
     if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
     if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
-    // BLINDAGEM MÁXIMA DA O.S SE TIVER FINANCEIRO: Não deixa salvar se a conta não fechar.
     if (currentOSFinanceiro.length > 0) {
         let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
         if (Math.abs(valoresFinais.total - somaF) > 0.05) {
@@ -964,95 +960,204 @@ function abrirFaturamentoDireto(dadosCodificados) {
     abrirEdicaoOS(dadosCodificados, 'fin', false);
 }
 
-function abrirModalDestravar(id, orcJSONCodificado) {
-    osParaDestravarId = id; 
-    osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
-    document.getElementById('input-senha-reabrir').value = '';
-    document.getElementById('modal-senha-destravar').classList.remove('hidden');
-}
-
-function fecharModalDestravar() { document.getElementById('modal-senha-destravar').classList.add('hidden'); }
-
-async function processarDestravarOS() {
-    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
-    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    const usuarioLogado = JSON.parse(usuarioLogadoStr);
-
-    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
+// ----------------------------------------------------
+// CADASTRO RÁPIDO E VIA CEP
+// ----------------------------------------------------
+function abrirModalCadastro(tipo) {
+    modalTipoAberto = tipo;
+    const modal = document.getElementById('modal-cadastro-rapido'); 
+    const titulo = document.getElementById('modal-titulo'); 
+    const conteudo = document.getElementById('modal-conteudo');
+    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
     
-    fecharModalDestravar();
-    window.isOSDestravada = true; 
-    abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
-    dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
-}
-
-function abrirModalExclusao(id, numero_os) {
-    idParaExcluir = id;
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
-}
-
-function fecharModalExclusao() { idParaExcluir = null; document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); }
-
-async function confirmarExclusao() {
-    if(!idParaExcluir) return;
-    try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
-        if (error) throw error;
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
-        dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        fecharModalExclusao();
-        buscarOrcamentosSupabase();
-    } catch (erro) { dispararAlerta("Falha ao excluir."); }
-}
-
-function obterCorStatus(status) {
-    const cores = { 'Em Aberto': 'bg-slate-100 text-slate-700', 'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700', 'Aguardando Peça': 'bg-orange-50 text-orange-700', 'Aguardando Pagamento': 'bg-amber-50 text-amber-700', 'Aprovado': 'bg-blue-50 text-blue-700', 'Em Execução': 'bg-indigo-50 text-indigo-700', 'Finalizado': 'bg-emerald-50 text-emerald-700', 'Fechado': 'bg-slate-800 text-white', 'Não Usar': 'bg-red-50 text-red-700' };
-    return cores[status] || 'bg-slate-50 text-slate-500';
-}
-
-function renderizarTabelaReal(dados) {
-    const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!dados || dados.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
-        return; 
-    }
-    
-    tbody.innerHTML = dados.map(orc => {
-        const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
-        const corBg = obterCorStatus(orc.status);
-        const orcJSON = encodeURIComponent(JSON.stringify(orc));
-        const isFechado = orc.status === 'Fechado';
-        
-        let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
-        
-        if (isFechado) {
-            btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
-        } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
-        }
-        
-        return `
-        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="abrirVisualizacaoOS('${orcJSON}')">
-            <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
-            <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
-            <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
-            <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${isFechado ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
-            <td class="p-4 md:p-5 text-center" onclick="event.stopPropagation()">
-                <div class="flex items-center justify-center gap-1.5">
-                    ${btnAcao1}
-                    ${btnAcao2}
-                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="window.gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+    if (tipo === 'cliente') {
+        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
+        conteudo.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo <span class="text-red-500 text-sm">*</span></label>
+                <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
+                <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp <span class="text-red-500 text-sm">*</span></label>
+                <input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
+                <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+            </div>
+            <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
+                <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label>
+                <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label>
+                    <input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
                 </div>
-            </td>
-        </tr>`;
-    }).join('');
+                <div class="w-20">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label>
+                    <input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                <input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label>
+                <input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+            </div>
+        </div>`;
+    } else {
+        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
+        
+        let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
+        const clienteOS = document.getElementById('db-cliente-nome').value;
+        globalClientes.forEach(c => {
+            const selected = (c.nome === clienteOS) ? 'selected' : '';
+            optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
+        });
+
+        conteudo.innerHTML = `
+        <div class="space-y-4">
+            <div class="border-b border-slate-100 pb-4 mb-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
+                <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
+                    ${optionsDono}
+                </select>
+                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
+                </div>
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
+                    <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
+                    <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+            </div>
+        </div>`;
+    }
+    document.body.style.overflow = 'hidden'; 
+    modal.classList.remove('hidden');
 }
 
+function fecharModalCadastro() { 
+    document.body.style.overflow = 'auto'; 
+    document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
+}
+
+async function buscarCEP(cepInput) {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const statusSpan = document.getElementById('cep-status');
+    if(statusSpan) {
+        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
+    }
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await response.json();
+        
+        if (!dados.erro) {
+            document.getElementById('cad-rua').value = dados.logradouro;
+            document.getElementById('cad-bairro').value = dados.bairro;
+            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
+            document.getElementById('cad-num').focus();
+            
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
+                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
+            }
+        } else {
+            dispararAlerta("CEP não encontrado.");
+            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
+        }
+    } catch (e) { 
+        dispararAlerta("Falha ao buscar CEP.");
+        if(statusSpan) statusSpan.classList.add('hidden');
+    }
+}
+
+async function processarSalvamentoModal() {
+    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+    const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
+    btnSalvar.disabled = true;
+
+    try {
+        if (modalTipoAberto === 'cliente') {
+            const nome = document.getElementById('cad-nome').value;
+            const doc = document.getElementById('cad-doc').value;
+            const tel = document.getElementById('cad-tel').value;
+            const email = document.getElementById('cad-email').value;
+            const cep = document.getElementById('cad-cep').value;
+            const rua = document.getElementById('cad-rua').value;
+            const num = document.getElementById('cad-num').value;
+            const bairro = document.getElementById('cad-bairro').value;
+            const cidade = document.getElementById('cad-cidade').value;
+
+            if(!nome || !tel) { dispararAlerta("Nome e Celular são obrigatórios."); return; }
+            
+            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
+            if (error) throw error;
+            
+            await carregarListasBD(); 
+            document.getElementById('db-cliente-nome').value = nome; 
+            dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
+        } else {
+            const placa = document.getElementById('cad-placa').value;
+            const modelo = document.getElementById('cad-modelo').value;
+            const cor = document.getElementById('cad-cor').value;
+            const ano = document.getElementById('cad-ano').value;
+            
+            if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
+            
+            const dono = document.getElementById('cad-dono').value || '';
+            
+            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
+            if (error) throw error;
+            
+            await carregarListasBD(); 
+            document.getElementById('db-veiculo-placa').value = placa; 
+            if(dono) document.getElementById('db-cliente-nome').value = dono; 
+            
+            dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
+        }
+        fecharModalCadastro();
+    } catch (erro) {
+        if(erro.code === '23505') dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
+        else dispararAlerta("Falha ao salvar no banco de dados.");
+    } finally {
+        btnSalvar.innerHTML = textoOriginal;
+        btnSalvar.disabled = false;
+    }
+}
+
+// ----------------------------------------------------
+// MOTOR DE IMPRESSÃO - PDF ISOLADO
+// ----------------------------------------------------
 window.gerarPDFSupabase = function(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
