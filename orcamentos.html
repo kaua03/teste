@@ -11,7 +11,9 @@
         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Sincronizando Banco de Dados</p>
     </div>
 
-    <!-- LISTAGEM -->
+    <!-- ========================================== -->
+    <!-- LISTAGEM DE ORDENS DE SERVIÇO              -->
+    <!-- ========================================== -->
     <div id="view-lista-orcamentos" class="space-y-6 block fade-in">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
@@ -43,9 +45,12 @@
         </div>
     </div>
 
-    <!-- TELA DE EDIÇÃO -->
+    <!-- ========================================== -->
+    <!-- TELA DE EDIÇÃO COM SISTEMA DE ABAS         -->
+    <!-- ========================================== -->
     <div id="view-novo-orcamento" class="hidden fade-in space-y-6">
         
+        <!-- CABEÇALHO DA O.S -->
         <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex items-center gap-4">
                 <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
@@ -62,184 +67,81 @@
             </div>
         </div>
 
+        <!-- MENU DE ABAS -->
         <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
             <button id="aba-dados" onclick="mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
             <button id="aba-fin" onclick="mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- ============================================== -->
+        <!-- ABA 1: DADOS DA O.S                            -->
+        <!-- ============================================== -->
+        <div id="aba-conteudo-dados" class="grid grid-cols-1 xl:grid-cols-3 gap-6 fade-in block">
             
-            <div class="xl:col-span-2 flex flex-col gap-6 relative">
-                
-                <!-- ABA 1: DADOS DA O.S -->
-                <div id="aba-conteudo-dados" class="space-y-6 fade-in block">
-                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                                <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
-                                    <option value="">Carregando Clientes...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
-                                <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
-                                    <option value="">Carregando Veículos...</option>
-                                </select>
-                            </div>
+            <!-- COLUNA ESQUERDA (DADOS) -->
+            <div class="xl:col-span-2 space-y-6">
+                <!-- IDENTIFICAÇÃO -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                            <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
+                                <option value="">Carregando Clientes...</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">2</div> Peças e Serviços</h3>
-                        <div id="box-add-item" class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
-                            <div class="flex flex-col md:flex-row gap-3">
-                                <div class="w-full md:w-32"><select id="item-tipo" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold bg-white text-slate-600 shadow-sm"><option value="Peça">Peça</option><option value="Serviço">Serviço</option></select></div>
-                                <div class="flex-1"><input type="text" id="item-nome" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white"></div>
-                                <div class="flex gap-3">
-                                    <input type="number" id="item-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center font-bold shadow-sm bg-white">
-                                    <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
-                                </div>
-                            </div>
-                            <div class="flex flex-col md:flex-row gap-3">
-                                <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
-                                <input type="hidden" id="item-id-edit" value="">
-                                <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
-                            </div>
-                        </div>
-                        <div id="lista-itens-db" class="space-y-3 min-h-[100px]"><div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div></div>
-                    </div>
-
-                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">3</div> Detalhes e Anexos Digitais</h3>
-                        <div class="space-y-5">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
-                                <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
-                            </div>
-                            <div id="box-upload-fotos">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
-                                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
-                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="processarImagens(event)" />
-                                </label>
-                            </div>
-                            <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                            <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
+                                <option value="">Carregando Veículos...</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-                
-                <!-- ABA 2: GESTÃO FINANCEIRA EXCLUSIVA -->
-                <div id="aba-conteudo-fin" class="fade-in hidden w-full">
-                    
-                    <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
-                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100"><i class="ph-fill ph-lock-key text-4xl text-slate-300"></i></div>
-                        <h3 class="text-lg font-black text-slate-700 mb-1">O.S. não registrada</h3>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Salve a O.S. pela primeira vez para liberar o Faturamento.</p>
-                    </div>
 
-                    <!-- ESTA CAIXA DEVE PERDER O HIDDEN QUANDO LIBERADA -->
-                    <div id="fin-liberado-box" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 hidden w-full">
-                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2 mb-1"><i class="ph-fill ph-wallet text-emerald-500 text-2xl"></i> Painel Financeiro</h3>
-                        <p class="text-xs text-slate-500 font-medium mb-6 pb-4 border-b border-slate-100" id="fin-aba-subtitulo">Gerencie os pagamentos atrelados a esta Ordem de Serviço.</p>
-
-                        <!-- GERADOR (Se não tem nada) -->
-                        <div id="fin-gerador-box" class="space-y-6">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
-                                <select id="tab-fin-tipo" onchange="mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
-                                    <option value="avista">Pagamento Total na Entrega (À Vista)</option>
-                                    <option value="entrada_parcela">Dar uma Entrada + Parcelar o Saldo</option>
-                                    <option value="parcelado">Parcelar o Valor Total (Sem Entrada)</option>
-                                </select>
-                            </div>
-
-                            <div id="tab-box-entrada" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Recebido (R$)</label>
-                                    <input type="text" id="tab-fin-entrada" onkeyup="mascaraMoeda(this); gerarLinhasParcelasTab()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm transition-colors">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagto.</label>
-                                    <select id="tab-fin-forma-entrada" onchange="gerarLinhasParcelasTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
-                                        <option value="Pix" selected>Pix</option>
-                                        <option value="Dinheiro">Dinheiro Físico</option>
-                                        <option value="Cartão de Débito">Cartão de Débito</option>
-                                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                        <option value="Boleto">Boleto</option>
-                                        <option value="Transferência">Transferência Bancária</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div id="tab-box-parcelamento" class="hidden space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Parcelas</label>
-                                        <input type="number" id="tab-fin-parcelas" oninput="gerarLinhasParcelasTab()" value="1" min="1" max="120" class="w-full border border-slate-300 p-3 rounded-xl text-center text-lg bg-white outline-none focus:border-emerald-500 font-black text-slate-800 shadow-sm transition-colors">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1º Vencimento</label>
-                                        <input type="date" id="tab-fin-vencimento-base" onchange="gerarLinhasParcelasTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
-                                    </div>
-                                </div>
-                                <div id="tab-fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner space-y-2 mt-2 max-h-64 overflow-y-auto"></div>
-                            </div>
-                            
-                            <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
-                        </div>
-
-                        <!-- EDITOR DE PARCELAS VIVAS (Se já tem fin gerado) -->
-                        <div id="fin-editor-box" class="hidden space-y-4">
-                            <div id="lista-financeiro-vinculado" class="space-y-3">
-                                <!-- Injetado via JS -->
+                <!-- PEÇAS E SERVIÇOS -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">2</div> Peças e Serviços</h3>
+                    <div id="box-add-item" class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <div class="w-full md:w-32"><select id="item-tipo" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold bg-white text-slate-600 shadow-sm"><option value="Peça">Peça</option><option value="Serviço">Serviço</option></select></div>
+                            <div class="flex-1"><input type="text" id="item-nome" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white"></div>
+                            <div class="flex gap-3">
+                                <input type="number" id="item-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center font-bold shadow-sm bg-white">
+                                <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
                             </div>
                         </div>
-
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
+                            <input type="hidden" id="item-id-edit" value="">
+                            <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
+                        </div>
                     </div>
+                    <div id="lista-itens-db" class="space-y-3 min-h-[100px]"><div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div></div>
                 </div>
 
+                <!-- OBSERVAÇÕES E FOTOS -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">3</div> Detalhes e Anexos Digitais</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
+                            <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
+                        </div>
+                        <div id="box-upload-fotos">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
+                            <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
+                                <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="processarImagens(event)" />
+                            </label>
+                        </div>
+                        <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
+                    </div>
+                </div>
             </div>
 
-            <!-- COLUNA DIREITA ESTÁTICA -->
+            <!-- COLUNA DIREITA ESTÁTICA (APENAS DA ABA DE DADOS) -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
-                
-                <!-- PAINEL DE AUDITORIA FINANCEIRA (VISÍVEL APENAS NA ABA FINANCEIRO) -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden" id="box-auditoria-financeira">
-                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-blue-500 mr-2 text-lg"></i> Auditoria de Valores</h3>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
-                            <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
-                        </div>
-                        
-                        <div class="flex justify-center"><i class="ph-bold ph-arrows-down-up text-xl text-slate-300"></i></div>
-                        
-                        <div class="p-4 rounded-xl border transition-colors shadow-inner text-center" id="fin-aba-soma-box">
-                            <p class="text-[10px] font-bold uppercase tracking-wider mb-1" id="fin-aba-soma-label">Soma Lançamentos</p>
-                            <h4 class="text-2xl font-black" id="fin-aba-soma">R$ 0,00</h4>
-                        </div>
-                        
-                        <div id="fin-aba-alerta" class="hidden bg-red-50 p-3 rounded-lg border border-red-100 text-red-600 text-[10px] font-bold text-center leading-relaxed">
-                            <i class="ph-bold ph-warning text-lg mb-1 block"></i> Os valores não batem. Ajuste as parcelas para a conta fechar!
-                        </div>
-                    </div>
-
-                    <!-- BOTÕES DO EDITOR FINANCEIRO -->
-                    <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
-                        <button id="btn-salvar-fin-edicao" onclick="salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
-                            <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
-                        </button>
-                        
-                        <button id="btn-estornar-fin" onclick="limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
-                            <i class="ph-bold ph-trash text-lg"></i> Apagar Todos os Lançamentos
-                        </button>
-                    </div>
-                </div>
-
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
                     <div class="space-y-3">
@@ -280,6 +182,130 @@
                     
                     <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- ABA 2: GESTÃO FINANCEIRA EXCLUSIVA             -->
+        <!-- ============================================== -->
+        <div id="aba-conteudo-fin" class="grid grid-cols-1 xl:grid-cols-3 gap-6 fade-in hidden">
+            
+            <div class="xl:col-span-2 space-y-6">
+                <!-- BLOQUEADO -->
+                <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
+                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100"><i class="ph-fill ph-lock-key text-4xl text-slate-300"></i></div>
+                    <h3 class="text-lg font-black text-slate-700 mb-1">O.S. não registrada</h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Salve a O.S. pela primeira vez para liberar o Faturamento.</p>
+                </div>
+
+                <!-- LIBERADO -->
+                <div id="fin-liberado-box" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 hidden">
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2 mb-1"><i class="ph-fill ph-wallet text-emerald-500 text-2xl"></i> Painel Financeiro</h3>
+                    <p class="text-xs text-slate-500 font-medium mb-6 pb-4 border-b border-slate-100" id="fin-aba-subtitulo">Gerencie os pagamentos atrelados a esta Ordem de Serviço.</p>
+
+                    <!-- GERADOR (Se não tem nada) -->
+                    <div id="fin-gerador-box" class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
+                            <select id="tab-fin-tipo" onchange="mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
+                                <option value="avista">Pagamento Total na Entrega (À Vista)</option>
+                                <option value="entrada_parcela">Dar uma Entrada + Parcelar o Saldo</option>
+                                <option value="parcelado">Parcelar o Valor Total (Sem Entrada)</option>
+                            </select>
+                        </div>
+
+                        <div id="tab-box-entrada" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Recebido (R$)</label>
+                                <input type="text" id="tab-fin-entrada" onkeyup="mascaraMoeda(this); checarSomaGeradorTab()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagto.</label>
+                                <select id="tab-fin-forma-entrada" onchange="checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
+                                    <option value="Pix" selected>Pix</option>
+                                    <option value="Dinheiro">Dinheiro Físico</option>
+                                    <option value="Cartão de Débito">Cartão de Débito</option>
+                                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                    <option value="Boleto">Boleto</option>
+                                    <option value="Transferência">Transferência Bancária</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="tab-box-parcelamento" class="hidden space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Parcelas</label>
+                                    <input type="number" id="tab-fin-parcelas" oninput="gerarLinhasParcelasTab()" value="1" min="1" max="120" class="w-full border border-slate-300 p-3 rounded-xl text-center text-lg bg-white outline-none focus:border-emerald-500 font-black text-slate-800 shadow-sm transition-colors">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1º Vencimento</label>
+                                    <input type="date" id="tab-fin-vencimento-base" onchange="gerarLinhasParcelasTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
+                                </div>
+                            </div>
+                            <div id="tab-fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner space-y-2 mt-2 max-h-64 overflow-y-auto"></div>
+                        </div>
+                        
+                        <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
+                    </div>
+
+                    <!-- EDITOR (Se já tem fin gerado) -->
+                    <div id="fin-editor-box" class="hidden space-y-4">
+                        <div id="lista-financeiro-vinculado" class="space-y-3">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA DA ABA FINANCEIRA (RESUMO CLARO + AUDITORIA) -->
+            <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
+                
+                <!-- RESUMO CLARO (Design amigável) -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                    <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-receipt text-blue-500 mr-2 text-lg"></i> Resumo da O.S</h3>
+                    <div class="space-y-3 mb-2">
+                        <div class="flex justify-between text-xs text-slate-500 font-medium"><span>Peças:</span> <span id="fin-resumo-pecas">R$ 0,00</span></div>
+                        <div class="flex justify-between text-xs text-slate-500 font-medium"><span>Serviços:</span> <span id="fin-resumo-servicos">R$ 0,00</span></div>
+                        <div class="flex justify-between text-xs text-red-400 font-bold"><span>Desconto:</span> <span id="fin-resumo-desc">- R$ 0,00</span></div>
+                    </div>
+                </div>
+
+                <!-- PAINEL DE AUDITORIA FINANCEIRA -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200" id="box-auditoria-financeira">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
+                            <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
+                        </div>
+                        
+                        <div class="flex justify-center"><i class="ph-bold ph-arrows-down-up text-xl text-slate-300"></i></div>
+                        
+                        <div class="p-4 rounded-xl border transition-colors shadow-inner text-center" id="fin-aba-soma-box">
+                            <p class="text-[10px] font-bold uppercase tracking-wider mb-1" id="fin-aba-soma-label">Soma Lançamentos</p>
+                            <h4 class="text-2xl font-black" id="fin-aba-soma">R$ 0,00</h4>
+                        </div>
+                        
+                        <div id="fin-aba-alerta" class="hidden bg-red-50 p-3 rounded-lg border border-red-100 text-red-600 text-[10px] font-bold text-center leading-relaxed">
+                            <i class="ph-bold ph-warning text-lg mb-1 block"></i> Os valores não batem. Ajuste as parcelas para a conta fechar!
+                        </div>
+                    </div>
+
+                    <!-- BOTÕES DO EDITOR FINANCEIRO -->
+                    <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
+                        <button id="btn-salvar-fin-edicao" onclick="salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                            <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
+                        </button>
+                        
+                        <button id="btn-estornar-fin" onclick="limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
+                            <i class="ph-bold ph-trash text-lg"></i> Apagar Financeiro Completo
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
