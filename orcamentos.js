@@ -1,3 +1,389 @@
+<div class="max-w-7xl mx-auto w-full pb-28 md:pb-4 flex flex-col relative font-sans min-h-screen">
+    
+    <div id="loading-screen" class="absolute inset-0 bg-slate-50 z-[2000] flex flex-col items-center justify-center transition-opacity duration-300 rounded-2xl hidden">
+        <div class="relative w-20 h-20 mb-4">
+            <div class="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+            <i class="ph-fill ph-car-profile absolute inset-0 flex items-center justify-center text-3xl text-blue-600"></i>
+        </div>
+        <h2 class="text-lg font-black text-slate-800 tracking-tight">Carregando Módulo...</h2>
+        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Sincronizando Banco de Dados</p>
+    </div>
+
+    <div id="view-lista-orcamentos" class="space-y-6 block fade-in">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Ordens de Serviço</h2>
+                <p class="text-xs text-slate-500 mt-1 uppercase font-bold tracking-wider">Histórico e Gerenciamento</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg"></i>
+                    <input type="text" id="input-pesquisa-os" onkeyup="window.filtrarTabelaOS()" placeholder="Buscar O.S, cliente, status..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white shadow-sm">
+                </div>
+                <button onclick="window.alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                    <i class="ph-bold ph-plus text-lg"></i> Nova O.S.
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1">
+            <div class="w-full overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-50/80 border-b border-slate-100">
+                        <tr class="text-slate-500 text-[10px] md:text-xs uppercase tracking-wider font-bold">
+                            <th class="p-4 md:p-5">Data / O.S</th>
+                            <th class="p-4 md:p-5">Cliente / Veículo</th>
+                            <th class="p-4 md:p-5 text-right">Valor Final</th>
+                            <th class="p-4 md:p-5 text-center">Status</th>
+                            <th class="p-4 md:p-5 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-orcamentos-real" class="text-xs md:text-sm divide-y divide-slate-100">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-novo-orcamento" class="hidden fade-in space-y-6">
+        
+        <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center gap-4">
+                <button onclick="window.alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                    <i class="ph-bold ph-arrow-left text-lg"></i>
+                </button>
+                <div>
+                    <h2 id="titulo-tela-os" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">Emissão de O.S.</h2>
+                    <p class="text-[10px] md:text-xs text-blue-600 font-bold uppercase mt-0.5 tracking-wider">Modo Detalhado de Orçamentação</p>
+                </div>
+            </div>
+            <div id="badge-os-fechada" class="hidden px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
+                </div>
+        </div>
+
+        <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
+            <button id="aba-dados" onclick="window.mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
+            <button id="aba-fin" onclick="window.mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            
+            <div class="xl:col-span-2 flex flex-col gap-6 relative">
+                
+                <div id="aba-conteudo-dados" class="space-y-6 fade-in block">
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="window.abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <select id="db-cliente-nome" onchange="window.vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
+                                    <option value="">Carregando Clientes...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="window.abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <select id="db-veiculo-placa" onchange="window.vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
+                                    <option value="">Carregando Veículos...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">2</div> Peças e Serviços</h3>
+                        <div id="box-add-item" class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner mb-6 space-y-3">
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <div class="w-full md:w-32"><select id="item-tipo" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold bg-white text-slate-600 shadow-sm"><option value="Peça">Peça</option><option value="Serviço">Serviço</option></select></div>
+                                <div class="flex-1"><input type="text" id="item-nome" placeholder="Ex: Kit Correia Dentada" class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white"></div>
+                                <div class="flex gap-3">
+                                    <input type="number" id="item-qtd" placeholder="Qtd" value="1" class="w-20 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm text-center font-bold shadow-sm bg-white">
+                                    <input type="text" id="item-val" placeholder="R$ 0,00" onkeyup="window.mascaraMoeda(this)" class="w-28 md:w-32 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold shadow-sm bg-white">
+                                </div>
+                            </div>
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
+                                <input type="hidden" id="item-id-edit" value="">
+                                <button onclick="window.adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
+                            </div>
+                        </div>
+                        <div id="lista-itens-db" class="space-y-3 min-h-[100px]"><div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div></div>
+                    </div>
+
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">3</div> Detalhes e Anexos Digitais</h3>
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
+                                <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
+                            </div>
+                            <div id="box-upload-fotos">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
+                                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
+                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="window.processarImagens(event)" />
+                                </label>
+                            </div>
+                            <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="aba-conteudo-fin" class="fade-in hidden w-full">
+                    
+                    <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100"><i class="ph-fill ph-lock-key text-4xl text-slate-300"></i></div>
+                        <h3 class="text-lg font-black text-slate-700 mb-1">O.S. não registrada</h3>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Salve a O.S. pela primeira vez para liberar o Faturamento.</p>
+                    </div>
+
+                    <div id="fin-liberado-box" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 hidden w-full">
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2 mb-1"><i class="ph-fill ph-wallet text-emerald-500 text-2xl"></i> Painel Financeiro</h3>
+                        <p class="text-xs text-slate-500 font-medium mb-6 pb-4 border-b border-slate-100" id="fin-aba-subtitulo">Gerencie os pagamentos atrelados a esta Ordem de Serviço.</p>
+
+                        <div id="fin-gerador-box" class="space-y-6">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
+                                <select id="tab-fin-tipo" onchange="window.mudarTipoFaturamentoTab()" class="w-full border border-slate-300 p-3.5 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-emerald-500 font-bold text-slate-800 shadow-sm cursor-pointer transition-colors">
+                                    <option value="avista">Pagamento Total na Entrega (À Vista)</option>
+                                    <option value="entrada_parcela">Dar uma Entrada + Parcelar o Saldo</option>
+                                    <option value="parcelado">Parcelar o Valor Total (Sem Entrada)</option>
+                                </select>
+                            </div>
+
+                            <div id="tab-box-entrada" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Valor Recebido (R$)</label>
+                                    <input type="text" id="tab-fin-entrada" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" placeholder="0,00" class="w-full border border-slate-300 p-3 rounded-xl text-lg bg-white outline-none focus:border-emerald-500 font-black text-emerald-600 shadow-sm transition-colors">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Forma de Pagto.</label>
+                                    <select id="tab-fin-forma-entrada" onchange="window.checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white focus:border-emerald-500 font-bold text-slate-800 cursor-pointer shadow-sm">
+                                        <option value="Pix" selected>Pix</option>
+                                        <option value="Dinheiro">Dinheiro Físico</option>
+                                        <option value="Cartão de Débito">Cartão de Débito</option>
+                                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                        <option value="Boleto">Boleto</option>
+                                        <option value="Transferência">Transferência Bancária</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="tab-box-parcelamento" class="hidden space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nº Parcelas</label>
+                                        <input type="number" id="tab-fin-parcelas" oninput="window.checarSomaGeradorTab()" value="1" min="1" max="120" class="w-full border border-slate-300 p-3 rounded-xl text-center text-lg bg-white outline-none focus:border-emerald-500 font-black text-slate-800 shadow-sm transition-colors">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1º Vencimento</label>
+                                        <input type="date" id="tab-fin-vencimento-base" onchange="window.checarSomaGeradorTab()" class="w-full border border-slate-300 p-3 rounded-xl text-sm bg-white outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-sm">
+                                    </div>
+                                </div>
+                                <div id="tab-fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner space-y-2 mt-2 max-h-64 overflow-y-auto"></div>
+                            </div>
+                            
+                            <button onclick="window.processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
+                        </div>
+
+                        <div id="fin-editor-box" class="hidden space-y-4 w-full">
+                            <div id="lista-financeiro-vinculado" class="space-y-3 w-full">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
+                
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
+                            <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
+                        </div>
+                        
+                        <div class="flex justify-center"><i class="ph-bold ph-arrows-down-up text-xl text-slate-300"></i></div>
+                        
+                        <div class="p-4 rounded-xl border transition-colors shadow-inner text-center" id="fin-aba-soma-box">
+                            <p class="text-[10px] font-bold uppercase tracking-wider mb-1" id="fin-aba-soma-label">Soma Lançamentos</p>
+                            <h4 class="text-2xl font-black" id="fin-aba-soma">R$ 0,00</h4>
+                        </div>
+                        
+                        <div id="fin-aba-alerta" class="hidden bg-red-50 p-3 rounded-lg border border-red-100 text-red-600 text-[10px] font-bold text-center leading-relaxed">
+                            <i class="ph-bold ph-warning text-lg mb-1 block"></i> Os valores não batem. Ajuste as parcelas para a conta fechar!
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
+                        <button id="btn-salvar-fin-edicao" onclick="window.salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                            <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
+                        </button>
+                        <button id="btn-estornar-fin" onclick="window.limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
+                            <i class="ph-bold ph-trash text-lg"></i> Apagar Lançamentos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <select id="desc-tipo" onchange="window.calcularTotais()" class="w-1/3 border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="perc">%</option><option value="val">R$</option></select>
+                            <input type="text" id="desc-val" onkeyup="this.value = this.value.replace(/[^0-9,]/g, ''); window.calcularTotais()" placeholder="0,00" class="flex-1 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold">
+                        </div>
+                        <select id="desc-alvo" onchange="window.calcularTotais()" class="w-full border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="total">No Total da O.S</option><option value="pecas">Somente nas Peças</option><option value="servicos">Somente nos Serviços</option></select>
+                    </div>
+                </div>
+
+                <div id="box-caixa-preta" class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
+                    <div class="mb-5" id="box-status">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
+                        <select id="db-status" onchange="window.verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
+                            <option value="Em Aberto" selected>Em Aberto</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                            <option value="Aguardando Peça">Aguardando Peça</option>
+                            <option value="Aguardando Pagamento">Aguardando Pagamento</option>
+                            <option value="Aprovado">Aprovado</option>
+                            <option value="Em Execução">Em Execução</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Fechado" class="hidden" disabled>Fechado (Faturado)</option>
+                            <option value="Não Usar">Não Usar</option>
+                            <option value="Orçamento">Orçamento</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3 mb-6 shadow-inner">
+                        <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Peças:</span> <span id="resumo-pecas">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Serviços:</span> <span id="resumo-servicos">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm text-red-400 font-bold"><span>Desconto:</span> <span id="resumo-desc">- R$ 0,00</span></div>
+                        <div class="border-t border-slate-700 pt-3 mt-2 flex justify-between items-end">
+                            <span class="font-bold text-slate-300 text-xs">VALOR FINAL:</span>
+                            <span class="font-black text-2xl md:text-3xl text-blue-400 tracking-tight" id="db-total">R$ 0,00</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-confirmacao-exclusao" class="hidden fixed inset-0 bg-slate-900/80 z-[1000] flex items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100"><i class="ph-bold ph-trash text-3xl text-red-500"></i></div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">Excluir O.S. <span id="exc-os-num" class="text-red-600"></span>?</h3>
+            <p class="text-sm text-slate-500 font-medium">Esta ação apagará permanentemente a ordem de serviço e todos os seus itens. <br>Não pode ser desfeita.</p>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button onclick="window.fecharModalExclusao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+            <button onclick="window.confirmarExclusao()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-warning"></i> Excluir</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/90 z-[1500] flex items-center justify-center p-4 fade-in">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
+            <h3 class="text-xl font-black text-white mb-2">Destravar a O.S?</h3>
+            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição temporária. Lembre-se de conferir se o Financeiro bate na Auditoria se alterar valores. <br><br><b>Digite a senha gerencial:</b></p>
+            <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
+        </div>
+        <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
+            <button onclick="window.fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
+            <button onclick="window.processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/80 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
+        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
+            <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
+            <button onclick="window.fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+        </div>
+        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+            <button onclick="window.fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
+            <button onclick="window.processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
+        </div>
+    </div>
+</div>
+
+<div style="position: fixed; top: 0; left: 200vw; width: 800px; opacity: 0; pointer-events: none; z-index: -9999; background-color: white;">
+    <div id="pdf-template-real" style="padding: 30px 40px; color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+        <div style="border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h1 style="font-size: 24px; font-weight: 900; margin: 0; color: #000000; text-transform: uppercase; letter-spacing: -0.5px;">AUTOMANAGER OFICINA</h1>
+                <p style="font-size: 9px; color: #4B5563; margin: 2px 0 0 0; font-weight: bold; text-transform: uppercase;">Serviços Automotivos Avançados</p>
+                <p style="font-size: 9px; color: #6B7280; margin: 1px 0 0 0;">CNPJ: 00.000.000/0001-00 | Rua Fictícia, 123 - Centro</p>
+            </div>
+            <div style="text-align: right;">
+                <h2 style="font-size: 18px; font-weight: 900; color: #000000; margin: 0; letter-spacing: -0.5px;">ORDEM DE SERVIÇO <span id="pdf-id"></span></h2>
+                <p style="font-size: 10px; margin: 4px 0 0 0; color: #000000;"><span style="font-weight: bold;">Abertura:</span> <span id="pdf-data-abertura"></span></p>
+                <p style="font-size: 10px; margin: 1px 0 0 0; color: #000000;"><span style="font-weight: bold;">Emissão:</span> <span id="pdf-data-emissao"></span></p>
+                <p style="font-size: 10px; margin: 1px 0 0 0; color: #000000;"><span style="font-weight: bold;">Status:</span> <span id="pdf-status"></span></p>
+            </div>
+        </div>
+        <div style="border: 1px solid #000000; padding: 10px; margin-bottom: 20px; font-size: 11px; line-height: 1.6; color: #000000; background-color: #F9FAFB;">
+            <div style="display: flex; flex-wrap: wrap; margin-bottom: 4px;">
+                <div style="width: 50%;"><span style="font-weight: 900;">NOME:</span> <span id="pdf-cli-nome" style="text-transform: uppercase;"></span></div>
+                <div style="width: 25%;"><span style="font-weight: 900;">CPF:</span> <span id="pdf-cli-doc"></span></div>
+                <div style="width: 25%;"><span style="font-weight: 900;">CELULAR:</span> <span id="pdf-cli-tel"></span></div>
+            </div>
+            <div style="margin-bottom: 4px;"><span style="font-weight: 900;">ENDEREÇO:</span> <span id="pdf-cli-end" style="text-transform: uppercase;"></span></div>
+            <div style="border-top: 1px dashed #9CA3AF; margin: 8px 0;"></div>
+            <div style="display: flex; flex-wrap: wrap;">
+                <div style="width: 50%;"><span style="font-weight: 900;">VEÍCULO:</span> <span id="pdf-vei-mod" style="text-transform: uppercase;"></span></div>
+                <div style="width: 25%;"><span style="font-weight: 900;">PLACA:</span> <span id="pdf-vei-placa" style="font-weight: 900; text-transform: uppercase;"></span></div>
+                <div style="width: 25%;"><span style="font-weight: 900;">COR/ANO:</span> <span id="pdf-vei-det" style="text-transform: uppercase;"></span></div>
+            </div>
+        </div>
+        
+        <div id="pdf-container-itens"></div>
+        
+        <div style="display: flex; gap: 20px; margin-top: 15px;">
+            <div style="flex: 2;">
+                <div id="pdf-container-obs" style="display: none; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB; height: 100%;">
+                    <h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Observações da O.S.</h3>
+                    <p id="pdf-obs-texto" style="font-size: 11px; color: #000000; margin: 0; line-height: 1.4;"></p>
+                </div>
+            </div>
+            <div style="flex: 1;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #000000;">
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; color: #000000;">Total Peças</td><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-pecas">R$ 0,00</td></tr>
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; color: #000000;">Total Serviços</td><td style="padding: 6px 10px; border-bottom: 1px solid #D1D5DB; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-servicos">R$ 0,00</td></tr>
+                    <tr><td style="padding: 6px 10px; border-bottom: 1px solid #000000; color: #000000; font-weight: bold;">Desconto</td><td style="padding: 6px 10px; border-bottom: 1px solid #000000; text-align: right; font-weight: bold; color: #000000;" id="pdf-tot-desc">- R$ 0,00</td></tr>
+                    <tr style="background-color: #E5E7EB;"><td style="padding: 8px 10px; font-weight: 900; font-size: 12px; color: #000000;">VALOR TOTAL</td><td style="padding: 8px 10px; text-align: right; font-weight: 900; font-size: 15px; color: #000000;" id="pdf-tot-final">R$ 0,00</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <div id="pdf-container-financeiro" style="display: none; margin-top: 15px; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB;"></div>
+
+        <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
+            <div style="flex: 2; display: flex; flex-direction: column; align-items: center;">
+                <div style="width: 100%; max-width: 300px; border-bottom: 1px solid #000000; height: 40px; margin-bottom: 5px;"></div>
+                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Assinatura do Cliente</p>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; align-items: flex-end; justify-content: center; height: 40px; margin-bottom: 5px; gap: 6px;">
+                    <div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div><div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div><div style="width: 35px; border-bottom: 1px solid #000000; height: 1px;"></div><div style="width: 1px; height: 14px; background-color: #000000; transform: rotate(15deg);"></div><div style="width: 45px; border-bottom: 1px solid #000000; height: 1px;"></div>
+                </div>
+                <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 // ========================================================
 // AutoManager - Módulo de Orçamentos e O.S.
 // ========================================================
@@ -45,7 +431,7 @@ window.valorParaInput = function(v) {
     val = val.replace('.', ',');
     val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     return val;
-};
+}
 
 window.reverterMoeda = function(texto) {
     if(!texto) return 0;
@@ -554,19 +940,6 @@ window.excluirParcelaManual = async function(id) {
     try {
         const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
         if (error) throw error;
-        
-        const { data: restantes } = await window.banco.from('contas_receber').select('id').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`);
-        if(!restantes || restantes.length === 0) {
-             const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', window.osEmEdicaoId).single();
-             if (oldOrc && oldOrc.itens) {
-                 delete oldOrc.itens.financeiro;
-                 await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', window.osEmEdicaoId);
-             } else {
-                 await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', window.osEmEdicaoId);
-             }
-             document.getElementById('db-status').value = 'Finalizado';
-        }
-        
         window.dispararAlerta("Parcela excluída com sucesso.", "sucesso");
         await window.recarregarFinanceiroDaOS();
     } catch(e) { window.dispararAlerta("Erro ao excluir."); }
@@ -611,16 +984,12 @@ window.limparFinanceiroAtual = async function() {
         const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', window.osEmEdicaoId).single();
         if (oldOrc && oldOrc.itens) {
             delete oldOrc.itens.financeiro;
-            await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', window.osEmEdicaoId);
-        } else {
-            await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', window.osEmEdicaoId);
+            await window.banco.from('orcamentos').update({ itens: oldOrc.itens }).eq('id', window.osEmEdicaoId);
         }
-        
-        document.getElementById('db-status').value = 'Finalizado';
         
         window.currentOSFinanceiro = [];
         window.renderizarAbaFinanceiro();
-        window.dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
+        window.dispararAlerta("Financeiro estornado. Pode gerar novamente.", "sucesso");
     } catch(e) { window.dispararAlerta("Erro ao limpar financeiro"); }
 };
 
@@ -644,10 +1013,16 @@ window.processarDestravarOS = async function() {
 
     if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
-    window.fecharModalDestravar();
-    window.isOSDestravada = true;
-    window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-    window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
+    try {
+        const novoStatus = 'Em Aberto';
+        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', window.osParaDestravarId);
+        if (error) throw error;
+        
+        window.fecharModalDestravar();
+        window.osParaDestravarDados.status = novoStatus;
+        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
+        window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
+    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
 // ========================================================
@@ -657,7 +1032,6 @@ window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVis
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     window.osEmEdicaoId = orc.id;
     window.osEmEdicaoNumero = orc.numero_os; 
-    window.osParaDestravarDados = orc; 
     window.isVisualizacaoModo = isVisualizacao;
     if (isVisualizacao) window.isOSDestravada = false;
     
@@ -711,24 +1085,133 @@ window.abrirFaturamentoDireto = function(dadosCodificados) {
     window.abrirEdicaoOS(dadosCodificados, 'fin', false);
 };
 
-window.abrirModalDestravar = function(id, orcJSONCodificado) {
-    window.osParaDestravarId = id; 
-    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
-    document.getElementById('input-senha-reabrir').value = '';
-    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+window.mudarTipoFaturamentoTab = function() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    const boxEntrada = document.getElementById('tab-box-entrada');
+    const boxParcelamento = document.getElementById('tab-box-parcelamento');
+    const inputEntrada = document.getElementById('tab-fin-entrada');
+
+    let d = new Date(); d.setMonth(d.getMonth() + 1);
+    const dataMesQueVem = window.formatarDataISO(d);
+
+    if (tipo === 'avista') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
+        inputEntrada.value = window.formataDinheiro(window.valoresFinais.total); inputEntrada.readOnly = true;
+        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
+    } else if (tipo === 'entrada_parcela') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.readOnly = false; inputEntrada.value = ''; 
+        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    } else if (tipo === 'parcelado') {
+        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.value = '0,00';
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    }
+    window.gerarLinhasParcelasTab();
 };
 
-window.fecharModalDestravar = function() { document.getElementById('modal-senha-destravar').classList.add('hidden'); };
+window.gerarLinhasParcelasTab = function() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let entrada = (tipo === 'avista') ? window.valoresFinais.total : ((tipo === 'parcelado') ? 0 : window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    let restante = window.valoresFinais.total - entrada; if(restante < 0) restante = 0;
 
-window.abrirModalExclusao = function(id, numero_os) {
-    window.idParaExcluir = id;
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+    const divSimulacao = document.getElementById('tab-fin-simulacao');
+    if (tipo === 'avista' || restante === 0) {
+        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
+        document.getElementById('tab-fin-parcelas').disabled = true;
+        
+        document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(entrada);
+        window.atualizarPlacarAuditoria(entrada, 'btn-salvar-fin-tab');
+        return;
+    }
+
+    document.getElementById('tab-fin-parcelas').disabled = false;
+    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
+    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
+    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
+    
+    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+    let centavosTotal = Math.round(restante * 100);
+    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
+    let restoCentavos = centavosTotal % parcelas;
+
+    const activeEl = document.activeElement;
+    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
+
+    let somaGerada = entrada;
+
+    for(let i=1; i<=parcelas; i++) {
+        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        somaGerada += valorParc;
+        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = window.formatarDataISO(d);
+
+        if (apenasAtualizar) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if (inputParc) inputParc.value = window.valorParaInput(valorParc);
+        } else {
+            html += `
+            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
+                <input type="text" id="tab-parc-val-${i}" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" value="${window.valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
+                <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+                <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
+                    <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Dinheiro">Dinheiro Físico</option>
+                    <option value="Transferência">Transferência Bancária</option>
+                </select>
+            </div>`;
+        }
+    }
+    
+    if (!apenasAtualizar) {
+        divSimulacao.innerHTML = html;
+    }
+    
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(somaGerada);
+    window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 };
 
-window.fecharModalExclusao = function() { 
-    window.idParaExcluir = null; 
-    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
+window.checarSomaGeradorTab = function() {
+    const activeEl = document.activeElement;
+    
+    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
+        window.gerarLinhasParcelasTab();
+        return;
+    }
+
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let soma = 0;
+    
+    if (tipo !== 'parcelado') {
+        soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
+    }
+    
+    if (tipo !== 'avista') {
+        const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+        for(let i=1; i<=parcelas; i++) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if(inputParc) soma += window.reverterMoeda(inputParc.value) || 0;
+        }
+    }
+    
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
+    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
+};
+
+window.checarSomaFinanceiroEdit = function() {
+    let soma = 0;
+    window.currentOSFinanceiro.forEach((rec, idx) => {
+        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
+        if(inputVal) soma += window.reverterMoeda(inputVal.value);
+        else soma += rec.valor;
+    });
+    
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
+    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
 };
 
 window.verificarStatusFinanceiro = function() {
@@ -904,6 +1387,28 @@ window.calcularTotais = function() {
             window.checarSomaGeradorTab();
         }
     }
+};
+
+window.abrirModalDestravar = function(id, orcJSONCodificado) {
+    window.osParaDestravarId = id; 
+    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
+    document.getElementById('input-senha-reabrir').value = '';
+    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+};
+
+window.fecharModalDestravar = function() { 
+    document.getElementById('modal-senha-destravar').classList.add('hidden'); 
+};
+
+window.abrirModalExclusao = function(id, numero_os) {
+    window.idParaExcluir = id;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+};
+
+window.fecharModalExclusao = function() { 
+    window.idParaExcluir = null; 
+    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
 };
 
 window.abrirModalCadastro = function(tipo) {
