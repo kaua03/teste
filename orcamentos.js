@@ -14,11 +14,13 @@ let osParaDestravarDados = null;
 
 let globalClientes = [];
 let globalVeiculos = [];
-let currentOSFinanceiro = []; 
+let currentOSFinanceiro = []; // Armazena as parcelas vivas que vieram do banco
 
 async function initOrcamentos() {
+    console.log("🟢 Módulo Orçamentos Inicializado.");
     await carregarListasBD();
     await buscarOrcamentosSupabase();
+    
     document.getElementById('view-novo-orcamento').classList.add('hidden');
     document.getElementById('view-lista-orcamentos').classList.remove('hidden');
 }
@@ -65,7 +67,7 @@ function dispararAlerta(msg, tipo = 'erro') {
 }
 
 // -----------------------------------------------------------------------------------
-// SISTEMA DE ABAS
+// SISTEMA DE ABAS (DADOS DA O.S vs GESTÃO FINANCEIRA)
 // -----------------------------------------------------------------------------------
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
@@ -217,9 +219,7 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
     }
 }
 
-// -----------------------------------------------------------------------------------
-// AUDITORIA EM TEMPO REAL AO DIGITAR VALORES (SEM AUTO-AJUSTE)
-// -----------------------------------------------------------------------------------
+// O Auto-Ajuste foi removido. Agora ele só SOMA o que você digitar.
 window.checarSomaGeradorTab = function() {
     const tipo = document.getElementById('tab-fin-tipo').value;
     let soma = 0;
@@ -227,7 +227,6 @@ window.checarSomaGeradorTab = function() {
     if (tipo !== 'parcelado') {
         soma += reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
     }
-    
     if (tipo !== 'avista') {
         const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
         for(let i=1; i<=parcelas; i++) {
@@ -306,8 +305,11 @@ function gerarLinhasParcelasTab() {
     let centavosPorParcela = Math.floor(centavosTotal / parcelas);
     let restoCentavos = centavosTotal % parcelas;
 
+    let somaGerada = entrada;
+
     for(let i=1; i<=parcelas; i++) {
         let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        somaGerada += valorParc;
         let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = formatarDataISO(d);
 
         html += `
@@ -327,8 +329,8 @@ function gerarLinhasParcelasTab() {
     }
     divSimulacao.innerHTML = html;
     
-    document.getElementById('fin-aba-soma').innerText = formataDinheiro(valoresFinais.total);
-    atualizarPlacarAuditoria(valoresFinais.total, 'btn-salvar-fin-tab');
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(somaGerada);
+    atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 }
 
 async function processarLancarFinanceiroTab() {
@@ -340,10 +342,10 @@ async function processarLancarFinanceiroTab() {
     const parcelas = (tipo === 'avista') ? 0 : Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
     const cliente = document.getElementById('db-cliente-nome').value;
 
-    let somaParcelas = 0;
-    if(total - entrada > 0 && tipo !== 'avista') {
+    let somaParcelas = entrada;
+    if(tipo !== 'avista') {
         for(let i=1; i<=parcelas; i++) somaParcelas += reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0;
-        if (Math.abs(somaParcelas - (total - entrada)) > 0.05) { dispararAlerta("As parcelas não batem com o saldo da O.S.", "erro"); return; }
+        if (Math.abs(somaParcelas - total) > 0.05) { dispararAlerta("As parcelas não batem com o saldo da O.S.", "erro"); return; }
     }
     
     const btnSalvar = document.getElementById('btn-salvar-fin-tab');
@@ -359,7 +361,7 @@ async function processarLancarFinanceiroTab() {
         });
     }
 
-    if (total - entrada > 0 && parcelas > 0) {
+    if (parcelas > 0) {
         for(let i=1; i<=parcelas; i++) {
             records.push({
                 descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
@@ -455,8 +457,8 @@ async function adicionarNovaParcelaManual() {
     if(!cliente) { dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
     
     let somaAtual = 0;
-    currentOSFinanceiro.forEach(r => {
-        const inputVal = document.getElementById(`edit-rec-val-${currentOSFinanceiro.indexOf(r)}`);
+    currentOSFinanceiro.forEach((r, idx) => {
+        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
         if(inputVal) somaAtual += reverterMoeda(inputVal.value);
         else somaAtual += r.valor;
     });
@@ -499,7 +501,7 @@ async function limparFinanceiroAtual() {
 }
 
 // ----------------------------------------------------
-// TELA, CADEADOS, ETC
+// TELA E REGRAS DE TRAVA
 // ----------------------------------------------------
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
@@ -516,6 +518,7 @@ function verificarStatusFinanceiro() {
     congelarCamposOS(false);
     if(badgeFechada) badgeFechada.classList.add('hidden');
     
+    // Mostra a aba Financeiro só se estiver Finalizado, Fechado ou já tiver financeiro salvo
     if (status === 'Finalizado' || currentOSFinanceiro.length > 0) {
         abaFinBtn.classList.remove('hidden');
     } else {
@@ -538,6 +541,9 @@ function congelarCamposOS(travar) {
     
     const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
     botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
+    
+    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
+    camposFinEdit.forEach(el => el.disabled = travar);
 }
 
 function alternarSubTelaOrcamento(modo) {
@@ -574,6 +580,8 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
+const formataDinheiro = (v) => { const val = Number(v)||0; return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+
 function mascaraMoeda(campo) {
     let valor = campo.value.replace(/\D/g, ''); 
     if (valor === '') { campo.value = ''; return; }
@@ -589,7 +597,8 @@ function formatarDataISO(dataObj) {
 }
 
 function valorParaInput(v) {
-    let val = v.toFixed(2);
+    let val = Number(v) || 0;
+    val = val.toFixed(2);
     val = val.replace('.', ',');
     val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     return val;
@@ -650,6 +659,7 @@ function removerItemDB(id) { itensTemporarios = itensTemporarios.filter(i => i.i
 function editarItem(id) {
     const item = itensTemporarios.find(i => i.id_temp === id);
     if (!item) return;
+
     document.getElementById('item-tipo').value = item.tipo || 'Peça';
     document.getElementById('item-nome').value = item.descricao;
     document.getElementById('item-desc').value = item.detalhe || '';
@@ -725,11 +735,6 @@ function atualizarInterfaceItensETotais() {
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
     document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
-    
-    // Atualiza o resumo de design limpo na Aba Financeiro
-    document.getElementById('fin-resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
-    document.getElementById('fin-resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
-    document.getElementById('fin-resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
 }
 
 function processarImagens(event) {
@@ -762,12 +767,16 @@ function renderizarPreviewFotos() {
 }
 function removerImagemArray(strToRem) { imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); renderizarPreviewFotos(); }
 
+// -----------------------------------------------------------------------------------
+// BUSCA NO BANCO
+// -----------------------------------------------------------------------------------
 async function buscarOrcamentosSupabase() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
+        console.error("Erro na busca de orçamentos:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 }
