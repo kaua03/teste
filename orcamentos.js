@@ -601,16 +601,10 @@ window.processarDestravarOS = async function() {
 
     if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
-    try {
-        const novoStatus = 'Em Aberto';
-        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', window.osParaDestravarId);
-        if (error) throw error;
-        
-        window.fecharModalDestravar();
-        window.osParaDestravarDados.status = novoStatus;
-        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-        window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
+    window.fecharModalDestravar();
+    window.isOSDestravada = true; 
+    window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
+    window.dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
 };
 
 // ========================================================
@@ -1191,7 +1185,7 @@ window.processarSalvamentoModal = async function() {
     }
 };
 
-window.gerarPDFSupabase = function(dadosCodificados) {
+window.gerarPDFSupabase = async function(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
     document.getElementById('pdf-id').innerText = orc.numero_os;
@@ -1274,27 +1268,40 @@ window.gerarPDFSupabase = function(dadosCodificados) {
         if(boxObs) boxObs.style.display = 'none'; 
     }
 
-    const fin = orc.itens?.financeiro;
     const containerFin = document.getElementById('pdf-container-financeiro');
-    if (fin && (fin.entrada > 0 || (fin.parcelas && fin.parcelas.length > 0))) {
-        let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
-        htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
-        if (fin.entrada > 0) {
-            const dataEntradaBR = new Date(fin.data_entrada + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${window.formataDinheiro(fin.entrada)} (Via ${fin.forma_entrada} em ${dataEntradaBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
-        }
-        if (fin.parcelas && fin.parcelas.length > 0) {
-            fin.parcelas.forEach(p => {
-                const dataBR = new Date(p.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-                htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${p.numero}/${fin.parcelas.length}:</b> ${window.formataDinheiro(p.valor)} - Vencimento: ${dataBR} (Via ${p.forma_pagamento})</td></tr>`;
+    containerFin.innerHTML = '';
+    
+    // Busca do banco de dados na hora de gerar o PDF (BLINDADO ASYNC)
+    try {
+        const { data: recordsFin } = await window.banco.from('contas_receber')
+            .select('*').like('descricao', `%O.S #${orc.numero_os}%`).order('data_vencimento', { ascending: true });
+            
+        if (recordsFin && recordsFin.length > 0) {
+            let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
+            htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
+            
+            let counterParcela = 1;
+            const parcelasPuras = recordsFin.filter(r => r.categoria !== 'Adiantamento' && !r.descricao.includes('Acerto Imediato'));
+            const totalParcelas = parcelasPuras.length;
+
+            recordsFin.forEach(rec => {
+                const dataBR = new Date(rec.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                if (rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${window.formataDinheiro(rec.valor)} (Via ${rec.forma_pagamento} em ${dataBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+                } else {
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${counterParcela}/${totalParcelas}:</b> ${window.formataDinheiro(rec.valor)} - Vencimento: ${dataBR} (Via ${rec.forma_pagamento})</td></tr>`;
+                    counterParcela++;
+                }
             });
+
+            htmlFin += `</table>`;
+            containerFin.innerHTML = htmlFin;
+            containerFin.style.display = 'block';
+        } else {
+            containerFin.style.display = 'none';
         }
-        htmlFin += `</table>`;
-        containerFin.innerHTML = htmlFin;
-        containerFin.style.display = 'block';
-    } else {
-        containerFin.innerHTML = '';
-        containerFin.style.display = 'none';
+    } catch (e) {
+        console.error("Erro ao buscar financeiro para PDF", e);
     }
 
     const el = document.getElementById('pdf-template-real');
