@@ -2,58 +2,58 @@
 // AutoManager - Módulo de Orçamentos e O.S.
 // ========================================================
 
-window.itensTemporarios = [];
-window.valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
-window.modalTipoAberto = '';
-window.imagensUploadArray = []; 
-window.osEmEdicaoId = null; 
-window.osEmEdicaoNumero = null; 
-window.idParaExcluir = null;
-window.osParaDestravarId = null;
-window.osParaDestravarDados = null; 
-window.globalClientes = [];
-window.globalVeiculos = [];
-window.currentOSFinanceiro = []; 
-window.isVisualizacaoModo = false;
-window.isOSDestravada = false;
+let itensTemporarios = [];
+let valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
+let modalTipoAberto = '';
+let imagensUploadArray = []; 
+let osEmEdicaoId = null; 
+let osEmEdicaoNumero = null; 
+let idParaExcluir = null;
+let osParaDestravarId = null;
+let osParaDestravarDados = null; 
+let globalClientes = [];
+let globalVeiculos = [];
+let currentOSFinanceiro = []; 
+let isVisualizacaoModo = false;
+let isOSDestravada = false;
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
 // ========================================================
-window.formataDinheiro = function(v) {
+function formataDinheiro(v) {
     const val = Number(v) || 0;
     return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-};
+}
 
-window.mascaraMoeda = function(campo) {
+function mascaraMoeda(campo) {
     let valor = campo.value.replace(/\D/g, ''); 
     if (valor === '') { campo.value = ''; return; }
     valor = (parseInt(valor, 10) / 100).toFixed(2);
     campo.value = valor.replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-};
+}
 
-window.formatarDataISO = function(dataObj) {
+function formatarDataISO(dataObj) {
     const ano = dataObj.getFullYear();
     const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
     const dia = String(dataObj.getDate()).padStart(2, '0');
     return `${ano}-${mes}-${dia}`;
-};
+}
 
-window.valorParaInput = function(v) {
+function valorParaInput(v) {
     let val = Number(v) || 0;
     val = val.toFixed(2);
     val = val.replace('.', ',');
     val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     return val;
-};
+}
 
-window.reverterMoeda = function(texto) {
+function reverterMoeda(texto) {
     if(!texto) return 0;
     let limpo = texto.toString().replace(/[^\d,-]/g, '');
     return parseFloat(limpo.replace(',', '.')) || 0;
-};
+}
 
-window.mascaraGeral = function(tipo, campo) {
+function mascaraGeral(tipo, campo) {
     let v = campo.value;
     if (tipo === 'cpf') {
         v = v.replace(/\D/g, ""); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d)/, "$1.$2"); v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); campo.value = v;
@@ -66,9 +66,9 @@ window.mascaraGeral = function(tipo, campo) {
         if (v.length > 4 && /[0-9]/.test(v[4])) { v = v.substring(0, 3) + '-' + v.substring(3); }
         campo.value = v;
     }
-};
+}
 
-window.dispararAlerta = function(msg, tipo = 'erro') {
+function dispararAlerta(msg, tipo = 'erro') {
     const corBg = tipo === 'erro' ? 'bg-red-500' : 'bg-emerald-500';
     const icone = tipo === 'erro' ? 'ph-warning-circle' : 'ph-check-circle';
     const alertaAntigo = document.getElementById('alerta-toast-flutuante');
@@ -79,17 +79,17 @@ window.dispararAlerta = function(msg, tipo = 'erro') {
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
-};
+}
 
-window.obterCorStatus = function(status) {
+function obterCorStatus(status) {
     const cores = { 'Em Aberto': 'bg-slate-100 text-slate-700', 'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700', 'Aguardando Peça': 'bg-orange-50 text-orange-700', 'Aguardando Pagamento': 'bg-amber-50 text-amber-700', 'Aprovado': 'bg-blue-50 text-blue-700', 'Em Execução': 'bg-indigo-50 text-indigo-700', 'Finalizado': 'bg-emerald-50 text-emerald-700', 'Fechado': 'bg-slate-800 text-white', 'Não Usar': 'bg-red-50 text-red-700' };
     return cores[status] || 'bg-slate-50 text-slate-500';
-};
+}
 
 // ========================================================
 // 2. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
 // ========================================================
-window.renderizarTabelaReal = function(dados) {
+function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -98,85 +98,85 @@ window.renderizarTabelaReal = function(dados) {
     
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
-        const corBg = window.obterCorStatus(orc.status);
+        const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="window.abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="window.abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="window.abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
-        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.abrirVisualizacaoOS('${orcJSON}')">
+        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="abrirVisualizacaoOS('${orcJSON}')">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
-            <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${window.formataDinheiro(orc.valor_total)}</td>
+            <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${formataDinheiro(orc.valor_total)}</td>
             <td class="p-4 md:p-5 text-center"><span class="${corBg} border px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${isFechado ? '<i class="ph-bold ph-lock-key mr-1"></i> Faturada' : orc.status}</span></td>
             <td class="p-4 md:p-5 text-center" onclick="event.stopPropagation()">
                 <div class="flex items-center justify-center gap-1.5">
                     ${btnAcao1}
                     ${btnAcao2}
-                    <button onclick="window.abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="window.gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
     }).join('');
-};
+}
 
-window.atualizarInterfaceItensETotais = function() {
+function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
-    if (window.itensTemporarios.length === 0) {
+    if (itensTemporarios.length === 0) {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
-        const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+        const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
         
-        divLista.innerHTML = window.itensTemporarios.map(item => {
+        divLista.innerHTML = itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
             
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
-                <button onclick="window.editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                <button onclick="window.removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
 
             return `
             <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
-                    <div class="flex items-center"><span class="border ${badgeClass} px-2 py-0.5 rounded text-[10px] font-black uppercase mr-2 shadow-sm">${item.tipo}</span><span class="font-bold text-slate-800 text-sm">${item.quantidade}x ${item.descricao}</span> <span class="text-xs text-slate-400 ml-1">(${window.formataDinheiro(item.valor_unitario)})</span></div>
+                    <div class="flex items-center"><span class="border ${badgeClass} px-2 py-0.5 rounded text-[10px] font-black uppercase mr-2 shadow-sm">${item.tipo}</span><span class="font-bold text-slate-800 text-sm">${item.quantidade}x ${item.descricao}</span> <span class="text-xs text-slate-400 ml-1">(${formataDinheiro(item.valor_unitario)})</span></div>
                     ${HTMLdetalhe}
                 </div>
                 <div class="flex items-center gap-3 w-full lg:w-auto justify-between border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
-                    <span class="font-black text-slate-900 text-sm md:text-base">${window.formataDinheiro(item.subtotal)}</span>
+                    <span class="font-black text-slate-900 text-sm md:text-base">${formataDinheiro(item.subtotal)}</span>
                     ${acoes}
                 </div>
             </div>`;
         }).join('');
     }
     
-    document.getElementById('resumo-pecas').innerText = window.formataDinheiro(window.valoresFinais.pecas);
-    document.getElementById('resumo-servicos').innerText = window.formataDinheiro(window.valoresFinais.servicos);
-    document.getElementById('resumo-desc').innerText = `- ${window.formataDinheiro(window.valoresFinais.desconto)}`;
-    document.getElementById('db-total').innerText = window.formataDinheiro(window.valoresFinais.total);
+    document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
+    document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
+    document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
+    document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
     
     const finPecas = document.getElementById('fin-resumo-pecas');
-    if(finPecas) finPecas.innerText = window.formataDinheiro(window.valoresFinais.pecas);
+    if(finPecas) finPecas.innerText = formataDinheiro(valoresFinais.pecas);
     const finServicos = document.getElementById('fin-resumo-servicos');
-    if(finServicos) finServicos.innerText = window.formataDinheiro(window.valoresFinais.servicos);
+    if(finServicos) finServicos.innerText = formataDinheiro(valoresFinais.servicos);
     const finDesc = document.getElementById('fin-resumo-desc');
-    if(finDesc) finDesc.innerText = `- ${window.formataDinheiro(window.valoresFinais.desconto)}`;
+    if(finDesc) finDesc.innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     const finTotalOs = document.getElementById('fin-aba-total-os');
-    if(finTotalOs) finTotalOs.innerText = window.formataDinheiro(window.valoresFinais.total);
-};
+    if(finTotalOs) finTotalOs.innerText = formataDinheiro(valoresFinais.total);
+}
 
-window.renderizarAbaFinanceiro = function() {
+function renderizarAbaFinanceiro() {
     const boxBloqueado = document.getElementById('fin-bloqueado-box');
     const boxLiberado = document.getElementById('fin-liberado-box');
     const boxGerador = document.getElementById('fin-gerador-box');
@@ -185,9 +185,9 @@ window.renderizarAbaFinanceiro = function() {
     const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
     const subtitulo = document.getElementById('fin-aba-subtitulo');
     
-    document.getElementById('fin-aba-total-os').innerText = window.formataDinheiro(window.valoresFinais.total);
+    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 
-    if (!window.osEmEdicaoId) {
+    if (!osEmEdicaoId) {
         boxBloqueado.classList.remove('hidden');
         boxLiberado.classList.add('hidden');
         if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
@@ -198,27 +198,27 @@ window.renderizarAbaFinanceiro = function() {
     boxBloqueado.classList.add('hidden');
     boxLiberado.classList.remove('hidden'); 
 
-    if (!window.currentOSFinanceiro || window.currentOSFinanceiro.length === 0) {
+    if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
         if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
         
-        if (window.isVisualizacaoModo) {
+        if (isVisualizacaoModo) {
             boxGerador.classList.add('hidden');
             subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
             document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
-            window.atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
+            atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
         } else {
             subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
             document.getElementById('tab-fin-tipo').value = 'avista';
-            window.mudarTipoFaturamentoTab();
+            mudarTipoFaturamentoTab();
         }
     } else {
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
         
-        if (window.isVisualizacaoModo) {
+        if (isVisualizacaoModo) {
             if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
             subtitulo.innerText = "Lançamentos financeiros atrelados à O.S.";
         } else {
@@ -226,8 +226,8 @@ window.renderizarAbaFinanceiro = function() {
             subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
         }
         
-        const hasPago = window.currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
-        if (hasPago || window.isVisualizacaoModo) {
+        const hasPago = currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
+        if (hasPago || isVisualizacaoModo) {
             if(btnRefazer) btnRefazer.classList.add('hidden'); 
         } else {
             if(btnRefazer) btnRefazer.classList.remove('hidden'); 
@@ -237,9 +237,9 @@ window.renderizarAbaFinanceiro = function() {
         let html = '';
         
         const statusAtual = document.getElementById('db-status').value;
-        const isTravadoGlobal = (statusAtual === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+        const isTravadoGlobal = (statusAtual === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-        window.currentOSFinanceiro.forEach((rec, idx) => {
+        currentOSFinanceiro.forEach((rec, idx) => {
             const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
             const trancaGeral = isTravadoGlobal ? 'disabled' : '';
             const trancaParaPago = isPago ? 'disabled' : trancaGeral;
@@ -274,10 +274,10 @@ window.renderizarAbaFinanceiro = function() {
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
-                        <input type="text" id="edit-rec-val-${idx}" onkeyup="window.mascaraMoeda(this); window.checarSomaFinanceiroEdit()" value="${window.valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
+                        <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
-                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="window.excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
             </div>`;
         });
         
@@ -285,65 +285,65 @@ window.renderizarAbaFinanceiro = function() {
             html += `
             <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
                  <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
-                <button onclick="window.adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+                <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
             </div>`;
         }
 
         listaDiv.innerHTML = html;
-        window.checarSomaFinanceiroEdit();
+        checarSomaFinanceiroEdit();
     }
-};
+}
 
-window.renderizarPreviewFotos = function() {
+function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     previewContainer.innerHTML = '';
     
-    if(window.imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
     
-    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-    window.imagensUploadArray.forEach(base64Str => {
+    imagensUploadArray.forEach(base64Str => {
         const imgBox = document.createElement('div');
         imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
         
-        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
         
         imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
         previewContainer.appendChild(imgBox);
     });
-};
+}
 
-window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
+function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
     const elSomaBox = document.getElementById('fin-aba-soma-box');
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
     
-    if (somaFinanceiro > 0 && Math.abs(window.valoresFinais.total - somaFinanceiro) > 0.05) {
+    if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
         if(elAlerta) elAlerta.classList.remove('hidden');
-        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
+        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
     } else {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
         if(elAlerta) elAlerta.classList.add('hidden');
-        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
     }
-};
+}
 
-// ========================================================
+// ===================================================================================
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
-// ========================================================
-window.initOrcamentos = async function() {
-    await window.carregarListasBD();
-    await window.buscarOrcamentosSupabase();
+// ===================================================================================
+async function initOrcamentos() {
+    await carregarListasBD();
+    await buscarOrcamentosSupabase();
     document.getElementById('view-novo-orcamento').classList.add('hidden');
     document.getElementById('view-lista-orcamentos').classList.remove('hidden');
-};
+}
 
-window.carregarListasBD = async function() {
+async function carregarListasBD() {
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
-    window.globalClientes = cli || [];
-    window.globalVeiculos = vei || [];
+    globalClientes = cli || [];
+    globalVeiculos = vei || [];
 
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
@@ -351,35 +351,47 @@ window.carregarListasBD = async function() {
     if (selCli) selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
     if (selVei) selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
 
-    window.globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
-    window.globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
-};
+    globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
+    globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
+}
 
-window.buscarOrcamentosSupabase = async function() {
+function vincularClienteViceVersa(gatilho) {
+    const selCli = document.getElementById('db-cliente-nome');
+    const selVei = document.getElementById('db-veiculo-placa');
+    if (gatilho === 'cliente' && selCli && selCli.value) {
+        const veiEncontrado = globalVeiculos.find(v => v.dono_nome === selCli.value);
+        if (veiEncontrado && selVei) selVei.value = veiEncontrado.placa;
+    } else if (gatilho === 'veiculo' && selVei && selVei.value) {
+        const veiEncontrado = globalVeiculos.find(v => v.placa === selVei.value);
+        if (veiEncontrado && veiEncontrado.dono_nome && selCli) selCli.value = veiEncontrado.dono_nome;
+    }
+}
+
+async function buscarOrcamentosSupabase() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
-        window.renderizarTabelaReal(orcamentos);
+        renderizarTabelaReal(orcamentos);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
-};
+}
 
-window.salvarOrcamentoReal = async function() {
+async function salvarOrcamentoReal() {
     const nome = document.getElementById('db-cliente-nome').value;
     const placa = document.getElementById('db-veiculo-placa').value;
     const status = document.getElementById('db-status').value;
     const obs = document.getElementById('db-obs').value;
 
-    if (!nome || !placa) { window.dispararAlerta("Cliente e Placa são obrigatórios."); return; }
-    if (window.itensTemporarios.length === 0) { window.dispararAlerta("A O.S precisa de peças ou serviços."); return; }
+    if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
+    if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
 
-    if (window.currentOSFinanceiro.length > 0) {
-        let somaF = 0; window.currentOSFinanceiro.forEach(r => somaF += r.valor);
-        if (Math.abs(window.valoresFinais.total - somaF) > 0.05) {
-            window.dispararAlerta("O valor da O.S mudou. Ajuste as parcelas na aba 'Gestão Financeira' para a conta fechar!", "erro");
-            window.mudarAbaOS('fin');
+    if (currentOSFinanceiro.length > 0) {
+        let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
+        if (Math.abs(valoresFinais.total - somaF) > 0.05) {
+            dispararAlerta("O valor da O.S mudou. Ajuste as parcelas na aba 'Gestão Financeira' para a conta fechar!", "erro");
+            mudarAbaOS('fin');
             return;
         }
     }
@@ -389,32 +401,32 @@ window.salvarOrcamentoReal = async function() {
     btnSalvar.disabled = true;
 
     try {
-        const clienteObj = window.globalClientes.find(c => c.nome === nome) || {};
-        const veiculoObj = window.globalVeiculos.find(v => v.placa === placa) || {};
-        const payloadJSONB = { lista_itens: window.itensTemporarios, resumo: window.valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
+        const clienteObj = globalClientes.find(c => c.nome === nome) || {};
+        const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
 
-        if (window.osEmEdicaoId) {
-            const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', window.osEmEdicaoId).single();
+        if (osEmEdicaoId) {
+            const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
             if (oldOrc && oldOrc.itens && oldOrc.itens.financeiro) {
                 payloadJSONB.financeiro = oldOrc.itens.financeiro;
             }
 
-            const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: window.valoresFinais.total, status: status, observacao: obs, anexos: window.imagensUploadArray, itens: payloadJSONB }).eq('id', window.osEmEdicaoId);
+            const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
             if (error) throw error;
             
-            window.dispararAlerta("O.S atualizada com sucesso!", "sucesso");
-            window.alternarSubTelaOrcamento('lista');
+            dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+            alternarSubTelaOrcamento('lista');
         } else {
-            const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: window.valoresFinais.total, status: status, observacao: obs, anexos: window.imagensUploadArray, itens: payloadJSONB }]);
+            const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]);
             if (error) throw error;
-            window.dispararAlerta("O.S salva! Vá em 'Gestão Financeira' se desejar faturar agora.", "sucesso");
-            window.alternarSubTelaOrcamento('lista');
+            dispararAlerta("O.S salva! Vá em 'Gestão Financeira' se desejar faturar agora.", "sucesso");
+            alternarSubTelaOrcamento('lista');
         }
-    } catch (erro) { window.dispararAlerta("Falha de comunicação com o servidor."); } 
+    } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
-};
+}
 
-window.salvarFinanceiroEditado = async function() {
+async function salvarFinanceiroEditado() {
     const btnSalvar = document.getElementById('btn-salvar-fin-edicao');
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-lg"></i> Salvando...';
     btnSalvar.disabled = true;
@@ -422,15 +434,15 @@ window.salvarFinanceiroEditado = async function() {
     try {
         let snap = { entrada: 0, forma_entrada: '', data_entrada: '', parcelas: [] };
         
-        for(let i=0; i<window.currentOSFinanceiro.length; i++) {
-            const rec = window.currentOSFinanceiro[i];
+        for(let i=0; i<currentOSFinanceiro.length; i++) {
+            const rec = currentOSFinanceiro[i];
             const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
             
             const inputVal = document.getElementById(`edit-rec-val-${i}`);
             const inputData = document.getElementById(`edit-rec-data-${i}`);
             const inputForma = document.getElementById(`edit-rec-forma-${i}`);
             
-            const valorCorreto = inputVal ? window.reverterMoeda(inputVal.value) : rec.valor;
+            const valorCorreto = inputVal ? reverterMoeda(inputVal.value) : rec.valor;
             const dataCorreta = inputData ? inputData.value : rec.data_vencimento;
             const formaCorreta = inputForma ? inputForma.value : rec.forma_pagamento;
 
@@ -451,35 +463,35 @@ window.salvarFinanceiroEditado = async function() {
             }
         }
 
-        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', window.osEmEdicaoId).single();
+        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
         if (oldOrc && oldOrc.itens) {
             oldOrc.itens.financeiro = snap;
-            await window.banco.from('orcamentos').update({ itens: oldOrc.itens }).eq('id', window.osEmEdicaoId);
+            await window.banco.from('orcamentos').update({ itens: oldOrc.itens }).eq('id', osEmEdicaoId);
         }
 
-        window.dispararAlerta("Lançamentos financeiros salvos e atualizados!", "sucesso");
-        await window.recarregarFinanceiroDaOS();
+        dispararAlerta("Lançamentos financeiros salvos e atualizados!", "sucesso");
+        await recarregarFinanceiroDaOS();
     } catch(e) { 
-        window.dispararAlerta("Erro ao salvar o financeiro no banco."); 
+        dispararAlerta("Erro ao salvar o financeiro no banco."); 
     } finally {
         btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO';
         btnSalvar.disabled = false;
     }
-};
+}
 
-window.processarLancarFinanceiroTab = async function() {
+async function processarLancarFinanceiroTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
-    const total = window.valoresFinais.total;
-    const entrada = (tipo === 'avista') ? total : ((tipo === 'parcelado') ? 0 : window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    const total = valoresFinais.total;
+    const entrada = (tipo === 'avista') ? total : ((tipo === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
     const formaEntrada = document.getElementById('tab-fin-forma-entrada').value;
-    const dataAtualStr = window.formatarDataISO(new Date()); 
+    const dataAtualStr = formatarDataISO(new Date()); 
     const parcelas = (tipo === 'avista') ? 0 : Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
     const cliente = document.getElementById('db-cliente-nome').value;
 
     let somaParcelas = entrada;
     if(tipo !== 'avista') {
-        for(let i=1; i<=parcelas; i++) somaParcelas += window.reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0;
-        if (Math.abs(somaParcelas - total) > 0.05) { window.dispararAlerta("As parcelas não batem com o saldo da O.S.", "erro"); return; }
+        for(let i=1; i<=parcelas; i++) somaParcelas += reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value) || 0;
+        if (Math.abs(somaParcelas - total) > 0.05) { dispararAlerta("As parcelas não batem com o saldo da O.S.", "erro"); return; }
     }
     
     const btnSalvar = document.getElementById('btn-salvar-fin-tab');
@@ -489,7 +501,7 @@ window.processarLancarFinanceiroTab = async function() {
     let records = [];
     if(entrada > 0) {
         records.push({
-            descricao: `Acerto Imediato O.S #${window.osEmEdicaoNumero} - ${cliente}`,
+            descricao: `Acerto Imediato O.S #${osEmEdicaoNumero} - ${cliente}`,
             categoria: 'Serviços O.S', valor: entrada,
             data_vencimento: dataAtualStr, status: 'Pago', data_pagamento: dataAtualStr, forma_pagamento: formaEntrada
         });
@@ -498,9 +510,9 @@ window.processarLancarFinanceiroTab = async function() {
     if (parcelas > 0) {
         for(let i=1; i<=parcelas; i++) {
             records.push({
-                descricao: `Parcela ${i}/${parcelas} O.S #${window.osEmEdicaoNumero} - ${cliente}`,
+                descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
                 categoria: 'Serviços O.S',
-                valor: window.reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value),
+                valor: reverterMoeda(document.getElementById(`tab-parc-val-${i}`).value),
                 data_vencimento: document.getElementById(`tab-parc-data-${i}`).value,
                 status: 'Pendente', forma_pagamento: document.getElementById(`tab-parc-forma-${i}`).value
             });
@@ -508,50 +520,50 @@ window.processarLancarFinanceiroTab = async function() {
     }
 
     try {
-        const clienteObj = window.globalClientes.find(c => c.nome === cliente) || {};
-        const veiculoObj = window.globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
-        const payloadJSONB = { lista_itens: window.itensTemporarios, resumo: window.valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
+        const clienteObj = globalClientes.find(c => c.nome === cliente) || {};
+        const veiculoObj = globalVeiculos.find(v => v.placa === document.getElementById('db-veiculo-placa').value) || {};
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
         
-        const { error: errOS } = await window.banco.from('orcamentos').update({ status: 'Fechado', itens: payloadJSONB }).eq('id', window.osEmEdicaoId);
+        const { error: errOS } = await window.banco.from('orcamentos').update({ status: 'Fechado', itens: payloadJSONB }).eq('id', osEmEdicaoId);
         if(errOS) throw errOS;
 
         if (records.length > 0) await window.banco.from('contas_receber').insert(records);
         
-        window.dispararAlerta("O.S Faturada com sucesso!", "sucesso");
-        window.alternarSubTelaOrcamento('lista');
-    } catch (e) { window.dispararAlerta("Erro ao faturar no banco."); } 
+        dispararAlerta("O.S Faturada com sucesso!", "sucesso");
+        alternarSubTelaOrcamento('lista');
+    } catch (e) { dispararAlerta("Erro ao faturar no banco."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
-};
+}
 
-window.excluirParcelaManual = async function(id) {
+async function excluirParcelaManual(id) {
     if(!confirm("Atenção: Deseja excluir este lançamento definitivamente?")) return;
     try {
         const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
         if (error) throw error;
-        window.dispararAlerta("Parcela excluída com sucesso.", "sucesso");
-        await window.recarregarFinanceiroDaOS();
-    } catch(e) { window.dispararAlerta("Erro ao excluir."); }
-};
+        dispararAlerta("Parcela excluída com sucesso.", "sucesso");
+        await recarregarFinanceiroDaOS();
+    } catch(e) { dispararAlerta("Erro ao excluir."); }
+}
 
-window.adicionarNovaParcelaManual = async function() {
+async function adicionarNovaParcelaManual() {
     const cliente = document.getElementById('db-cliente-nome').value;
-    if(!cliente) { window.dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
+    if(!cliente) { dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
     
     let somaAtual = 0;
-    window.currentOSFinanceiro.forEach((r, idx) => {
+    currentOSFinanceiro.forEach((r, idx) => {
         const inputVal = document.getElementById(`edit-rec-val-${idx}`);
-        if(inputVal) somaAtual += window.reverterMoeda(inputVal.value);
+        if(inputVal) somaAtual += reverterMoeda(inputVal.value);
         else somaAtual += r.valor;
     });
     
-    let valorSugerido = window.valoresFinais.total - somaAtual;
+    let valorSugerido = valoresFinais.total - somaAtual;
     if(valorSugerido < 0) valorSugerido = 0;
 
     const novaParcela = {
-        descricao: `Parcela O.S #${window.osEmEdicaoNumero} - ${cliente}`,
+        descricao: `Parcela O.S #${osEmEdicaoNumero} - ${cliente}`,
         categoria: 'Serviços O.S',
         valor: parseFloat(valorSugerido.toFixed(2)),
-        data_vencimento: window.formatarDataISO(new Date()),
+        data_vencimento: formatarDataISO(new Date()),
         status: 'Pendente',
         forma_pagamento: 'Cartão de Crédito'
     };
@@ -559,68 +571,70 @@ window.adicionarNovaParcelaManual = async function() {
     try {
         const { error } = await window.banco.from('contas_receber').insert([novaParcela]);
         if (error) throw error;
-        window.dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
-        await window.recarregarFinanceiroDaOS();
-    } catch(e) { window.dispararAlerta("Erro ao criar lançamento extra."); }
-};
+        dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
+        await recarregarFinanceiroDaOS();
+    } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
+}
 
-window.limparFinanceiroAtual = async function() {
+async function limparFinanceiroAtual() {
     if(!confirm("Atenção: Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?")) return;
     try {
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${window.osEmEdicaoNumero}%`);
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
         
-        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', window.osEmEdicaoId).single();
+        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
         if (oldOrc && oldOrc.itens) {
             delete oldOrc.itens.financeiro;
-            await window.banco.from('orcamentos').update({ itens: oldOrc.itens }).eq('id', window.osEmEdicaoId);
+            await window.banco.from('orcamentos').update({ itens: oldOrc.itens }).eq('id', osEmEdicaoId);
         }
         
-        window.currentOSFinanceiro = [];
-        window.renderizarAbaFinanceiro();
-        window.dispararAlerta("Financeiro estornado. Pode gerar novamente.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao limpar financeiro"); }
-};
+        currentOSFinanceiro = [];
+        renderizarAbaFinanceiro();
+        dispararAlerta("Financeiro estornado. Pode gerar novamente.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
+}
 
-window.confirmarExclusao = async function() {
-    if(!window.idParaExcluir) return;
+async function confirmarExclusao() {
+    if(!idParaExcluir) return;
     try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
         if (error) throw error;
         await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
-        window.dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        window.fecharModalExclusao();
-        window.buscarOrcamentosSupabase();
-    } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
-};
+        dispararAlerta("Ordem de serviço apagada.", "sucesso");
+        fecharModalExclusao();
+        buscarOrcamentosSupabase();
+    } catch (erro) { dispararAlerta("Falha ao excluir."); }
+}
 
-window.processarDestravarOS = async function() {
+async function processarDestravarOS() {
     const senhaDigitada = document.getElementById('input-senha-reabrir').value;
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
     const usuarioLogado = JSON.parse(usuarioLogadoStr);
 
-    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
     
     try {
-        // O DESTAVAMENTO NÃO ALTERA MAIS O BANCO! Apenas destrava a tela.
-        window.fecharModalDestravar();
-        window.isOSDestravada = true;
-        // Reabre a tela mantendo o JSON original que foi carregado no clique da engrenagem
-        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-        window.dispararAlerta("O.S destravada temporariamente para edição. Lembre-se de Salvar.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S."); }
-};
+        const novoStatus = 'Em Aberto';
+        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', osParaDestravarId);
+        if (error) throw error;
+        
+        fecharModalDestravar();
+        osParaDestravarDados.status = novoStatus;
+        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
+        dispararAlerta("O.S destravada temporariamente para edição.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
+}
 
 // ========================================================
 // 4. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS GERAIS)
 // ========================================================
-window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
+async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    window.osEmEdicaoId = orc.id;
-    window.osEmEdicaoNumero = orc.numero_os; 
-    window.osParaDestravarDados = orc; // Guarda a OS inteira caso precise destravar depois
-    window.isVisualizacaoModo = isVisualizacao;
-    if (isVisualizacao) window.isOSDestravada = false;
+    osEmEdicaoId = orc.id;
+    osEmEdicaoNumero = orc.numero_os; 
+    osParaDestravarDados = orc; 
+    isVisualizacaoModo = isVisualizacao;
+    if (isVisualizacao) isOSDestravada = false;
     
     document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
     
@@ -641,108 +655,68 @@ window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVis
     selStatus.value = orc.status;
     
     document.getElementById('db-obs').value = orc.observacao || '';
-    window.itensTemporarios = orc.itens?.lista_itens || [];
-    window.imagensUploadArray = orc.anexos || [];
+    itensTemporarios = orc.itens?.lista_itens || [];
+    imagensUploadArray = orc.anexos || [];
     
-    if(window.imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); window.renderizarPreviewFotos(); }
+    if(imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); renderizarPreviewFotos(); }
 
     const descValor = orc.itens?.resumo?.desconto || 0;
     if (descValor > 0) {
         document.getElementById('desc-tipo').value = 'val';
         const descInput = document.getElementById('desc-val');
-        descInput.value = (descValor * 100).toString(); window.mascaraMoeda(descInput);
+        descInput.value = (descValor * 100).toString(); mascaraMoeda(descInput);
     } else { document.getElementById('desc-val').value = ''; }
 
-    window.calcularTotais();
+    calcularTotais();
     
-    await window.recarregarFinanceiroDaOS();
-    window.verificarStatusFinanceiro(); 
+    await recarregarFinanceiroDaOS();
+    verificarStatusFinanceiro(); 
     
     document.getElementById('view-lista-orcamentos').classList.add('hidden');
     document.getElementById('view-novo-orcamento').classList.remove('hidden');
     
-    window.mudarAbaOS(abaAlvo); 
-};
+    mudarAbaOS(abaAlvo); 
+}
 
-window.mudarAbaOS = function(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-    
-    const boxAuditoria = document.getElementById('box-auditoria-financeira');
-    const boxDesconto = document.getElementById('box-desconto');
-    const boxStatusSelect = document.getElementById('box-status');
-    const boxBtnSalvar = document.getElementById('btn-salvar-db');
+function abrirVisualizacaoOS(dadosCodificados) {
+    abrirEdicaoOS(dadosCodificados, 'dados', true);
+}
 
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-        
-        boxAuditoria.classList.add('hidden');
-        boxDesconto.classList.remove('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
-        
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        
-        boxAuditoria.classList.remove('hidden');
-        boxDesconto.classList.add('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
-        
-        window.renderizarAbaFinanceiro();
-    }
-};
+function abrirFaturamentoDireto(dadosCodificados) {
+    abrirEdicaoOS(dadosCodificados, 'fin', false);
+}
 
-window.abrirVisualizacaoOS = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'dados', true);
-};
-
-window.abrirFaturamentoDireto = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'fin', false);
-};
-
-window.abrirModalDestravar = function(id, orcJSONCodificado) {
-    window.osParaDestravarId = id; 
-    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
+function abrirModalDestravar(id, orcJSONCodificado) {
+    osParaDestravarId = id; 
+    osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
-};
+}
 
-window.fecharModalDestravar = function() { document.getElementById('modal-senha-destravar').classList.add('hidden'); };
+function fecharModalDestravar() { document.getElementById('modal-senha-destravar').classList.add('hidden'); }
 
-window.abrirModalExclusao = function(id, numero_os) {
-    window.idParaExcluir = id;
+function abrirModalExclusao(id, numero_os) {
+    idParaExcluir = id;
     document.getElementById('exc-os-num').innerText = `#${numero_os}`;
     document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
-};
+}
 
-window.fecharModalExclusao = function() { 
-    window.idParaExcluir = null; 
+function fecharModalExclusao() { 
+    idParaExcluir = null; 
     document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
-};
+}
 
-window.verificarStatusFinanceiro = function() {
+function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const badgeFechada = document.getElementById('badge-os-fechada');
     const abaFinBtn = document.getElementById('aba-fin');
     
-    // A Máquina de Estados
-    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+    const isTravadoLocalmente = (status === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
     if (isTravadoLocalmente) {
         if(badgeFechada) {
             badgeFechada.classList.remove('hidden');
-            if (window.isVisualizacaoModo) {
+            if (isVisualizacaoModo) {
                 badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
                 badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
             } else {
@@ -750,30 +724,30 @@ window.verificarStatusFinanceiro = function() {
                 badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
             }
         }
-        window.congelarCamposOS(true);
+        congelarCamposOS(true);
     } else {
-        window.congelarCamposOS(false);
+        congelarCamposOS(false);
         if(badgeFechada) badgeFechada.classList.add('hidden');
     }
     
-    if (status === 'Finalizado' || status === 'Fechado' || window.currentOSFinanceiro.length > 0) {
+    if (status === 'Finalizado' || status === 'Fechado' || currentOSFinanceiro.length > 0) {
         abaFinBtn.classList.remove('hidden');
     } else {
         abaFinBtn.classList.add('hidden');
-        if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
+        if(!isVisualizacaoModo) mudarAbaOS('dados'); 
     }
-};
+}
 
-window.alternarSubTelaOrcamento = function(modo) {
+function alternarSubTelaOrcamento(modo) {
     const viewLista = document.getElementById('view-lista-orcamentos');
     const viewNovo = document.getElementById('view-novo-orcamento');
 
     if (modo === 'novo') {
-        window.osEmEdicaoId = null; 
-        window.osEmEdicaoNumero = null;
-        window.currentOSFinanceiro = []; 
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
+        osEmEdicaoId = null; 
+        osEmEdicaoNumero = null;
+        currentOSFinanceiro = []; 
+        isOSDestravada = false;
+        isVisualizacaoModo = false;
         
         document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
         document.getElementById('db-cliente-nome').value = '';
@@ -782,27 +756,27 @@ window.alternarSubTelaOrcamento = function(modo) {
         document.getElementById('desc-val').value = '';
         document.getElementById('db-obs').value = '';
         
-        window.itensTemporarios = [];
-        window.imagensUploadArray = [];
+        itensTemporarios = [];
+        imagensUploadArray = [];
         const preview = document.getElementById('preview-anexos');
         if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
         
-        window.calcularTotais();
-        window.verificarStatusFinanceiro(); 
-        window.mudarAbaOS('dados'); 
+        calcularTotais();
+        verificarStatusFinanceiro(); 
+        mudarAbaOS('dados'); 
         
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
     } else {
         viewNovo.classList.add('hidden');
         viewLista.classList.remove('hidden');
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        window.buscarOrcamentosSupabase();
+        isOSDestravada = false;
+        isVisualizacaoModo = false;
+        buscarOrcamentosSupabase();
     }
-};
+}
 
-window.adicionarOuEditarItem = function() {
+function adicionarOuEditarItem() {
     const tipo = document.getElementById('item-tipo').value;
     const nome = document.getElementById('item-nome').value;
     const desc = document.getElementById('item-desc').value;
@@ -810,34 +784,34 @@ window.adicionarOuEditarItem = function() {
     const valString = document.getElementById('item-val').value;
     const idEdit = document.getElementById('item-id-edit').value;
 
-    if(!nome) { window.dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
-    if(!qtd || qtd <= 0) { window.dispararAlerta("A quantidade deve ser maior que zero."); return; }
-    const valFloat = window.reverterMoeda(valString);
-    if(valFloat <= 0) { window.dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
+    if(!nome) { dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
+    if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
+    const valFloat = reverterMoeda(valString);
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
 
     const sub = qtd * valFloat;
 
     if (idEdit) {
-        const index = window.itensTemporarios.findIndex(i => i.id_temp == idEdit);
-        if (index > -1) window.itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        const index = itensTemporarios.findIndex(i => i.id_temp == idEdit);
+        if (index > -1) itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
         document.getElementById('item-id-edit').value = '';
         document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
         document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
     } else {
-        window.itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
+        itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
     }
 
     document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
-    window.calcularTotais();
-};
+    calcularTotais();
+}
 
-window.removerItemDB = function(id) { 
-    window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
-    window.calcularTotais(); 
-};
+function removerItemDB(id) { 
+    itensTemporarios = itensTemporarios.filter(i => i.id_temp !== id); 
+    calcularTotais(); 
+}
 
-window.editarItem = function(id) {
-    const item = window.itensTemporarios.find(i => i.id_temp === id);
+function editarItem(id) {
+    const item = itensTemporarios.find(i => i.id_temp === id);
     if (!item) return;
 
     document.getElementById('item-tipo').value = item.tipo || 'Peça';
@@ -846,17 +820,17 @@ window.editarItem = function(id) {
     document.getElementById('item-qtd').value = item.quantidade;
     const inputVal = document.getElementById('item-val');
     inputVal.value = (item.valor_unitario * 100).toString(); 
-    window.mascaraMoeda(inputVal);
+    mascaraMoeda(inputVal);
     document.getElementById('item-id-edit').value = item.id_temp;
     
     const btn = document.getElementById('btn-add-item');
     btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
     btn.classList.replace('bg-slate-900', 'bg-emerald-600');
-};
+}
 
-window.calcularTotais = function() {
+function calcularTotais() {
     let sumPecas = 0; let sumServicos = 0;
-    window.itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
+    itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
     let totalBruto = sumPecas + sumServicos;
     let descValor = 0;
     const descTipo = document.getElementById('desc-tipo').value; 
@@ -871,24 +845,153 @@ window.calcularTotais = function() {
         descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
     }
 
-    window.valoresFinais.pecas = sumPecas; 
-    window.valoresFinais.servicos = sumServicos; 
-    window.valoresFinais.desconto = descValor; 
-    window.valoresFinais.total = totalBruto - descValor;
+    valoresFinais.pecas = sumPecas; 
+    valoresFinais.servicos = sumServicos; 
+    valoresFinais.desconto = descValor; 
+    valoresFinais.total = totalBruto - descValor;
     
-    window.atualizarInterfaceItensETotais();
+    atualizarInterfaceItensETotais();
     
     if(!document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
-        if(window.currentOSFinanceiro.length > 0) {
-            window.checarSomaFinanceiroEdit();
+        if(currentOSFinanceiro.length > 0) {
+            checarSomaFinanceiroEdit();
         } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
-            window.checarSomaGeradorTab();
+            checarSomaGeradorTab();
         }
     }
-};
+}
 
-window.abrirModalCadastro = function(tipo) {
-    window.modalTipoAberto = tipo;
+function checarSomaGeradorTab() {
+    const activeEl = document.activeElement;
+    
+    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
+        gerarLinhasParcelasTab();
+        return;
+    }
+
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let soma = 0;
+    
+    if (tipo !== 'parcelado') {
+        soma += reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
+    }
+    
+    if (tipo !== 'avista') {
+        const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+        for(let i=1; i<=parcelas; i++) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if(inputParc) soma += reverterMoeda(inputParc.value) || 0;
+        }
+    }
+    
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(soma);
+    atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
+}
+
+function checarSomaFinanceiroEdit() {
+    let soma = 0;
+    currentOSFinanceiro.forEach((rec, idx) => {
+        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
+        if(inputVal) soma += reverterMoeda(inputVal.value);
+        else soma += rec.valor;
+    });
+    
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(soma);
+    atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
+}
+
+function mudarTipoFaturamentoTab() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    const boxEntrada = document.getElementById('tab-box-entrada');
+    const boxParcelamento = document.getElementById('tab-box-parcelamento');
+    const inputEntrada = document.getElementById('tab-fin-entrada');
+
+    let d = new Date(); d.setMonth(d.getMonth() + 1);
+    const dataMesQueVem = formatarDataISO(d);
+
+    if (tipo === 'avista') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
+        inputEntrada.value = formataDinheiro(valoresFinais.total); inputEntrada.readOnly = true;
+        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
+    } else if (tipo === 'entrada_parcela') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.readOnly = false; inputEntrada.value = ''; 
+        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    } else if (tipo === 'parcelado') {
+        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.value = '0,00';
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    }
+    gerarLinhasParcelasTab();
+}
+
+function gerarLinhasParcelasTab() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let entrada = (tipo === 'avista') ? valoresFinais.total : ((tipo === 'parcelado') ? 0 : reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    let restante = valoresFinais.total - entrada; if(restante < 0) restante = 0;
+
+    const divSimulacao = document.getElementById('tab-fin-simulacao');
+    if (tipo === 'avista' || restante === 0) {
+        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
+        document.getElementById('tab-fin-parcelas').disabled = true;
+        
+        document.getElementById('fin-aba-soma').innerText = formataDinheiro(entrada);
+        atualizarPlacarAuditoria(entrada, 'btn-salvar-fin-tab');
+        return;
+    }
+
+    document.getElementById('tab-fin-parcelas').disabled = false;
+    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
+    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
+    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
+    
+    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+    let centavosTotal = Math.round(restante * 100);
+    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
+    let restoCentavos = centavosTotal % parcelas;
+
+    const activeEl = document.activeElement;
+    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
+
+    let somaGerada = entrada;
+
+    for(let i=1; i<=parcelas; i++) {
+        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        somaGerada += valorParc;
+        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = formatarDataISO(d);
+
+        if (apenasAtualizar) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if (inputParc) inputParc.value = valorParaInput(valorParc);
+        } else {
+            html += `
+            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
+                <input type="text" id="tab-parc-val-${i}" onkeyup="mascaraMoeda(this); checarSomaGeradorTab()" value="${valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
+                <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+                <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
+                    <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Dinheiro">Dinheiro Físico</option>
+                    <option value="Transferência">Transferência Bancária</option>
+                </select>
+            </div>`;
+        }
+    }
+    
+    if (!apenasAtualizar) {
+        divSimulacao.innerHTML = html;
+    }
+    
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(somaGerada);
+    atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
+}
+
+function abrirModalCadastro(tipo) {
+    modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
     const conteudo = document.getElementById('modal-conteudo');
@@ -905,11 +1008,11 @@ window.abrirModalCadastro = function(tipo) {
             </div>
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
-                <input type="text" id="cad-doc" onkeyup="window.mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
+                <input type="text" id="cad-doc" onkeyup="mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
             </div>
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp <span class="text-red-500 text-sm">*</span></label>
-                <input type="text" id="cad-tel" onkeyup="window.mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                <input type="text" id="cad-tel" onkeyup="mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
             </div>
             <div class="md:col-span-2">
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
@@ -917,7 +1020,7 @@ window.abrirModalCadastro = function(tipo) {
             </div>
             <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
                 <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label>
-                <input type="text" id="cad-cep" onkeyup="window.mascaraGeral('cep', this)" onblur="window.buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
+                <input type="text" id="cad-cep" onkeyup="mascaraGeral('cep', this)" onblur="buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
             </div>
             <div class="md:col-span-2 flex gap-2">
                 <div class="flex-1">
@@ -944,7 +1047,7 @@ window.abrirModalCadastro = function(tipo) {
         
         let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
         const clienteOS = document.getElementById('db-cliente-nome').value;
-        window.globalClientes.forEach(c => {
+        globalClientes.forEach(c => {
             const selected = (c.nome === clienteOS) ? 'selected' : '';
             optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
         });
@@ -961,7 +1064,7 @@ window.abrirModalCadastro = function(tipo) {
             <div class="grid grid-cols-2 gap-3">
                 <div class="col-span-2 md:col-span-1">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500 text-sm">*</span></label>
-                    <input type="text" id="cad-placa" onkeyup="window.mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
+                    <input type="text" id="cad-placa" onkeyup="mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
                 </div>
                 <div class="col-span-2 md:col-span-1">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo <span class="text-red-500 text-sm">*</span></label>
@@ -982,14 +1085,14 @@ window.abrirModalCadastro = function(tipo) {
     }
     document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
-};
+}
 
-window.fecharModalCadastro = function() { 
+function fecharModalCadastro() { 
     document.body.style.overflow = 'auto'; 
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
-};
+}
 
-window.buscarCEP = async function(cepInput) {
+async function buscarCEP(cepInput) {
     const cep = cepInput.replace(/\D/g, '');
     if (cep.length !== 8) return;
 
@@ -1015,23 +1118,23 @@ window.buscarCEP = async function(cepInput) {
                 setTimeout(() => statusSpan.classList.add('hidden'), 2500);
             }
         } else {
-            window.dispararAlerta("CEP não encontrado.");
+            dispararAlerta("CEP não encontrado.");
             if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
         }
     } catch (e) { 
-        window.dispararAlerta("Falha ao buscar CEP.");
+        dispararAlerta("Falha ao buscar CEP.");
         if(statusSpan) statusSpan.classList.add('hidden');
     }
-};
+}
 
-window.processarSalvamentoModal = async function() {
+async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    const textoOriginal = window.modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
+    const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
     btnSalvar.disabled = true;
 
     try {
-        if (window.modalTipoAberto === 'cliente') {
+        if (modalTipoAberto === 'cliente') {
             const nome = document.getElementById('cad-nome').value;
             const doc = document.getElementById('cad-doc').value;
             const tel = document.getElementById('cad-tel').value;
@@ -1042,44 +1145,44 @@ window.processarSalvamentoModal = async function() {
             const bairro = document.getElementById('cad-bairro').value;
             const cidade = document.getElementById('cad-cidade').value;
 
-            if(!nome || !tel) { window.dispararAlerta("Nome e Celular são obrigatórios."); return; }
+            if(!nome || !tel) { dispararAlerta("Nome e Celular são obrigatórios."); return; }
             
             const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
             if (error) throw error;
             
-            await window.carregarListasBD(); 
+            await carregarListasBD(); 
             document.getElementById('db-cliente-nome').value = nome; 
-            window.dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
+            dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
         } else {
             const placa = document.getElementById('cad-placa').value;
             const modelo = document.getElementById('cad-modelo').value;
             const cor = document.getElementById('cad-cor').value;
             const ano = document.getElementById('cad-ano').value;
             
-            if(!placa || !modelo) { window.dispararAlerta("Placa e Modelo obrigatórios."); return; }
+            if(!placa || !modelo) { dispararAlerta("Placa e Modelo obrigatórios."); return; }
             
             const dono = document.getElementById('cad-dono').value || '';
             
             const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
             if (error) throw error;
             
-            await window.carregarListasBD(); 
+            await carregarListasBD(); 
             document.getElementById('db-veiculo-placa').value = placa; 
             if(dono) document.getElementById('db-cliente-nome').value = dono; 
             
-            window.dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
+            dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
         }
-        window.fecharModalCadastro();
+        fecharModalCadastro();
     } catch (erro) {
-        if(erro.code === '23505') window.dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
-        else window.dispararAlerta("Falha ao salvar no banco de dados.");
+        if(erro.code === '23505') dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
+        else dispararAlerta("Falha ao salvar no banco de dados.");
     } finally {
         btnSalvar.innerHTML = textoOriginal;
         btnSalvar.disabled = false;
     }
-};
+}
 
-window.gerarPDFSupabase = async function(dadosCodificados) {
+async function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
     document.getElementById('pdf-id').innerText = orc.numero_os;
@@ -1094,8 +1197,8 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
     const pdfStatusEl = document.getElementById('pdf-status');
     if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
 
-    let cliDados = orc.itens?.cliente_dados || window.globalClientes.find(c => c.nome === orc.cliente_nome) || {};
-    let veiDados = orc.itens?.veiculo_dados || window.globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
+    let cliDados = orc.itens?.cliente_dados || globalClientes.find(c => c.nome === orc.cliente_nome) || {};
+    let veiDados = orc.itens?.veiculo_dados || globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
 
     const pdfCliNomeEl = document.getElementById('pdf-cli-nome');
     if(pdfCliNomeEl) pdfCliNomeEl.innerText = orc.cliente_nome || '---';
@@ -1139,19 +1242,19 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
     
     if(pecas.length > 0) {
         htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #D1D5DB;">1. Peças e Componentes</td></tr>`;
-        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${formataDinheiro(i.subtotal)}</td></tr>`).join('');
     }
     if(servicos.length > 0) {
         htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-top: 1px solid #000000; border-bottom: 1px solid #D1D5DB;">2. Mão de Obra e Serviços</td></tr>`;
-        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
+        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${formataDinheiro(i.subtotal)}</td></tr>`).join('');
     }
     htmlTabela += `</tbody></table>`;
     document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
 
-    document.getElementById('pdf-tot-pecas').innerText = window.formataDinheiro(calcPecas);
-    document.getElementById('pdf-tot-servicos').innerText = window.formataDinheiro(calcServicos);
-    document.getElementById('pdf-tot-desc').innerText = `- ${window.formataDinheiro(calcDesc)}`;
-    document.getElementById('pdf-tot-final').innerText = window.formataDinheiro(calcTotal);
+    document.getElementById('pdf-tot-pecas').innerText = formataDinheiro(calcPecas);
+    document.getElementById('pdf-tot-servicos').innerText = formataDinheiro(calcServicos);
+    document.getElementById('pdf-tot-desc').innerText = `- ${formataDinheiro(calcDesc)}`;
+    document.getElementById('pdf-tot-final').innerText = formataDinheiro(calcTotal);
 
     const boxObs = document.getElementById('pdf-container-obs');
     const pdfObsTextoEl = document.getElementById('pdf-obs-texto');
@@ -1180,9 +1283,9 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
             recordsFin.forEach(rec => {
                 const dataBR = new Date(rec.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
                 if (rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
-                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${window.formataDinheiro(rec.valor)} (Via ${rec.forma_pagamento} em ${dataBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${formataDinheiro(rec.valor)} (Via ${rec.forma_pagamento} em ${dataBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
                 } else {
-                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${counterParcela}/${totalParcelas}:</b> ${window.formataDinheiro(rec.valor)} - Vencimento: ${dataBR} (Via ${rec.forma_pagamento})</td></tr>`;
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${counterParcela}/${totalParcelas}:</b> ${formataDinheiro(rec.valor)} - Vencimento: ${dataBR} (Via ${rec.forma_pagamento})</td></tr>`;
                     counterParcela++;
                 }
             });
@@ -1207,6 +1310,4 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
         window.open(pdfUrl, '_blank');
         el.style.left = '-9999px'; el.style.top = '-9999px';
     });
-};
-
-console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso!");
+}
