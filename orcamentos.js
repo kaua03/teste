@@ -17,7 +17,7 @@ let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 
 // ========================================================
-// FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS)
+// FUNÇÕES UTILITÁRIAS (HOISTED PARA EVITAR ERROS DE CARREGAMENTO)
 // ========================================================
 function formataDinheiro(v) {
     const val = Number(v) || 0;
@@ -119,7 +119,7 @@ function vincularClienteViceVersa(gatilho) {
 }
 
 // ========================================================
-// SISTEMA DE ABAS E RENDERIZAÇÃO FINANCEIRA
+// SISTEMA DE ABAS DA O.S E RENDERIZAÇÃO FINANCEIRA
 // ========================================================
 function mudarAbaOS(aba) {
     const btnDados = document.getElementById('aba-dados');
@@ -175,7 +175,7 @@ function renderizarAbaFinanceiro() {
     boxLiberado.classList.remove('hidden'); 
 
     if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
-        // TELA DE GERADOR
+        // TELA DE GERADOR (PRIMEIRO FATURAMENTO)
         boxGerador.classList.remove('hidden');
         boxEditor.classList.add('hidden');
         if(btnRefazer) btnRefazer.classList.add('hidden');
@@ -185,7 +185,7 @@ function renderizarAbaFinanceiro() {
         document.getElementById('tab-fin-tipo').value = 'avista';
         mudarTipoFaturamentoTab();
     } else {
-        // TELA DE EDITOR
+        // TELA DE EDITOR (MOSTRA AS PARCELAS DO BANCO)
         boxGerador.classList.add('hidden');
         boxEditor.classList.remove('hidden');
         if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
@@ -228,7 +228,7 @@ function renderizarAbaFinanceiro() {
                         <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Forma de Pagto.</label>
                         <select id="edit-rec-forma-${idx}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses} cursor-pointer">
                             <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
-                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
+                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro</option>
                             <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
                             <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
                             <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
@@ -258,7 +258,7 @@ function renderizarAbaFinanceiro() {
     }
 }
 
-function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock) {
+function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
     const elSomaBox = document.getElementById('fin-aba-soma-box');
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
@@ -311,7 +311,7 @@ window.checarSomaFinanceiroEdit = function() {
 }
 
 // ----------------------------------------------------
-// GERADOR DE PARCELAS (ABA FINANCEIRA)
+// GERADOR DE PARCELAS TAB
 // ----------------------------------------------------
 function mudarTipoFaturamentoTab() {
     const tipo = document.getElementById('tab-fin-tipo').value;
@@ -364,15 +364,21 @@ window.gerarLinhasParcelasTab = function() {
     let centavosPorParcela = Math.floor(centavosTotal / parcelas);
     let restoCentavos = centavosTotal % parcelas;
 
+    // Se estivermos recriando o HTML e for uma digitação na entrada, para não perder o cursor, 
+    // a gente não reescreve a div, apenas atualiza os valores dela via JS (se os campos já existirem)
+    const activeEl = document.activeElement;
+    const apenasAtualizar = (activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas);
+
+    let somaGerada = entrada;
+
     for(let i=1; i<=parcelas; i++) {
         let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        somaGerada += valorParc;
         let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = formatarDataISO(d);
 
-        // Se estivermos recriando o HTML e for uma digitação na entrada, para não perder o cursor, 
-        // a gente não reescreve a div, apenas atualiza os valores dela via JS (se os campos já existirem)
-        const activeEl = document.activeElement;
-        if (activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas) {
-            document.getElementById(`tab-parc-val-${i}`).value = valorParaInput(valorParc);
+        if (apenasAtualizar) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if (inputParc) inputParc.value = valorParaInput(valorParc);
         } else {
             html += `
             <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
@@ -383,21 +389,20 @@ window.gerarLinhasParcelasTab = function() {
                     <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
                     <option value="Cartão de Débito">Cartão de Débito</option>
                     <option value="Pix">Pix</option>
-                    <option value="Boleto">Boleto</option>
                     <option value="Dinheiro">Dinheiro Físico</option>
                     <option value="Transferência">Transferência Bancária</option>
+                    <option value="Boleto">Boleto</option>
                 </select>
             </div>`;
         }
     }
     
-    // Só injeta o HTML se a quantidade de parcelas mudou ou não for o input da entrada ativo (evita perder o foco)
-    const activeEl = document.activeElement;
-    if (!(activeEl && activeEl.id === 'tab-fin-entrada' && divSimulacao.children.length === parcelas)) {
+    if (!apenasAtualizar) {
         divSimulacao.innerHTML = html;
     }
     
-    checarSomaGeradorTab();
+    document.getElementById('fin-aba-soma').innerText = formataDinheiro(somaGerada);
+    atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 }
 
 async function processarLancarFinanceiroTab() {
@@ -428,7 +433,7 @@ async function processarLancarFinanceiroTab() {
         });
     }
 
-    if (parcelas > 0) {
+    if (total - entrada > 0 && parcelas > 0) {
         for(let i=1; i<=parcelas; i++) {
             records.push({
                 descricao: `Parcela ${i}/${parcelas} O.S #${osEmEdicaoNumero} - ${cliente}`,
@@ -567,9 +572,9 @@ async function limparFinanceiroAtual() {
     } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
 }
 
-// -----------------------------------------------------------------------------------
-// FUNCIONALIDADES GERAIS
-// -----------------------------------------------------------------------------------
+// ----------------------------------------------------
+// TELA E REGRAS DE TRAVA
+// ----------------------------------------------------
 function verificarStatusFinanceiro() {
     const status = document.getElementById('db-status').value;
     const badgeFechada = document.getElementById('badge-os-fechada');
@@ -646,6 +651,84 @@ function alternarSubTelaOrcamento(modo) {
     }
 }
 
+function adicionarOuEditarItem() {
+    const tipo = document.getElementById('item-tipo').value;
+    const nome = document.getElementById('item-nome').value;
+    const desc = document.getElementById('item-desc').value;
+    const qtd = parseFloat(document.getElementById('item-qtd').value);
+    const valString = document.getElementById('item-val').value;
+    const idEdit = document.getElementById('item-id-edit').value;
+
+    if(!nome) { dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
+    if(!qtd || qtd <= 0) { dispararAlerta("A quantidade deve ser maior que zero."); return; }
+    const valFloat = reverterMoeda(valString);
+    if(valFloat <= 0) { dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
+
+    const sub = qtd * valFloat;
+
+    if (idEdit) {
+        const index = itensTemporarios.findIndex(i => i.id_temp == idEdit);
+        if (index > -1) itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        document.getElementById('item-id-edit').value = '';
+        document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
+        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
+    } else {
+        itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
+    }
+
+    document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
+    calcularTotais();
+}
+
+function removerItemDB(id) { itensTemporarios = itensTemporarios.filter(i => i.id_temp !== id); calcularTotais(); }
+
+function editarItem(id) {
+    const item = itensTemporarios.find(i => i.id_temp === id);
+    if (!item) return;
+
+    document.getElementById('item-tipo').value = item.tipo || 'Peça';
+    document.getElementById('item-nome').value = item.descricao;
+    document.getElementById('item-desc').value = item.detalhe || '';
+    document.getElementById('item-qtd').value = item.quantidade;
+    const inputVal = document.getElementById('item-val');
+    inputVal.value = (item.valor_unitario * 100).toString(); 
+    mascaraMoeda(inputVal);
+    document.getElementById('item-id-edit').value = item.id_temp;
+    
+    const btn = document.getElementById('btn-add-item');
+    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
+    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+}
+
+function calcularTotais() {
+    let sumPecas = 0; let sumServicos = 0;
+    itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
+    let totalBruto = sumPecas + sumServicos;
+    let descValor = 0;
+    const descTipo = document.getElementById('desc-tipo').value; 
+    const descAlvo = document.getElementById('desc-alvo').value; 
+    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
+
+    if (descFator > 0) {
+        let baseDeCalculo = 0;
+        if (descAlvo === 'total') baseDeCalculo = totalBruto;
+        else if (descAlvo === 'pecas') baseDeCalculo = sumPecas;
+        else if (descAlvo === 'servicos') baseDeCalculo = sumServicos;
+        descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
+    }
+
+    valoresFinais.pecas = sumPecas; valoresFinais.servicos = sumServicos; valoresFinais.desconto = descValor; valoresFinais.total = totalBruto - descValor;
+    atualizarInterfaceItensETotais();
+    
+    if(!document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
+        if(currentOSFinanceiro.length > 0) {
+            checarSomaFinanceiroEdit();
+        } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
+            checarSomaGeradorTab();
+        }
+    }
+}
+
 function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
     if (itensTemporarios.length === 0) {
@@ -677,13 +760,13 @@ function atualizarInterfaceItensETotais() {
         }).join('');
     }
     
-    // ATUALIZA A ABA DE DADOS
+    // Atualiza a Caixa Preta (Aba 1)
     document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
     document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
     document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
     document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
     
-    // ATUALIZA A ABA FINANCEIRA (Se existirem no HTML, vão atualizar sincronizado)
+    // Atualiza o painel limpo da Aba Financeiro
     const finPecas = document.getElementById('fin-resumo-pecas');
     if(finPecas) finPecas.innerText = formataDinheiro(valoresFinais.pecas);
     
@@ -729,6 +812,169 @@ function renderizarPreviewFotos() {
 function removerImagemArray(strToRem) { 
     imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); 
     renderizarPreviewFotos(); 
+}
+
+// -----------------------------------------------------------------------------------
+// COMUNICAÇÃO COM O BANCO
+// -----------------------------------------------------------------------------------
+async function buscarOrcamentosSupabase() {
+    try {
+        const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
+        if (error) throw error;
+        renderizarTabelaReal(orcamentos);
+    } catch (erro) {
+        console.error(erro);
+        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
+    }
+}
+
+async function salvarOrcamentoReal() {
+    const nome = document.getElementById('db-cliente-nome').value;
+    const placa = document.getElementById('db-veiculo-placa').value;
+    const status = document.getElementById('db-status').value;
+    const obs = document.getElementById('db-obs').value;
+
+    if (!nome || !placa) { dispararAlerta("Cliente e Placa são obrigatórios."); return; }
+    if (itensTemporarios.length === 0) { dispararAlerta("A O.S precisa de peças ou serviços."); return; }
+
+    const btnSalvar = document.getElementById('btn-salvar-db');
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-xl"></i> SALVANDO...';
+    btnSalvar.disabled = true;
+
+    try {
+        const clienteObj = globalClientes.find(c => c.nome === nome) || {};
+        const veiculoObj = globalVeiculos.find(v => v.placa === placa) || {};
+        const payloadJSONB = { lista_itens: itensTemporarios, resumo: valoresFinais, cliente_dados: clienteObj, veiculo_dados: veiculoObj };
+
+        if (osEmEdicaoId) {
+            
+            const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
+            if (oldOrc && oldOrc.itens && oldOrc.itens.financeiro) {
+                payloadJSONB.financeiro = oldOrc.itens.financeiro;
+            }
+
+            const { error } = await window.banco.from('orcamentos').update({ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }).eq('id', osEmEdicaoId);
+            if (error) throw error;
+            
+            if (currentOSFinanceiro.length > 0) {
+                let somaF = 0; currentOSFinanceiro.forEach(r => somaF += r.valor);
+                if (Math.abs(valoresFinais.total - somaF) > 0.05) {
+                    dispararAlerta("O.S atualizada! ATENÇÃO: O valor mudou. Acesse a aba 'Gestão Financeira' para corrigir as parcelas.", "erro");
+                } else {
+                    dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+                }
+            } else {
+                dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+            }
+            alternarSubTelaOrcamento('lista');
+        } else {
+            const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: valoresFinais.total, status: status, observacao: obs, anexos: imagensUploadArray, itens: payloadJSONB }]);
+            if (error) throw error;
+            dispararAlerta("O.S salva! Vá em 'Gestão Financeira' se desejar faturar agora.", "sucesso");
+            alternarSubTelaOrcamento('lista');
+        }
+    } catch (erro) { dispararAlerta("Falha de comunicação com o servidor."); } 
+    finally { btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.'; btnSalvar.disabled = false; }
+}
+
+async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados') {
+    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
+    osEmEdicaoId = orc.id;
+    osEmEdicaoNumero = orc.numero_os; 
+    
+    document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
+    
+    const selectCliente = document.getElementById('db-cliente-nome');
+    if (!Array.from(selectCliente.options).some(opt => opt.value === orc.cliente_nome)) { selectCliente.innerHTML += `<option value="${orc.cliente_nome}">${orc.cliente_nome}</option>`; }
+    selectCliente.value = orc.cliente_nome;
+
+    const selectVeiculo = document.getElementById('db-veiculo-placa');
+    if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
+    selectVeiculo.value = orc.veiculo_placa;
+
+    const selStatus = document.getElementById('db-status');
+    selStatus.disabled = false; 
+    if(orc.status === 'Fechado') {
+        const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
+        if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
+    }
+    selStatus.value = orc.status;
+    
+    document.getElementById('db-obs').value = orc.observacao || '';
+    itensTemporarios = orc.itens?.lista_itens || [];
+    imagensUploadArray = orc.anexos || [];
+    
+    if(imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); renderizarPreviewFotos(); }
+
+    const descValor = orc.itens?.resumo?.desconto || 0;
+    if (descValor > 0) {
+        document.getElementById('desc-tipo').value = 'val';
+        const descInput = document.getElementById('desc-val');
+        descInput.value = (descValor * 100).toString(); mascaraMoeda(descInput);
+    } else { document.getElementById('desc-val').value = ''; }
+
+    calcularTotais();
+    
+    await recarregarFinanceiroDaOS();
+    verificarStatusFinanceiro(); 
+    
+    document.getElementById('view-lista-orcamentos').classList.add('hidden');
+    document.getElementById('view-novo-orcamento').classList.remove('hidden');
+    
+    mudarAbaOS(abaAlvo); 
+}
+
+function abrirFaturamentoDireto(dadosCodificados) {
+    abrirEdicaoOS(dadosCodificados, 'fin');
+}
+
+function abrirModalDestravar(id, orcJSONCodificado) {
+    osParaDestravarId = id; 
+    osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
+    document.getElementById('input-senha-reabrir').value = '';
+    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+}
+
+function fecharModalDestravar() { document.getElementById('modal-senha-destravar').classList.add('hidden'); }
+
+async function processarDestravarOS() {
+    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
+    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
+    if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    const usuarioLogado = JSON.parse(usuarioLogadoStr);
+
+    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    
+    try {
+        const novoStatus = 'Em Aberto';
+        const { error } = await window.banco.from('orcamentos').update({ status: novoStatus }).eq('id', osParaDestravarId);
+        if (error) throw error;
+        
+        fecharModalDestravar();
+        osParaDestravarDados.status = novoStatus;
+        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados');
+        dispararAlerta("O.S destravada para edição.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
+}
+
+function abrirModalExclusao(id, numero_os) {
+    idParaExcluir = id;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+}
+
+function fecharModalExclusao() { idParaExcluir = null; document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); }
+
+async function confirmarExclusao() {
+    if(!idParaExcluir) return;
+    try {
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
+        if (error) throw error;
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
+        dispararAlerta("Ordem de serviço apagada.", "sucesso");
+        fecharModalExclusao();
+        buscarOrcamentosSupabase();
+    } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
 
 function obterCorStatus(status) {
@@ -969,9 +1215,6 @@ async function processarSalvamentoModal() {
     }
 }
 
-// ----------------------------------------------------
-// MOTOR DE IMPRESSÃO (PDF)
-// ----------------------------------------------------
 function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
