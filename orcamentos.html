@@ -198,12 +198,19 @@
 
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden" id="box-auditoria-financeira">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Resumo e Auditoria</h3>
                     </div>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 mb-5 shadow-inner">
+                        <div class="flex justify-between text-xs text-slate-500 font-bold"><span>Peças:</span> <span id="fin-resumo-pecas">R$ 0,00</span></div>
+                        <div class="flex justify-between text-xs text-slate-500 font-bold"><span>Serviços:</span> <span id="fin-resumo-servicos">R$ 0,00</span></div>
+                        <div class="flex justify-between text-xs text-red-500 font-bold"><span>Desconto:</span> <span id="fin-resumo-desc">- R$ 0,00</span></div>
+                    </div>
+
                     <div class="space-y-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
                             <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
                         </div>
