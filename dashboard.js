@@ -256,12 +256,11 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${r.forma_pagamento || '-'}</td><td class="p-4 font-black text-emerald-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-emerald-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${r.forma_pagamento || '-'}</td><td class="p-4 font-black text-emerald-600 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'desp') {
-        // NOVO: Detalhe das Despesas
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-rose-500';
+        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-red-500';
         titulo.innerHTML = '<i class="ph-bold ph-trend-down mr-2 text-2xl"></i> Detalhamento de Saídas (Despesas)';
         htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição da Despesa</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Pago</th>`;
         
@@ -272,7 +271,7 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(d => {
             const dataBr = new Date(d.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-rose-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-red-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-red-600 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'rec') {
@@ -287,7 +286,7 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-amber-50/30 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 font-black text-amber-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-amber-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 font-black text-amber-600 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'os') {
@@ -301,11 +300,11 @@ function abrirDetalhesDashboard(tipo) {
         
         filtrados.forEach(o => {
             const valorBr = o.valor_total ? o.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
-            htmlBody += `<tr class="hover:bg-blue-50/30 transition-colors"><td class="p-4 font-black text-blue-600">#${o.numero_os}</td><td class="p-4 text-slate-700 font-bold">${o.cliente_nome}<br><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${o.veiculo_placa}</span></td><td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td><td class="p-4 font-black text-slate-800 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-blue-50/50 transition-colors"><td class="p-4 font-black text-blue-600">#${o.numero_os}</td><td class="p-4 text-slate-700 font-bold">${o.cliente_nome}<br><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${o.veiculo_placa}</span></td><td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td><td class="p-4 font-black text-slate-800 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'inad') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-red-500';
+        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-purple-500';
         titulo.innerHTML = '<i class="ph-bold ph-warning-circle mr-2 text-2xl"></i> Alerta de Inadimplência';
         htmlHead = `<th class="p-4 w-32">Venceu Em</th><th class="p-4">Descrição da Cobrança</th><th class="p-4 text-right w-40">Valor em Atraso</th>`;
         
@@ -316,7 +315,7 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-red-50/50 transition-colors"><td class="p-4 font-bold text-red-500">${dataBr}</td><td class="p-4 text-slate-700 font-medium">${r.descricao}</td><td class="p-4 font-black text-red-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-purple-50/50 transition-colors"><td class="p-4 font-bold text-purple-500">${dataBr}</td><td class="p-4 text-slate-700 font-medium">${r.descricao}</td><td class="p-4 font-black text-purple-600 text-right">${valorBr}</td></tr>`;
         });
     }
 
