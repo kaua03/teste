@@ -13,6 +13,19 @@ let dashCacheOrdens = [];
 // ESTADO GLOBAL DO PERÍODO SELECIONADO
 let periodoAtualDash = 'mes'; 
 
+// DICIONÁRIO DE CORES DOS STATUS (SUPERPODER DE UI)
+const getCorStatusDashboard = (status) => {
+    const cores = {
+        'Em Aberto': 'bg-slate-100 text-slate-700 border-slate-200',
+        'Aguardando Aprovação': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        'Aguardando Peça': 'bg-orange-50 text-orange-700 border-orange-200',
+        'Aguardando Pagamento': 'bg-amber-50 text-amber-700 border-amber-200',
+        'Aprovado': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Em Execução': 'bg-indigo-50 text-indigo-700 border-indigo-200'
+    };
+    return cores[status] || 'bg-slate-50 text-slate-500 border-slate-200';
+};
+
 async function initDashboard() {
     console.log("🟢 Módulo Dashboard Inicializado.");
     document.getElementById('dash-ano-grafico').innerText = new Date().getFullYear();
@@ -260,7 +273,7 @@ function abrirDetalhesDashboard(tipo) {
         });
 
     } else if (tipo === 'desp') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-red-500';
+        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-rose-500';
         titulo.innerHTML = '<i class="ph-bold ph-trend-down mr-2 text-2xl"></i> Detalhamento de Saídas (Despesas)';
         htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição da Despesa</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Pago</th>`;
         
@@ -271,7 +284,7 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(d => {
             const dataBr = new Date(d.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-red-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-red-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-rose-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-rose-600 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'rec') {
@@ -286,21 +299,34 @@ function abrirDetalhesDashboard(tipo) {
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-amber-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 font-black text-amber-600 text-right">${valorBr}</td></tr>`;
+            htmlBody += `<tr class="hover:bg-amber-50/30 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 font-black text-amber-600 text-right">${valorBr}</td></tr>`;
         });
 
     } else if (tipo === 'os') {
         header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-blue-500';
         titulo.innerHTML = '<i class="ph-bold ph-wrench mr-2 text-2xl"></i> Ordens de Serviço em Andamento';
-        htmlHead = `<th class="p-4 w-24">Nº O.S</th><th class="p-4">Cliente Associado / Placa</th><th class="p-4 text-center w-32">Status Atual</th><th class="p-4 text-right w-40">Valor Parcial</th>`;
+        // HTML ATUALIZADO: Coluna Data/O.S combinada
+        htmlHead = `<th class="p-4 w-24">Data / O.S</th><th class="p-4">Cliente Associado / Placa</th><th class="p-4 text-center w-32">Status Atual</th><th class="p-4 text-right w-40">Valor Parcial</th>`;
         
         const filtrados = dashCacheOrdens.filter(o => !['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status) && verificarDentroDoPeriodo(o.data_criacao, periodoAtualDash));
 
         if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma O.S aberta neste período.</td></tr>`;
         
         filtrados.forEach(o => {
+            // LÓGICA ATUALIZADA: Puxa a Data, o Valor e a Cor do Dicionário
+            const dataBr = new Date(o.data_criacao).toLocaleDateString('pt-BR');
             const valorBr = o.valor_total ? o.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
-            htmlBody += `<tr class="hover:bg-blue-50/50 transition-colors"><td class="p-4 font-black text-blue-600">#${o.numero_os}</td><td class="p-4 text-slate-700 font-bold">${o.cliente_nome}<br><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${o.veiculo_placa}</span></td><td class="p-4 text-center"><span class="bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td><td class="p-4 font-black text-slate-800 text-right">${valorBr}</td></tr>`;
+            const corStatus = getCorStatusDashboard(o.status);
+
+            htmlBody += `<tr class="hover:bg-blue-50/30 transition-colors">
+                <td class="p-4">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataBr}</p>
+                    <p class="font-black text-blue-600">#${o.numero_os}</p>
+                </td>
+                <td class="p-4 text-slate-700 font-bold">${o.cliente_nome}<br><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${o.veiculo_placa}</span></td>
+                <td class="p-4 text-center"><span class="${corStatus} border px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td>
+                <td class="p-4 font-black text-slate-800 text-right">${valorBr}</td>
+            </tr>`;
         });
 
     } else if (tipo === 'inad') {
