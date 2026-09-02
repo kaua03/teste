@@ -1,4 +1,48 @@
 // ========================================================
+// MOTOR DO MODAL GENÉRICO (Global, Seguro e de Alta Performance)
+// ========================================================
+if (typeof window.abrirModalConfirmacao === 'undefined') {
+    window.acaoConfirmacaoGlobal = null;
+
+    window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+        document.getElementById('titulo-confirmacao').innerText = titulo;
+        
+        // A MÁGICA AQUI: innerHTML para interpretar as tags <b> (Negrito)
+        document.getElementById('texto-confirmacao').innerHTML = texto; 
+        
+        const iconeBox = document.getElementById('icone-confirmacao');
+        const btnConfirmar = document.getElementById('btn-confirmar-acao');
+
+        if (tipo === 'perigo') {
+            iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
+        } else {
+            iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
+        }
+
+        window.acaoConfirmacaoGlobal = callbackAcao;
+        document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+    };
+
+    window.fecharModalConfirmacao = function() {
+        window.acaoConfirmacaoGlobal = null;
+        document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    };
+
+    window.executarAcaoConfirmada = function() {
+        if (typeof window.acaoConfirmacaoGlobal === 'function') {
+            window.acaoConfirmacaoGlobal();
+        }
+        window.fecharModalConfirmacao();
+    };
+}
+
+// ========================================================
 // AutoManager - Módulo de Orçamentos e O.S.
 // ========================================================
 
@@ -17,10 +61,6 @@ let globalVeiculos = [];
 let currentOSFinanceiro = []; 
 let isVisualizacaoModo = false;
 let isOSDestravada = false;
-
-// Variáveis de estado do Modal Genérico
-let acaoConfirmacaoPendente = null;
-let idConfirmacaoPendente = null;
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
@@ -103,47 +143,6 @@ function filtrarTabelaOS() {
             linha.style.display = 'none';
         }
     });
-}
-
-// ========================================================
-// SISTEMA DE CONFIRMAÇÃO GENÉRICA (O "SUPERPODER")
-// ========================================================
-function abrirModalConfirmacao(titulo, texto, acao, id = null, tipo = 'perigo') {
-    document.getElementById('titulo-confirmacao').innerText = titulo;
-    document.getElementById('texto-confirmacao').innerText = texto;
-    
-    const iconeBox = document.getElementById('icone-confirmacao');
-    const btnConfirmar = document.getElementById('btn-confirmar-acao');
-
-    if (tipo === 'perigo') {
-        iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
-    } else {
-        iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
-    }
-
-    acaoConfirmacaoPendente = acao;
-    idConfirmacaoPendente = id;
-
-    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
-}
-
-function fecharModalConfirmacao() {
-    acaoConfirmacaoPendente = null;
-    idConfirmacaoPendente = null;
-    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
-}
-
-function executarAcaoConfirmada() {
-    if (acaoConfirmacaoPendente === 'excluirParcela') {
-        executarExclusaoParcelaManual(idConfirmacaoPendente);
-    } else if (acaoConfirmacaoPendente === 'limparFinanceiro') {
-        executarLimpezaFinanceiroAtual();
-    }
-    fecharModalConfirmacao();
 }
 
 // ========================================================
@@ -596,14 +595,13 @@ async function processarLancarFinanceiroTab() {
 }
 
 // -----------------------------------------------------------------------------------
-// As duas funções abaixo agora usam o nosso Modal Customizado!
+// EXCLUSÃO E CONFIRMAÇÕES USANDO O MOTOR GENÉRICO COM CALLBACKS
 // -----------------------------------------------------------------------------------
 function excluirParcelaManual(id) {
-    abrirModalConfirmacao(
+    window.abrirModalConfirmacao(
         "Excluir Lançamento", 
         "Deseja excluir este lançamento definitivamente?", 
-        "excluirParcela", 
-        id, 
+        function() { executarExclusaoParcelaManual(id); }, 
         "perigo"
     );
 }
@@ -618,11 +616,10 @@ async function executarExclusaoParcelaManual(id) {
 }
 
 function limparFinanceiroAtual() {
-    abrirModalConfirmacao(
+    window.abrirModalConfirmacao(
         "Apagar Lançamentos", 
         "Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?", 
-        "limparFinanceiro", 
-        null, 
+        function() { executarLimpezaFinanceiroAtual(); }, 
         "perigo"
     );
 }
@@ -646,7 +643,24 @@ async function executarLimpezaFinanceiroAtual() {
         dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
     } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
 }
-// -----------------------------------------------------------------------------------
+
+function abrirModalExclusao(id, numero_os) {
+    window.abrirModalConfirmacao(
+        "Excluir O.S?",
+        `Você está prestes a apagar a O.S <b class="text-slate-800">#${numero_os}</b> e todos os seus itens. Esta ação não pode ser desfeita.`,
+        function() { executarExclusaoOS(id); },
+        "perigo"
+    );
+}
+
+async function executarExclusaoOS(id) {
+    try {
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', id);
+        if (error) throw error;
+        dispararAlerta("Ordem de serviço apagada.", "sucesso");
+        buscarOrcamentosSupabase();
+    } catch (erro) { dispararAlerta("Falha ao excluir."); }
+}
 
 async function adicionarNovaParcelaManual() {
     const cliente = document.getElementById('db-cliente-nome').value;
@@ -677,18 +691,6 @@ async function adicionarNovaParcelaManual() {
         dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
-}
-
-async function confirmarExclusao() {
-    if(!idParaExcluir) return;
-    try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
-        if (error) throw error;
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
-        dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        fecharModalExclusao();
-        buscarOrcamentosSupabase();
-    } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
 
 async function processarDestravarOS() {
@@ -1162,17 +1164,6 @@ function fecharModalDestravar() {
     document.getElementById('modal-senha-destravar').classList.add('hidden'); 
 }
 
-function abrirModalExclusao(id, numero_os) {
-    idParaExcluir = id;
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
-}
-
-function fecharModalExclusao() { 
-    idParaExcluir = null; 
-    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
-}
-
 function abrirModalCadastro(tipo) {
     modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
@@ -1182,7 +1173,7 @@ function abrirModalCadastro(tipo) {
     
     if (tipo === 'cliente') {
         titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-       // btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
         conteudo.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="md:col-span-2">
@@ -1226,7 +1217,7 @@ function abrirModalCadastro(tipo) {
         </div>`;
     } else {
         titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        //btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
         
         let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
         const clienteOS = document.getElementById('db-cliente-nome').value;
@@ -1312,7 +1303,7 @@ async function buscarCEP(cepInput) {
 
 async function processarSalvamentoModal() {
     const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    //const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
+    const textoOriginal = modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
     btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
     btnSalvar.disabled = true;
 
@@ -1505,12 +1496,13 @@ window.buscarOrcamentosSupabase = buscarOrcamentosSupabase;
 window.salvarOrcamentoReal = salvarOrcamentoReal;
 window.salvarFinanceiroEditado = salvarFinanceiroEditado;
 window.processarLancarFinanceiroTab = processarLancarFinanceiroTab;
-window.excluirParcelaManual = excluirParcelaManual; // <-- Agora abre o Modal Customizado
-window.executarExclusaoParcelaManual = executarExclusaoParcelaManual; // <-- Executa de fato
+window.excluirParcelaManual = excluirParcelaManual; 
+window.executarExclusaoParcelaManual = executarExclusaoParcelaManual;
 window.adicionarNovaParcelaManual = adicionarNovaParcelaManual;
-window.limparFinanceiroAtual = limparFinanceiroAtual; // <-- Agora abre o Modal Customizado
-window.executarLimpezaFinanceiroAtual = executarLimpezaFinanceiroAtual; // <-- Executa de fato
-window.confirmarExclusao = confirmarExclusao;
+window.limparFinanceiroAtual = limparFinanceiroAtual; 
+window.executarLimpezaFinanceiroAtual = executarLimpezaFinanceiroAtual; 
+window.abrirModalExclusao = abrirModalExclusao; // <-- Atualizado pro modal novo!
+window.executarExclusaoOS = executarExclusaoOS;
 window.processarDestravarOS = processarDestravarOS;
 window.abrirEdicaoOS = abrirEdicaoOS;
 window.abrirVisualizacaoOS = abrirVisualizacaoOS;
@@ -1528,13 +1520,11 @@ window.editarItem = editarItem;
 window.calcularTotais = calcularTotais;
 window.abrirModalDestravar = abrirModalDestravar;
 window.fecharModalDestravar = fecharModalDestravar;
-window.abrirModalExclusao = abrirModalExclusao;
-window.fecharModalExclusao = fecharModalExclusao;
 window.abrirModalCadastro = abrirModalCadastro;
 window.fecharModalCadastro = fecharModalCadastro;
-window.abrirModalConfirmacao = abrirModalConfirmacao; // <-- Função base do novo Modal
-window.fecharModalConfirmacao = fecharModalConfirmacao; // <-- Função base do novo Modal
-window.executarAcaoConfirmada = executarAcaoConfirmada; // <-- Função base do novo Modal
+window.abrirModalConfirmacao = abrirModalConfirmacao; 
+window.fecharModalConfirmacao = fecharModalConfirmacao; 
+window.executarAcaoConfirmada = executarAcaoConfirmada; 
 window.buscarCEP = buscarCEP;
 window.processarSalvamentoModal = processarSalvamentoModal;
 window.gerarPDFSupabase = gerarPDFSupabase;
