@@ -1,12 +1,50 @@
 // ========================================================
+// MOTOR DO MODAL GENÉRICO (Global, Seguro e de Alta Performance)
+// ========================================================
+if (typeof window.abrirModalConfirmacao === 'undefined') {
+    window.acaoConfirmacaoGlobal = null;
+
+    window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+        document.getElementById('titulo-confirmacao').innerText = titulo;
+        document.getElementById('texto-confirmacao').innerHTML = texto;
+        
+        const iconeBox = document.getElementById('icone-confirmacao');
+        const btnConfirmar = document.getElementById('btn-confirmar-acao');
+
+        if (tipo === 'perigo') {
+            iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
+        } else {
+            iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
+        }
+
+        window.acaoConfirmacaoGlobal = callbackAcao;
+        document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+    };
+
+    window.fecharModalConfirmacao = function() {
+        window.acaoConfirmacaoGlobal = null;
+        document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    };
+
+    window.executarAcaoConfirmada = function() {
+        if (typeof window.acaoConfirmacaoGlobal === 'function') {
+            window.acaoConfirmacaoGlobal();
+        }
+        window.fecharModalConfirmacao();
+    };
+}
+
+// ========================================================
 // AutoManager - Módulo de Clientes
 // ========================================================
 
 let clienteEmEdicaoId = null;
-
-// Variáveis de estado do Modal Genérico
-let acaoConfirmacaoPendente = null;
-let idConfirmacaoPendente = null;
 
 function initClientes() {
     console.log("🟢 Módulo Clientes Inicializado.");
@@ -55,7 +93,6 @@ function alternarSubTelaClientes(modo) {
 function mascaraGeralCliente(tipo, campo) {
     let v = campo.value;
     if (tipo === 'cpf') {
-        // Máscara Estrita de CPF (000.000.000-00)
         v = v.replace(/\D/g, "");
         v = v.replace(/(\d{3})(\d)/, "$1.$2");
         v = v.replace(/(\d{3})(\d)/, "$1.$2");
@@ -65,44 +102,6 @@ function mascaraGeralCliente(tipo, campo) {
         v = v.replace(/\D/g, ""); v = v.replace(/^(\d{5})(\d)/, "$1-$2"); campo.value = v;
     } else if (tipo === 'tel') {
         v = v.replace(/\D/g, ""); v = v.replace(/^(\d{2})(\d)/g, "($1) $2"); v = v.replace(/(\d)(\d{4})$/, "$1-$2"); campo.value = v;
-    }
-}
-
-// ---- SISTEMA DE CONFIRMAÇÃO GENÉRICA (ALTA PERFORMANCE) ----
-function abrirModalConfirmacao(titulo, texto, acao, id = null, tipo = 'perigo') {
-    document.getElementById('titulo-confirmacao').innerText = titulo;
-    document.getElementById('texto-confirmacao').innerHTML = texto; // Usamos innerHTML para permitir o bold no nome
-    
-    const iconeBox = document.getElementById('icone-confirmacao');
-    const btnConfirmar = document.getElementById('btn-confirmar-acao');
-
-    if (tipo === 'perigo') {
-        iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
-        btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
-    } else {
-        iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
-        btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
-    }
-
-    acaoConfirmacaoPendente = acao;
-    idConfirmacaoPendente = id;
-
-    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
-}
-
-function fecharModalConfirmacao() {
-    acaoConfirmacaoPendente = null;
-    idConfirmacaoPendente = null;
-    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
-}
-
-function executarAcaoConfirmada() {
-    if (acaoConfirmacaoPendente === 'excluirCliente') {
-        executarExclusaoCliente(idConfirmacaoPendente);
     }
 }
 
@@ -211,13 +210,12 @@ function abrirEdicaoCliente(dadosCodificados) {
     document.getElementById('view-form-cliente').classList.remove('hidden');
 }
 
-// ---- NOVA EXCLUSÃO INTEGRADA AO MODAL GENÉRICO ----
+// ---- EXCLUSÃO INTEGRADA AO NOVO MODAL GENÉRICO ----
 function abrirModalExclusaoCli(id, nome) {
-    abrirModalConfirmacao(
+    window.abrirModalConfirmacao(
         "Excluir Cliente?",
         `Você está prestes a excluir <b class="text-slate-800">${nome}</b>. Esta ação não pode ser desfeita.`,
-        "excluirCliente",
-        id,
+        function() { executarExclusaoCliente(id); }, // Isso é um Callback!
         "perigo"
     );
 }
@@ -227,11 +225,9 @@ async function executarExclusaoCliente(id) {
         const { error } = await window.banco.from('clientes').delete().eq('id', id);
         if (error) throw error;
         dispararAlertaCliente("Cliente apagado permanentemente.", "sucesso");
-        fecharModalConfirmacao();
         buscarClientesSupabase();
     } catch (erro) {
         dispararAlertaCliente("Falha ao excluir o cliente.");
-        fecharModalConfirmacao();
     }
 }
 
@@ -246,7 +242,6 @@ function renderizarTabelaClientes(dados) {
         const dataStr = new Date(cli.data_criacao).toLocaleDateString('pt-BR');
         const cliJSON = encodeURIComponent(JSON.stringify(cli));
         
-        // Monta a sigla do nome (Ex: Kauã Freitas -> KF)
         const partesNome = cli.nome.split(' ');
         let sigla = partesNome[0].charAt(0).toUpperCase();
         if(partesNome.length > 1) sigla += partesNome[partesNome.length - 1].charAt(0).toUpperCase();
