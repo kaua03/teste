@@ -1,78 +1,97 @@
 <div class="max-w-7xl mx-auto w-full space-y-6 fade-in font-sans pb-28 lg:pb-4">
     
-    <div class="mb-2">
-        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
-        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Desempenho Financeiro e Operacional</p>
+    <!-- HEADER E FILTROS DE TEMPO -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
+            <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Desempenho Financeiro e Operacional</p>
+        </div>
+        
+        <!-- BOTOES DE FILTRO -->
+        <div class="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-sm">
+            <button onclick="mudarPeriodoDash('semana')" id="btn-periodo-semana" class="px-4 py-2 text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">7 Dias</button>
+            <button onclick="mudarPeriodoDash('mes')" id="btn-periodo-mes" class="px-4 py-2 text-xs font-bold rounded-lg bg-blue-50 text-blue-600 shadow-sm transition-colors">Mês</button>
+            <button onclick="mudarPeriodoDash('geral')" id="btn-periodo-geral" class="px-4 py-2 text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">Geral</button>
+        </div>
     </div>
 
-    <!-- CARDS SUPERIORES DE INDICADORES -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- CARDS SUPERIORES DE INDICADORES (AGORA SÃO 5) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
-        <div onclick="abrirDetalhesDashboard('fat')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-emerald-200 transition-colors cursor-pointer" title="Ver Detalhes do Faturamento">
+        <!-- FATURAMENTO -->
+        <div onclick="abrirDetalhesDashboard('fat')" class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-emerald-200 transition-colors cursor-pointer" title="Ver Detalhes do Faturamento">
             <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Faturamento (Mês)</p>
-                <div class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500"><i class="ph-bold ph-trend-up text-lg"></i></div>
+                <p class="text-[9px] xl:text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Entradas (<span class="lbl-periodo">Mês</span>)</p>
+                <div class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500 shrink-0"><i class="ph-bold ph-trend-up text-lg"></i></div>
             </div>
-            <h3 class="text-2xl font-black text-slate-800" id="dash-fat"><i class="ph-bold ph-spinner animate-spin text-lg text-emerald-500"></i></h3>
+            <h3 class="text-xl xl:text-2xl font-black text-slate-800" id="dash-fat"><i class="ph-bold ph-spinner animate-spin text-emerald-500"></i></h3>
             <div class="absolute bottom-0 left-0 w-full h-1 bg-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
         </div>
 
-        <div onclick="abrirDetalhesDashboard('rec')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-amber-200 transition-colors cursor-pointer" title="Ver Detalhes a Receber">
+        <!-- DESPESAS (NOVO) -->
+        <div onclick="abrirDetalhesDashboard('desp')" class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-rose-200 transition-colors cursor-pointer" title="Ver Detalhes das Despesas">
             <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-amber-600 transition-colors">A Receber (Futuro)</p>
-                <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500"><i class="ph-bold ph-clock text-lg"></i></div>
+                <p class="text-[9px] xl:text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-rose-600 transition-colors">Saídas (<span class="lbl-periodo">Mês</span>)</p>
+                <div class="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 shrink-0"><i class="ph-bold ph-trend-down text-lg"></i></div>
             </div>
-            <h3 class="text-2xl font-black text-slate-800" id="dash-rec"><i class="ph-bold ph-spinner animate-spin text-lg text-amber-500"></i></h3>
+            <h3 class="text-xl xl:text-2xl font-black text-slate-800" id="dash-desp"><i class="ph-bold ph-spinner animate-spin text-rose-500"></i></h3>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-rose-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+        </div>
+
+        <!-- A RECEBER -->
+        <div onclick="abrirDetalhesDashboard('rec')" class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-amber-200 transition-colors cursor-pointer" title="Ver Detalhes a Receber">
+            <div class="flex justify-between items-start mb-2">
+                <p class="text-[9px] xl:text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-amber-600 transition-colors">A Receber (<span class="lbl-periodo">Mês</span>)</p>
+                <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500 shrink-0"><i class="ph-bold ph-clock text-lg"></i></div>
+            </div>
+            <h3 class="text-xl xl:text-2xl font-black text-slate-800" id="dash-rec"><i class="ph-bold ph-spinner animate-spin text-amber-500"></i></h3>
             <div class="absolute bottom-0 left-0 w-full h-1 bg-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
         </div>
 
-        <div onclick="abrirDetalhesDashboard('os')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-blue-200 transition-colors cursor-pointer" title="Ver O.S em Andamento">
+        <!-- O.S EM ANDAMENTO -->
+        <div onclick="abrirDetalhesDashboard('os')" class="bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-blue-200 transition-colors cursor-pointer" title="Ver O.S em Andamento">
             <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-blue-600 transition-colors">O.S. em Andamento</p>
-                <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500"><i class="ph-bold ph-wrench text-lg"></i></div>
+                <p class="text-[9px] xl:text-[10px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-blue-600 transition-colors">O.S. Ativas (<span class="lbl-periodo">Mês</span>)</p>
+                <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 shrink-0"><i class="ph-bold ph-wrench text-lg"></i></div>
             </div>
-            <h3 class="text-2xl font-black text-slate-800" id="dash-os"><i class="ph-bold ph-spinner animate-spin text-lg text-blue-500"></i></h3>
+            <h3 class="text-xl xl:text-2xl font-black text-slate-800" id="dash-os"><i class="ph-bold ph-spinner animate-spin text-blue-500"></i></h3>
             <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
         </div>
 
-        <div onclick="abrirDetalhesDashboard('inad')" class="bg-red-50/30 p-5 rounded-2xl shadow-sm border border-red-100 flex flex-col relative overflow-hidden group hover:border-red-300 transition-colors cursor-pointer" title="Ver Clientes Inadimplentes">
+        <!-- INADIMPLENCIA -->
+        <div onclick="abrirDetalhesDashboard('inad')" class="bg-red-50/30 p-4 lg:p-5 rounded-2xl shadow-sm border border-red-100 flex flex-col relative overflow-hidden group hover:border-red-300 transition-colors cursor-pointer" title="Ver Clientes Inadimplentes">
             <div class="flex justify-between items-start mb-2">
-                <p class="text-[10px] text-red-500 font-bold uppercase tracking-wider group-hover:text-red-700 transition-colors">Inadimplência</p>
-                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600"><i class="ph-bold ph-warning-circle text-lg"></i></div>
+                <p class="text-[9px] xl:text-[10px] text-red-500 font-bold uppercase tracking-wider group-hover:text-red-700 transition-colors">Atrasos (<span class="lbl-periodo">Mês</span>)</p>
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600 shrink-0"><i class="ph-bold ph-warning-circle text-lg"></i></div>
             </div>
-            <h3 class="text-2xl font-black text-red-600" id="dash-inad"><i class="ph-bold ph-spinner animate-spin text-lg text-red-500"></i></h3>
-            <p class="text-[10px] text-red-400 font-bold mt-1">Boletos/Contas Atrasadas</p>
+            <h3 class="text-xl xl:text-2xl font-black text-red-600" id="dash-inad"><i class="ph-bold ph-spinner animate-spin text-red-500"></i></h3>
             <div class="absolute bottom-0 left-0 w-full h-1 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
         </div>
 
     </div>
 
-    <!-- ÁREA DOS GRÁFICOS (AGORA TOTALMENTE RESPONSIVA) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+    <!-- ÁREA DOS GRÁFICOS (MANTIDA IGUAL, RESPONSIVA) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Fluxo de Caixa (Últimos 6 Meses)</h3>
                 <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200" id="dash-ano-grafico">2026</span>
             </div>
-            <!-- Ajuste Responsivo: Mais alto no celular (h-72), normal no PC (lg:h-64) -->
             <div class="h-72 lg:h-64 w-full relative">
                 <canvas id="chartFluxo"></canvas>
             </div>
         </div>
 
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Status da Oficina (O.S)</h3>
-            <!-- Ajuste Responsivo: Bem mais alto no celular (h-80) para a legenda empilhar, normal no PC (lg:h-56) -->
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Status da Oficina (Geral)</h3>
             <div class="h-80 lg:h-56 w-full relative flex items-center justify-center">
                 <canvas id="chartOS"></canvas>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- MODAL DRILL-DOWN (DETALHES DO DASHBOARD OTIMIZADO) -->
+<!-- MODAL DRILL-DOWN (DETALHES DO DASHBOARD) -->
 <div id="modal-dash-detalhes" class="hidden fixed inset-0 bg-slate-900/90 z-[1000] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
     <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
         <div id="modal-dash-header" class="p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
