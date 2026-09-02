@@ -10,7 +10,16 @@ let cacheContasPagar = [];
 
 async function initContasPagar() {
     console.log("🟢 Módulo Contas a Pagar Inicializado.");
-    buscarContasPagarSupabase();
+    await buscarContasPagarSupabase();
+
+    // TRAVA E RESET: Garante que a tela volte para a listagem ao entrar no módulo
+    const viewNovo = document.getElementById('view-form-pagar');
+    const viewLista = document.getElementById('view-lista-pagar');
+    
+    if (viewNovo && viewLista) {
+        viewNovo.classList.add('hidden');
+        viewLista.classList.remove('hidden');
+    }
 }
 
 function dispararAlertaPagar(msg, tipo = 'erro') {
@@ -53,6 +62,9 @@ function mudarAbaPagar(aba) {
     abaAtivaPagar = aba;
     const btnPend = document.getElementById('aba-pendentes');
     const btnPagas = document.getElementById('aba-pagas');
+    
+    // TRAVA DE SEGURANÇA: Se o usuário mudar de aba super rápido
+    if (!btnPend || !btnPagas) return;
 
     if(aba === 'Pendente') {
         btnPend.className = "flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-slate-800 shadow-sm border border-slate-200 transition-all";
@@ -78,7 +90,11 @@ async function buscarContasPagarSupabase() {
         cacheContasPagar = data;
         renderizarTabelaPagar();
     } catch (erro) {
-        document.getElementById('tabela-pagar-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao buscar financeiro.</td></tr>`;
+        const tbody = document.getElementById('tabela-pagar-real');
+        // TRAVA DE SEGURANÇA
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao buscar financeiro.</td></tr>`;
+        }
     }
 }
 
@@ -103,11 +119,11 @@ async function salvarContaPagarBD() {
         if (contaPagarEmEdicaoId) {
             const { error } = await window.banco.from('contas_pagar').update(payload).eq('id', contaPagarEmEdicaoId);
             if (error) throw error;
-            dispararAlertaPagar("Conta atualizada!", "sucesso");
+            dispararAlertaPagar("Despesa atualizada!", "sucesso");
         } else {
             const { error } = await window.banco.from('contas_pagar').insert([payload]);
             if (error) throw error;
-            dispararAlertaPagar("Nova conta registrada!", "sucesso");
+            dispararAlertaPagar("Nova despesa registrada!", "sucesso");
         }
         alternarSubTelaPagar('lista');
     } catch (erro) {
@@ -130,7 +146,7 @@ function abrirEdicaoPagar(dadosCodificados) {
     
     const inputVal = document.getElementById('pag-val');
     inputVal.value = (conta.valor * 100).toString();
-    mascaraMoeda(inputVal);
+    if(typeof mascaraMoeda === 'function') mascaraMoeda(inputVal);
     
     document.getElementById('pag-venc').value = conta.data_vencimento || '';
     
@@ -166,11 +182,11 @@ async function confirmarBaixaPagar() {
         const { error } = await window.banco.from('contas_pagar').update({ status: 'Pago', data_pagamento: dataPag, forma_pagamento: formaPag }).eq('id', idContaParaBaixar);
         if (error) throw error;
         
-        dispararAlertaPagar("Conta baixada com sucesso!", "sucesso");
+        dispararAlertaPagar("Pagamento confirmado com sucesso!", "sucesso");
         fecharModalBaixaPagar();
         buscarContasPagarSupabase();
     } catch (erro) {
-        dispararAlertaPagar("Falha ao registrar o pagamento.");
+        dispararAlertaPagar("Falha ao registrar a saída.");
     }
 }
 
@@ -187,27 +203,31 @@ async function reverterBaixaPagar(id) {
     }
 }
 
-// ---- EXCLUSÃO ----
+// EXCLUSÃO COM MODAL GENÉRICO
 function abrirModalExclusaoPagar(id) {
-    idParaExcluirPagar = id;
-    document.getElementById('modal-exclusao-pagar').classList.remove('hidden');
+    if (typeof window.abrirModalConfirmacao === 'function') {
+        window.abrirModalConfirmacao(
+            "Excluir Despesa?",
+            "Esta ação apagará permanentemente esta despesa e não poderá ser desfeita. Continuar?",
+            function() { executarExclusaoPagarReal(id); },
+            "perigo"
+        );
+    } else {
+        // Fallback de segurança para o alert original
+        if (confirm("Tem certeza que deseja excluir esta despesa permanentemente?")) {
+            executarExclusaoPagarReal(id);
+        }
+    }
 }
 
-function fecharModalExclusaoPagar() {
-    idParaExcluirPagar = null;
-    document.getElementById('modal-exclusao-pagar').classList.add('hidden');
-}
-
-async function confirmarExclusaoPagar() {
-    if(!idParaExcluirPagar) return;
+async function executarExclusaoPagarReal(id) {
     try {
-        const { error } = await window.banco.from('contas_pagar').delete().eq('id', idParaExcluirPagar);
+        const { error } = await window.banco.from('contas_pagar').delete().eq('id', id);
         if(error) throw error;
-        dispararAlertaPagar("Conta excluída com sucesso.", "sucesso");
-        fecharModalExclusaoPagar();
+        dispararAlertaPagar("Despesa excluída com sucesso.", "sucesso");
         buscarContasPagarSupabase();
     } catch(e) {
-        dispararAlertaPagar("Erro ao excluir conta.");
+        dispararAlertaPagar("Erro ao excluir despesa.");
     }
 }
 
@@ -215,11 +235,16 @@ async function confirmarExclusaoPagar() {
 function renderizarTabelaPagar() {
     const tbody = document.getElementById('tabela-pagar-real');
     
+    // TRAVA DE SEGURANÇA: Cancela se o HTML não existe mais
+    if (!tbody) return; 
+    
     let dadosFiltrados = cacheContasPagar.filter(c => c.status === abaAtivaPagar);
     
     if (dadosFiltrados.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-check-circle text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma conta ${abaAtivaPagar.toLowerCase()} encontrada.</p></td></tr>`; return;
     }
+    
+    const hoje = new Date().toISOString().split('T')[0];
 
     tbody.innerHTML = dadosFiltrados.map(conta => {
         const jsonCodificado = encodeURIComponent(JSON.stringify(conta));
@@ -229,19 +254,19 @@ function renderizarTabelaPagar() {
         let infoData = '';
 
         if (conta.status === 'Pago') {
-            statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-check mr-1"></i>Pago</span>`;
+            statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase"><i class="ph-bold ph-check mr-1"></i>Pago</span>`;
             const dataPagBR = new Date(conta.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            infoData = `<p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">Pago em</p><p class="font-bold text-slate-800 text-sm">${dataPagBR}</p><p class="text-[9px] font-bold text-slate-400 mt-0.5">Via ${conta.forma_pagamento}</p>`;
+            infoData = `<p class="text-[10px] text-red-600 font-bold uppercase tracking-wider mb-0.5">Pago em</p><p class="font-bold text-slate-800 text-sm">${dataPagBR}</p><p class="text-[9px] font-bold text-slate-400 mt-0.5">Via ${conta.forma_pagamento}</p>`;
         } else {
             // LÓGICA BLINDADA DE DATAS
             const dataVencBR = new Date(conta.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const dataAtual = new Date();
-            const hoje = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
+            const hojeData = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
             
             const partesVenc = conta.data_vencimento.split('-');
             const venc = new Date(partesVenc[0], partesVenc[1] - 1, partesVenc[2]);
             
-            const diffTime = venc.getTime() - hoje.getTime();
+            const diffTime = venc.getTime() - hojeData.getTime();
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
             let corTexto, textoDias, badgeHtml;
@@ -272,7 +297,7 @@ function renderizarTabelaPagar() {
         let botoesAcao = '';
         if(conta.status === 'Pendente') {
             botoesAcao = `
-            <button onclick="abrirModalBaixaPagar('${jsonCodificado}')" class="bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Pagar"><i class="ph-bold ph-check text-lg"></i></button>
+            <button onclick="abrirModalBaixaPagar('${jsonCodificado}')" class="bg-red-500 text-white hover:bg-red-600 border border-red-600 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Pagar"><i class="ph-bold ph-check text-lg"></i></button>
             <button onclick="abrirEdicaoPagar('${jsonCodificado}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
             <button onclick="abrirModalExclusaoPagar(${conta.id})" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 w-9 h-9 flex items-center justify-center rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>`;
         } else {
