@@ -243,7 +243,7 @@ function renderizarGraficosHistoricos() {
 }
 
 // ========================================================
-// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL COM FILTRO)
+// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL COM FILTRO AVANÇADO E UI LIMPA)
 // ========================================================
 function abrirDetalhesDashboard(tipo) {
     const modal = document.getElementById('modal-dash-detalhes');
@@ -258,91 +258,122 @@ function abrirDetalhesDashboard(tipo) {
     let htmlBody = '';
 
     if (tipo === 'fat') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-emerald-500';
-        titulo.innerHTML = '<i class="ph-bold ph-trend-up mr-2 text-2xl"></i> Detalhamento do Faturamento';
-        htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição do Lançamento</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Recebido</th>`;
+        header.className = 'p-5 md:p-6 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-emerald-500 shadow-md z-20 relative';
+        titulo.innerHTML = '<i class="ph-bold ph-trend-up mr-3 text-2xl md:text-3xl opacity-90"></i> Detalhamento do Faturamento';
+        htmlHead = `<th class="px-6 py-4 w-32 text-left">Data Pagto</th><th class="px-6 py-4 text-left">Descrição do Lançamento</th><th class="px-6 py-4 w-32 text-center">Método</th><th class="px-6 py-4 text-right w-48">Valor Recebido</th>`;
         
         const filtrados = dashCacheReceitas.filter(r => r.status === 'Pago' && verificarDentroDoPeriodo(r.data_pagamento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhum faturamento registrado neste período.</td></tr>`;
-        
-        filtrados.forEach(r => {
-            const dataBr = new Date(r.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-emerald-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${r.forma_pagamento || '-'}</td><td class="p-4 font-black text-emerald-600 text-right">${valorBr}</td></tr>`;
-        });
+        if(filtrados.length === 0) {
+            htmlBody = `<tr><td colspan="4"><div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><i class="ph-fill ph-receipt text-4xl text-slate-300"></i></div><p class="font-bold text-sm">Nenhum faturamento registrado neste período.</p></div></td></tr>`;
+        } else {
+            filtrados.forEach(r => {
+                const dataBr = new Date(r.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                htmlBody += `<tr class="hover:bg-emerald-50/30 transition-colors align-middle">
+                    <td class="px-6 py-4"><span class="text-[11px] font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap shadow-sm">${dataBr}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-700">${r.descricao}</td>
+                    <td class="px-6 py-4 text-center"><span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">${r.forma_pagamento || '-'}</span></td>
+                    <td class="px-6 py-4 font-black text-emerald-600 text-right text-base md:text-lg tracking-tight">${valorBr}</td>
+                </tr>`;
+            });
+        }
 
     } else if (tipo === 'desp') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-rose-500';
-        titulo.innerHTML = '<i class="ph-bold ph-trend-down mr-2 text-2xl"></i> Detalhamento de Saídas (Despesas)';
-        htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição da Despesa</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Pago</th>`;
+        header.className = 'p-5 md:p-6 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-rose-500 shadow-md z-20 relative';
+        titulo.innerHTML = '<i class="ph-bold ph-trend-down mr-3 text-2xl md:text-3xl opacity-90"></i> Detalhamento de Saídas (Despesas)';
+        htmlHead = `<th class="px-6 py-4 w-32 text-left">Data Pagto</th><th class="px-6 py-4 text-left">Descrição da Despesa</th><th class="px-6 py-4 w-32 text-center">Método</th><th class="px-6 py-4 text-right w-48">Valor Pago</th>`;
         
         const filtrados = dashCacheDespesas.filter(d => d.status === 'Pago' && verificarDentroDoPeriodo(d.data_pagamento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma despesa paga neste período.</td></tr>`;
-        
-        filtrados.forEach(d => {
-            const dataBr = new Date(d.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            const valorBr = d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-rose-50/50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-rose-600 text-right">${valorBr}</td></tr>`;
-        });
+        if(filtrados.length === 0) {
+            htmlBody = `<tr><td colspan="4"><div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><i class="ph-fill ph-wallet text-4xl text-slate-300"></i></div><p class="font-bold text-sm">Nenhuma despesa paga neste período.</p></div></td></tr>`;
+        } else {
+            filtrados.forEach(d => {
+                const dataBr = new Date(d.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                const valorBr = d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                htmlBody += `<tr class="hover:bg-rose-50/30 transition-colors align-middle">
+                    <td class="px-6 py-4"><span class="text-[11px] font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap shadow-sm">${dataBr}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-700">${d.descricao}</td>
+                    <td class="px-6 py-4 text-center"><span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">${d.forma_pagamento || '-'}</span></td>
+                    <td class="px-6 py-4 font-black text-rose-600 text-right text-base md:text-lg tracking-tight">${valorBr}</td>
+                </tr>`;
+            });
+        }
 
     } else if (tipo === 'rec') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-amber-500';
-        titulo.innerHTML = '<i class="ph-bold ph-clock mr-2 text-2xl"></i> Entradas Futuras (A Receber)';
-        htmlHead = `<th class="p-4 w-32">Vencimento</th><th class="p-4">Descrição do Lançamento</th><th class="p-4 text-right w-40">Valor Projetado</th>`;
+        header.className = 'p-5 md:p-6 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-amber-500 shadow-md z-20 relative';
+        titulo.innerHTML = '<i class="ph-bold ph-clock mr-3 text-2xl md:text-3xl opacity-90"></i> Entradas Futuras (A Receber)';
+        htmlHead = `<th class="px-6 py-4 w-32 text-left">Vencimento</th><th class="px-6 py-4 text-left">Descrição do Lançamento</th><th class="px-6 py-4 text-right w-48">Valor Projetado</th>`;
         
         const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento >= hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Nenhuma conta a receber para este período.</td></tr>`;
-        
-        filtrados.forEach(r => {
-            const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-amber-50/30 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 font-black text-amber-600 text-right">${valorBr}</td></tr>`;
-        });
+        if(filtrados.length === 0) {
+            htmlBody = `<tr><td colspan="3"><div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><i class="ph-fill ph-calendar-check text-4xl text-slate-300"></i></div><p class="font-bold text-sm">Nenhuma conta a receber para este período.</p></div></td></tr>`;
+        } else {
+            filtrados.forEach(r => {
+                const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                htmlBody += `<tr class="hover:bg-amber-50/30 transition-colors align-middle">
+                    <td class="px-6 py-4"><span class="text-[11px] font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap shadow-sm">${dataBr}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-700">${r.descricao}</td>
+                    <td class="px-6 py-4 font-black text-amber-600 text-right text-base md:text-lg tracking-tight">${valorBr}</td>
+                </tr>`;
+            });
+        }
 
     } else if (tipo === 'os') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-blue-500';
-        titulo.innerHTML = '<i class="ph-bold ph-wrench mr-2 text-2xl"></i> Ordens de Serviço em Andamento';
-        // HTML ATUALIZADO: Coluna Data/O.S combinada
-        htmlHead = `<th class="p-4 w-24">Data / O.S</th><th class="p-4">Cliente Associado / Placa</th><th class="p-4 text-center w-32">Status Atual</th><th class="p-4 text-right w-40">Valor Parcial</th>`;
+        header.className = 'p-5 md:p-6 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-blue-500 shadow-md z-20 relative';
+        titulo.innerHTML = '<i class="ph-bold ph-wrench mr-3 text-2xl md:text-3xl opacity-90"></i> Ordens de Serviço em Andamento';
+        htmlHead = `<th class="px-6 py-4 w-32 text-left">Data / O.S</th><th class="px-6 py-4 text-left">Cliente Associado / Placa</th><th class="px-6 py-4 text-center w-36">Status Atual</th><th class="px-6 py-4 text-right w-48">Valor Parcial</th>`;
         
         const filtrados = dashCacheOrdens.filter(o => !['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status) && verificarDentroDoPeriodo(o.data_criacao, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma O.S aberta neste período.</td></tr>`;
-        
-        filtrados.forEach(o => {
-            // LÓGICA ATUALIZADA: Puxa a Data, o Valor e a Cor do Dicionário
-            const dataBr = new Date(o.data_criacao).toLocaleDateString('pt-BR');
-            const valorBr = o.valor_total ? o.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
-            const corStatus = getCorStatusDashboard(o.status);
+        if(filtrados.length === 0) {
+            htmlBody = `<tr><td colspan="4"><div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><i class="ph-fill ph-car text-4xl text-slate-300"></i></div><p class="font-bold text-sm">Nenhuma O.S aberta neste período.</p></div></td></tr>`;
+        } else {
+            filtrados.forEach(o => {
+                const dataBr = new Date(o.data_criacao).toLocaleDateString('pt-BR');
+                const valorBr = o.valor_total ? o.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+                const corStatus = getCorStatusDashboard(o.status);
 
-            htmlBody += `<tr class="hover:bg-blue-50/30 transition-colors">
-                <td class="p-4">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataBr}</p>
-                    <p class="font-black text-blue-600">#${o.numero_os}</p>
-                </td>
-                <td class="p-4 text-slate-700 font-bold">${o.cliente_nome}<br><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${o.veiculo_placa}</span></td>
-                <td class="p-4 text-center"><span class="${corStatus} border px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td>
-                <td class="p-4 font-black text-slate-800 text-right">${valorBr}</td>
-            </tr>`;
-        });
+                htmlBody += `<tr class="hover:bg-blue-50/30 transition-colors align-middle">
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${dataBr}</span>
+                            <span class="font-black text-blue-600 text-sm">#${o.numero_os}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-bold text-slate-700">${o.cliente_nome}</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5">${o.veiculo_placa}</p>
+                    </td>
+                    <td class="px-6 py-4 text-center"><span class="${corStatus} border px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm whitespace-nowrap">${o.status}</span></td>
+                    <td class="px-6 py-4 font-black text-slate-800 text-right text-base md:text-lg tracking-tight">${valorBr}</td>
+                </tr>`;
+            });
+        }
 
     } else if (tipo === 'inad') {
-        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-purple-500';
-        titulo.innerHTML = '<i class="ph-bold ph-warning-circle mr-2 text-2xl"></i> Alerta de Inadimplência';
-        htmlHead = `<th class="p-4 w-32">Venceu Em</th><th class="p-4">Descrição da Cobrança</th><th class="p-4 text-right w-40">Valor em Atraso</th>`;
+        header.className = 'p-5 md:p-6 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-purple-500 shadow-md z-20 relative';
+        titulo.innerHTML = '<i class="ph-bold ph-warning-circle mr-3 text-2xl md:text-3xl opacity-90"></i> Alerta de Inadimplência';
+        htmlHead = `<th class="px-6 py-4 w-32 text-left">Venceu Em</th><th class="px-6 py-4 text-left">Descrição da Cobrança</th><th class="px-6 py-4 text-right w-48">Valor em Atraso</th>`;
         
         const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento < hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Sem inadimplência neste período de filtro!</td></tr>`;
-        
-        filtrados.forEach(r => {
-            const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-            const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            htmlBody += `<tr class="hover:bg-purple-50/50 transition-colors"><td class="p-4 font-bold text-purple-500">${dataBr}</td><td class="p-4 text-slate-700 font-medium">${r.descricao}</td><td class="p-4 font-black text-purple-600 text-right">${valorBr}</td></tr>`;
-        });
+        if(filtrados.length === 0) {
+            htmlBody = `<tr><td colspan="3"><div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4"><i class="ph-fill ph-check-circle text-4xl text-slate-300"></i></div><p class="font-bold text-sm">Oficina sem nenhuma inadimplência. Parabéns!</p></div></td></tr>`;
+        } else {
+            filtrados.forEach(r => {
+                const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                const valorBr = r.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                htmlBody += `<tr class="hover:bg-purple-50/30 transition-colors align-middle">
+                    <td class="px-6 py-4"><span class="text-[11px] font-black text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 whitespace-nowrap shadow-sm">${dataBr}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-700">${r.descricao}</td>
+                    <td class="px-6 py-4 font-black text-purple-600 text-right text-base md:text-lg tracking-tight">${valorBr}</td>
+                </tr>`;
+            });
+        }
     }
 
     thead.innerHTML = htmlHead;
