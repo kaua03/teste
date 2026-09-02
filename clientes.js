@@ -5,8 +5,11 @@ if (typeof window.abrirModalConfirmacao === 'undefined') {
     window.acaoConfirmacaoGlobal = null;
 
     window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+        // Título sempre texto puro por segurança
         document.getElementById('titulo-confirmacao').innerText = titulo;
-        document.getElementById('texto-confirmacao').innerHTML = texto;
+        
+        // A MÁGICA AQUI: innerHTML para interpretar as tags HTML (como o <b> de negrito)
+        document.getElementById('texto-confirmacao').innerHTML = texto; 
         
         const iconeBox = document.getElementById('icone-confirmacao');
         const btnConfirmar = document.getElementById('btn-confirmar-acao');
@@ -215,7 +218,7 @@ function abrirModalExclusaoCli(id, nome) {
     window.abrirModalConfirmacao(
         "Excluir Cliente?",
         `Você está prestes a excluir <b class="text-slate-800">${nome}</b>. Esta ação não pode ser desfeita.`,
-        function() { executarExclusaoCliente(id); }, // Isso é um Callback!
+        function() { executarExclusaoCliente(id); }, 
         "perigo"
     );
 }
