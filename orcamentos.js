@@ -398,8 +398,15 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
-    document.getElementById('view-novo-orcamento').classList.add('hidden');
-    document.getElementById('view-lista-orcamentos').classList.remove('hidden');
+    
+    // TRAVA DE SEGURANÇA: Verifica se a tela ainda existe antes de alterar as classes
+    const viewNovo = document.getElementById('view-novo-orcamento');
+    const viewLista = document.getElementById('view-lista-orcamentos');
+    
+    if (viewNovo && viewLista) {
+        viewNovo.classList.add('hidden');
+        viewLista.classList.remove('hidden');
+    }
 }
 
 async function carregarListasBD() {
