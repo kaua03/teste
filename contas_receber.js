@@ -10,7 +10,7 @@ let cacheContasReceber = [];
 
 async function initContasReceber() {
     console.log("🟢 Módulo Contas a Receber Inicializado.");
-    buscarContasReceberSupabase();
+    await buscarContasReceberSupabase(); // Adicionado await
 }
 
 function dispararAlertaReceber(msg, tipo = 'erro') {
@@ -53,6 +53,8 @@ function mudarAbaReceber(aba) {
     abaAtivaReceber = aba;
     const btnPend = document.getElementById('aba-pendentes-rec');
     const btnPagas = document.getElementById('aba-recebidas');
+    // TRAVA DE SEGURANÇA: Previne erro se o usuário clicar rápido demais
+    if (!btnPend || !btnPagas) return;
 
     if(aba === 'Pendente') {
         btnPend.className = "flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-slate-800 shadow-sm border border-slate-200 transition-all";
@@ -71,7 +73,11 @@ async function buscarContasReceberSupabase() {
         cacheContasReceber = data;
         renderizarTabelaReceber();
     } catch (erro) {
-        document.getElementById('tabela-receber-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao buscar financeiro.</td></tr>`;
+        const tbody = document.getElementById('tabela-receber-real');
+        // TRAVA DE SEGURANÇA: Só acusa erro se a tabela existir
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha ao buscar financeiro.</td></tr>`;
+        }
     }
 }
 
@@ -111,7 +117,6 @@ async function salvarContaReceberBD() {
     }
 }
 
-// ---- EDIÇÃO ----
 function abrirEdicaoReceber(dadosCodificados) {
     const conta = JSON.parse(decodeURIComponent(dadosCodificados));
     contaReceberEmEdicaoId = conta.id;
@@ -131,7 +136,6 @@ function abrirEdicaoReceber(dadosCodificados) {
     document.getElementById('view-form-receber').classList.remove('hidden');
 }
 
-// ---- BAIXA (RECEBIMENTO) ----
 function abrirModalBaixaReceber(dadosCodificados) {
     const conta = JSON.parse(decodeURIComponent(dadosCodificados));
     idContaParaReceber = conta.id;
@@ -167,7 +171,6 @@ async function confirmarBaixaReceber() {
     }
 }
 
-// ---- REVERSÃO DE RECEBIMENTO ----
 async function reverterBaixaReceber(id) {
     try {
         const { error } = await window.banco.from('contas_receber').update({ status: 'Pendente', data_pagamento: null, forma_pagamento: null }).eq('id', id);
@@ -180,24 +183,28 @@ async function reverterBaixaReceber(id) {
     }
 }
 
-// ---- EXCLUSÃO ----
+// ---- EXCLUSÃO (Agora usando o Modal Genérico) ----
 function abrirModalExclusaoReceber(id) {
-    idParaExcluirReceber = id;
-    document.getElementById('modal-exclusao-receber').classList.remove('hidden');
+    if (typeof window.abrirModalConfirmacao === 'function') {
+        window.abrirModalConfirmacao(
+            "Excluir Lançamento?",
+            "Esta ação apagará permanentemente esta receita e não poderá ser desfeita. Continuar?",
+            function() { executarExclusaoReceberReal(id); },
+            "perigo"
+        );
+    } else {
+        // Fallback pro alert feio só por garantia
+        if (confirm("Tem certeza que deseja excluir esta receita permanentemente?")) {
+            executarExclusaoReceberReal(id);
+        }
+    }
 }
 
-function fecharModalExclusaoReceber() {
-    idParaExcluirReceber = null;
-    document.getElementById('modal-exclusao-receber').classList.add('hidden');
-}
-
-async function confirmarExclusaoReceber() {
-    if(!idParaExcluirReceber) return;
+async function executarExclusaoReceberReal(id) {
     try {
-        const { error } = await window.banco.from('contas_receber').delete().eq('id', idParaExcluirReceber);
+        const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
         if(error) throw error;
         dispararAlertaReceber("Receita excluída com sucesso.", "sucesso");
-        fecharModalExclusaoReceber();
         buscarContasReceberSupabase();
     } catch(e) {
         dispararAlertaReceber("Erro ao excluir receita.");
@@ -207,6 +214,9 @@ async function confirmarExclusaoReceber() {
 // RENDERIZAÇÃO
 function renderizarTabelaReceber() {
     const tbody = document.getElementById('tabela-receber-real');
+    
+    // TRAVA DE SEGURANÇA: Se a tabela sumir, cancela a operação silenciosamente.
+    if (!tbody) return; 
     
     let dadosFiltrados = cacheContasReceber.filter(c => c.status === abaAtivaReceber);
     
@@ -228,7 +238,6 @@ function renderizarTabelaReceber() {
             const dataPagBR = new Date(conta.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             infoData = `<p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">Recebido em</p><p class="font-bold text-slate-800 text-sm">${dataPagBR}</p><p class="text-[9px] font-bold text-slate-400 mt-0.5">Via ${conta.forma_pagamento}</p>`;
         } else {
-            // LÓGICA BLINDADA DE DATAS
             const dataVencBR = new Date(conta.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
             const dataAtual = new Date();
             const hojeData = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate());
@@ -263,7 +272,6 @@ function renderizarTabelaReceber() {
             infoData = `<p class="text-[10px] ${corTexto} font-bold uppercase tracking-wider mb-0.5">${textoDias}</p><p class="font-bold text-slate-800 text-sm">${dataVencBR}</p>`;
         }
 
-        // BOTOES MINIMALISTAS QUADRADOS
         let botoesAcao = '';
         if(conta.status === 'Pendente') {
             botoesAcao = `
@@ -283,7 +291,6 @@ function renderizarTabelaReceber() {
                 <p class="font-bold text-slate-800 text-sm">${conta.descricao}</p>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">${conta.categoria}</p>
             </td>
-            <!-- ATENÇÃO: VALOR AQUI É VERDE (EMERALD) -->
             <td class="p-4 md:p-5 font-black text-emerald-600 text-right text-sm">${valorBR}</td>
             <td class="p-4 md:p-5 text-center">${statusBadge}</td>
             <td class="p-4 md:p-5 text-center">
