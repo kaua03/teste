@@ -1,29 +1,59 @@
 // ========================================================
+// MOTOR DO MODAL GENÉRICO (Global, Seguro e de Alta Performance)
+// ========================================================
+if (typeof window.abrirModalConfirmacao === 'undefined') {
+    window.acaoConfirmacaoGlobal = null;
+
+    window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+        // Título sempre texto puro por segurança
+        document.getElementById('titulo-confirmacao').innerText = titulo;
+        
+        // A MÁGICA AQUI: innerHTML para interpretar as tags HTML (como o <b> de negrito)
+        document.getElementById('texto-confirmacao').innerHTML = texto; 
+        
+        const iconeBox = document.getElementById('icone-confirmacao');
+        const btnConfirmar = document.getElementById('btn-confirmar-acao');
+
+        if (tipo === 'perigo') {
+            iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
+        } else {
+            iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
+            iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+            btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
+            btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
+        }
+
+        window.acaoConfirmacaoGlobal = callbackAcao;
+        document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+    };
+
+    window.fecharModalConfirmacao = function() {
+        window.acaoConfirmacaoGlobal = null;
+        document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    };
+
+    window.executarAcaoConfirmada = function() {
+        if (typeof window.acaoConfirmacaoGlobal === 'function') {
+            window.acaoConfirmacaoGlobal();
+        }
+        window.fecharModalConfirmacao();
+    };
+}
+
+// ========================================================
 // AutoManager - Módulo de Veículos
 // ========================================================
 
 let veiculoEmEdicaoId = null;
-let idVeiculoParaExcluir = null;
+let globalClientesCache = [];
 
 async function initVeiculos() {
     console.log("🟢 Módulo Veículos Inicializado.");
-    await carregarClientesParaVeiculos();
+    await carregarClientesParaSelect();
     buscarVeiculosSupabase();
-}
-
-/** PUXA OS CLIENTES PARA O DROPDOWN DE DONO **/
-async function carregarClientesParaVeiculos() {
-    const { data: cli } = await window.banco.from('clientes').select('nome').order('nome');
-    const selectDono = document.getElementById('vei-dono');
-    
-    if(selectDono) {
-        selectDono.innerHTML = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
-        if(cli) {
-            cli.forEach(c => {
-                selectDono.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
-            });
-        }
-    }
 }
 
 function dispararAlertaVeiculo(msg, tipo = 'erro') {
@@ -41,6 +71,34 @@ function dispararAlertaVeiculo(msg, tipo = 'erro') {
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
 }
 
+// ---- MÁSCARA DE PLACA ----
+function mascaraGeralVeiculo(tipo, campo) {
+    let v = campo.value;
+    if (tipo === 'placa') {
+        v = v.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
+        if (v.length > 4 && /[0-9]/.test(v[4])) { 
+            v = v.substring(0, 3) + '-' + v.substring(3); 
+        }
+        campo.value = v;
+    }
+}
+
+async function carregarClientesParaSelect() {
+    try {
+        const { data: clientes } = await window.banco.from('clientes').select('nome').order('nome');
+        globalClientesCache = clientes || [];
+        const selectDono = document.getElementById('vei-dono');
+        if (selectDono) {
+            selectDono.innerHTML = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
+            globalClientesCache.forEach(c => {
+                selectDono.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+            });
+        }
+    } catch(e) {
+        console.error("Erro ao carregar clientes para o select", e);
+    }
+}
+
 function alternarSubTelaVeiculos(modo) {
     const viewLista = document.getElementById('view-lista-veiculos');
     const viewNovo = document.getElementById('view-form-veiculo');
@@ -49,9 +107,9 @@ function alternarSubTelaVeiculos(modo) {
         veiculoEmEdicaoId = null; 
         document.getElementById('titulo-tela-veiculo').innerText = 'Novo Veículo';
         
+        // Limpa formulário
         ['vei-placa', 'vei-modelo', 'vei-cor', 'vei-ano', 'vei-dono'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.value = '';
+            document.getElementById(id).value = '';
         });
         
         viewLista.classList.add('hidden');
@@ -64,23 +122,14 @@ function alternarSubTelaVeiculos(modo) {
     }
 }
 
-function mascaraPlacaVeiculo(campo) {
-    let v = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 7);
-    if (v.length > 4) {
-        if (/[0-9]/.test(v[4])) { // Se o 5º caractere for número, é placa antiga
-            v = v.substring(0, 3) + '-' + v.substring(3);
-        }
-    }
-    campo.value = v;
-}
-
+// ---- SUPABASE CRUD ----
 async function buscarVeiculosSupabase() {
     try {
-        const { data: veiculos, error } = await window.banco.from('veiculos').select('*').order('id', { ascending: false });
+        const { data: veiculos, error } = await window.banco.from('veiculos').select('*').order('placa', { ascending: true });
         if (error) throw error;
         renderizarTabelaVeiculos(veiculos);
     } catch (erro) {
-        document.getElementById('tabela-veiculos-real').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        document.getElementById('tabela-veiculos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
     }
 }
 
@@ -111,11 +160,8 @@ async function salvarVeiculoBD() {
         }
         alternarSubTelaVeiculos('lista');
     } catch (erro) {
-        if(erro.code === '23505') { 
-            dispararAlertaVeiculo("Esta placa já está cadastrada no sistema.");
-        } else {
-            dispararAlertaVeiculo("Falha ao salvar veículo.");
-        }
+        if(erro.code === '23505') dispararAlertaVeiculo("Esta placa já existe no banco de dados.");
+        else dispararAlertaVeiculo("Falha ao salvar veículo.");
     } finally {
         btnSalvar.innerHTML = '<i class="ph-bold ph-floppy-disk text-lg"></i> Salvar Veículo';
         btnSalvar.disabled = false;
@@ -133,32 +179,32 @@ function abrirEdicaoVeiculo(dadosCodificados) {
     document.getElementById('vei-cor').value = vei.cor || '';
     document.getElementById('vei-ano').value = vei.ano || '';
     
-    const selDono = document.getElementById('vei-dono');
-    if(selDono) selDono.value = vei.dono_nome || '';
+    // Garante que o cliente existe no select antes de setar
+    const selectDono = document.getElementById('vei-dono');
+    if (vei.dono_nome && !Array.from(selectDono.options).some(opt => opt.value === vei.dono_nome)) {
+        selectDono.innerHTML += `<option value="${vei.dono_nome}">${vei.dono_nome}</option>`;
+    }
+    selectDono.value = vei.dono_nome || '';
 
     document.getElementById('view-lista-veiculos').classList.add('hidden');
     document.getElementById('view-form-veiculo').classList.remove('hidden');
 }
 
-// EXCLUSÃO
-function abrirModalExclusaoVei(id, placa) {
-    idVeiculoParaExcluir = id;
-    document.getElementById('exc-vei-placa').innerText = placa;
-    document.getElementById('modal-exclusao-veiculo').classList.remove('hidden');
+// ---- EXCLUSÃO INTEGRADA AO NOVO MODAL GENÉRICO ----
+function abrirModalExclusaoVei(id, modeloPlaca) {
+    window.abrirModalConfirmacao(
+        "Excluir Veículo?",
+        `Você está prestes a excluir o veículo <b class="text-slate-800">${modeloPlaca}</b>. Esta ação não pode ser desfeita.`,
+        function() { executarExclusaoVeiculo(id); }, 
+        "perigo"
+    );
 }
 
-function fecharModalExclusaoVei() {
-    idVeiculoParaExcluir = null;
-    document.getElementById('modal-exclusao-veiculo').classList.add('hidden');
-}
-
-async function confirmarExclusaoVei() {
-    if(!idVeiculoParaExcluir) return;
+async function executarExclusaoVeiculo(id) {
     try {
-        const { error } = await window.banco.from('veiculos').delete().eq('id', idVeiculoParaExcluir);
+        const { error } = await window.banco.from('veiculos').delete().eq('id', id);
         if (error) throw error;
         dispararAlertaVeiculo("Veículo apagado permanentemente.", "sucesso");
-        fecharModalExclusaoVei();
         buscarVeiculosSupabase();
     } catch (erro) {
         dispararAlertaVeiculo("Falha ao excluir o veículo.");
@@ -169,34 +215,41 @@ async function confirmarExclusaoVei() {
 function renderizarTabelaVeiculos(dados) {
     const tbody = document.getElementById('tabela-veiculos-real');
     if (dados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center"><i class="ph-fill ph-car text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; return;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-jeep text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; return;
     }
     
     tbody.innerHTML = dados.map(vei => {
+        const dataStr = new Date(vei.data_criacao).toLocaleDateString('pt-BR');
         const veiJSON = encodeURIComponent(JSON.stringify(vei));
         
-        // Emblema do Dono
-        const badgeDono = vei.dono_nome 
-            ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold shadow-sm uppercase"><i class="ph-bold ph-user mr-1"></i>${vei.dono_nome}</span>` 
-            : `<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Sem vínculo</span>`;
+        const stringIdentificacao = `${vei.placa} - ${vei.modelo}`;
 
         return `
         <tr class="hover:bg-slate-50 transition-colors">
             <td class="p-4 md:p-5">
-                <div class="inline-block bg-white border-2 border-slate-800 rounded px-2 py-0.5 shadow-sm text-center">
-                    <span class="text-[10px] text-blue-700 font-black tracking-widest block leading-none pt-0.5 uppercase">Brasil</span>
-                    <span class="font-black text-slate-800 text-sm tracking-widest uppercase">${vei.placa}</span>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p>
+                <p class="font-black text-slate-800 text-xs md:text-sm">VEI #${String(vei.id).padStart(4,'0')}</p>
+            </td>
+            <td class="p-4 md:p-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg shrink-0"><i class="ph-bold ph-car-profile"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-700 text-sm">${vei.modelo}</p>
+                        <p class="text-[10px] text-blue-600 font-black uppercase tracking-wider mt-0.5">${vei.placa}</p>
+                    </div>
                 </div>
             </td>
-            <td class="p-4 md:p-5">${badgeDono}</td>
             <td class="p-4 md:p-5">
-                <p class="font-bold text-slate-700 text-sm">${vei.modelo}</p>
-                <p class="font-bold text-slate-500 text-[10px] uppercase tracking-wider mt-0.5">${vei.cor || '--'} / ${vei.ano || '--'}</p>
+                <p class="font-bold text-slate-700 text-sm">${vei.cor || '---'}</p>
+                <p class="text-[10px] text-slate-500 font-medium mt-0.5">Ano: ${vei.ano || '---'}</p>
+            </td>
+            <td class="p-4 md:p-5">
+                <p class="font-bold text-slate-600 text-xs md:text-sm"><i class="ph-fill ph-user text-slate-400 mr-1"></i> ${vei.dono_nome || 'Sem Vínculo'}</p>
             </td>
             <td class="p-4 md:p-5 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                     <button onclick="abrirEdicaoVeiculo('${veiJSON}')" class="bg-white text-blue-500 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                    <button onclick="abrirModalExclusaoVei(${vei.id}, '${vei.placa}')" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                    <button onclick="abrirModalExclusaoVei(${vei.id}, '${stringIdentificacao.replace(/'/g, "\\'")}')" class="bg-white text-slate-400 hover:text-red-500 border border-slate-200 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
