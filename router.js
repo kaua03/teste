@@ -121,3 +121,4 @@ async function navegarPara(tela) {
             visorErro.classList.add('opacity-100', 'translate-y-0');
         }
     }
+}
