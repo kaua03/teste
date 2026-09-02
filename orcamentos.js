@@ -18,6 +18,10 @@ let currentOSFinanceiro = [];
 let isVisualizacaoModo = false;
 let isOSDestravada = false;
 
+// Variáveis de estado do Modal Genérico
+let acaoConfirmacaoPendente = null;
+let idConfirmacaoPendente = null;
+
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
 // ========================================================
@@ -99,6 +103,47 @@ function filtrarTabelaOS() {
             linha.style.display = 'none';
         }
     });
+}
+
+// ========================================================
+// SISTEMA DE CONFIRMAÇÃO GENÉRICA (O "SUPERPODER")
+// ========================================================
+function abrirModalConfirmacao(titulo, texto, acao, id = null, tipo = 'perigo') {
+    document.getElementById('titulo-confirmacao').innerText = titulo;
+    document.getElementById('texto-confirmacao').innerText = texto;
+    
+    const iconeBox = document.getElementById('icone-confirmacao');
+    const btnConfirmar = document.getElementById('btn-confirmar-acao');
+
+    if (tipo === 'perigo') {
+        iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
+        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+        btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
+    } else {
+        iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
+        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+        btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
+    }
+
+    acaoConfirmacaoPendente = acao;
+    idConfirmacaoPendente = id;
+
+    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+}
+
+function fecharModalConfirmacao() {
+    acaoConfirmacaoPendente = null;
+    idConfirmacaoPendente = null;
+    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+}
+
+function executarAcaoConfirmada() {
+    if (acaoConfirmacaoPendente === 'excluirParcela') {
+        executarExclusaoParcelaManual(idConfirmacaoPendente);
+    } else if (acaoConfirmacaoPendente === 'limparFinanceiro') {
+        executarLimpezaFinanceiroAtual();
+    }
+    fecharModalConfirmacao();
 }
 
 // ========================================================
@@ -550,8 +595,20 @@ async function processarLancarFinanceiroTab() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
 }
 
-async function excluirParcelaManual(id) {
-    if(!confirm("Atenção: Deseja excluir este lançamento definitivamente?")) return;
+// -----------------------------------------------------------------------------------
+// As duas funções abaixo agora usam o nosso Modal Customizado!
+// -----------------------------------------------------------------------------------
+function excluirParcelaManual(id) {
+    abrirModalConfirmacao(
+        "Excluir Lançamento", 
+        "Deseja excluir este lançamento definitivamente?", 
+        "excluirParcela", 
+        id, 
+        "perigo"
+    );
+}
+
+async function executarExclusaoParcelaManual(id) {
     try {
         const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
         if (error) throw error;
@@ -559,6 +616,37 @@ async function excluirParcelaManual(id) {
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao excluir."); }
 }
+
+function limparFinanceiroAtual() {
+    abrirModalConfirmacao(
+        "Apagar Lançamentos", 
+        "Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?", 
+        "limparFinanceiro", 
+        null, 
+        "perigo"
+    );
+}
+
+async function executarLimpezaFinanceiroAtual() {
+    try {
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
+        
+        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
+        if (oldOrc && oldOrc.itens) {
+            delete oldOrc.itens.financeiro;
+            await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        } else {
+            await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        }
+        
+        document.getElementById('db-status').value = 'Finalizado';
+        
+        currentOSFinanceiro = [];
+        renderizarAbaFinanceiro();
+        dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
+}
+// -----------------------------------------------------------------------------------
 
 async function adicionarNovaParcelaManual() {
     const cliente = document.getElementById('db-cliente-nome').value;
@@ -589,27 +677,6 @@ async function adicionarNovaParcelaManual() {
         dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
-}
-
-async function limparFinanceiroAtual() {
-    if(!confirm("Atenção: Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?")) return;
-    try {
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
-        
-        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
-        if (oldOrc && oldOrc.itens) {
-            delete oldOrc.itens.financeiro;
-            await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', osEmEdicaoId);
-        } else {
-            await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
-        }
-        
-        document.getElementById('db-status').value = 'Finalizado';
-        
-        currentOSFinanceiro = [];
-        renderizarAbaFinanceiro();
-        dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
-    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
 }
 
 async function confirmarExclusao() {
@@ -1438,9 +1505,11 @@ window.buscarOrcamentosSupabase = buscarOrcamentosSupabase;
 window.salvarOrcamentoReal = salvarOrcamentoReal;
 window.salvarFinanceiroEditado = salvarFinanceiroEditado;
 window.processarLancarFinanceiroTab = processarLancarFinanceiroTab;
-window.excluirParcelaManual = excluirParcelaManual;
+window.excluirParcelaManual = excluirParcelaManual; // <-- Agora abre o Modal Customizado
+window.executarExclusaoParcelaManual = executarExclusaoParcelaManual; // <-- Executa de fato
 window.adicionarNovaParcelaManual = adicionarNovaParcelaManual;
-window.limparFinanceiroAtual = limparFinanceiroAtual;
+window.limparFinanceiroAtual = limparFinanceiroAtual; // <-- Agora abre o Modal Customizado
+window.executarLimpezaFinanceiroAtual = executarLimpezaFinanceiroAtual; // <-- Executa de fato
 window.confirmarExclusao = confirmarExclusao;
 window.processarDestravarOS = processarDestravarOS;
 window.abrirEdicaoOS = abrirEdicaoOS;
@@ -1463,6 +1532,9 @@ window.abrirModalExclusao = abrirModalExclusao;
 window.fecharModalExclusao = fecharModalExclusao;
 window.abrirModalCadastro = abrirModalCadastro;
 window.fecharModalCadastro = fecharModalCadastro;
+window.abrirModalConfirmacao = abrirModalConfirmacao; // <-- Função base do novo Modal
+window.fecharModalConfirmacao = fecharModalConfirmacao; // <-- Função base do novo Modal
+window.executarAcaoConfirmada = executarAcaoConfirmada; // <-- Função base do novo Modal
 window.buscarCEP = buscarCEP;
 window.processarSalvamentoModal = processarSalvamentoModal;
 window.gerarPDFSupabase = gerarPDFSupabase;
