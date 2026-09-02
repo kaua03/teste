@@ -1,12 +1,11 @@
-<!-- dashboard.html -->
-<div class="max-w-7xl mx-auto w-full space-y-6 fade-in font-sans pb-4">
+<div class="max-w-7xl mx-auto w-full space-y-6 fade-in font-sans pb-28 lg:pb-4">
     
     <div class="mb-2">
         <h2 class="text-2xl font-black text-slate-800 tracking-tight">Visão Geral</h2>
         <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Desempenho Financeiro e Operacional</p>
     </div>
 
-    <!-- CARDS SUPERIORES DE INDICADORES (AGORA CLICÁVEIS E COM ANIMAÇÕES PADRONIZADAS) -->
+    <!-- CARDS SUPERIORES DE INDICADORES -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         <div onclick="abrirDetalhesDashboard('fat')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col relative overflow-hidden group hover:border-emerald-200 transition-colors cursor-pointer" title="Ver Detalhes do Faturamento">
@@ -48,7 +47,7 @@
 
     </div>
 
-    <!-- ÁREA DOS GRÁFICOS -->
+    <!-- ÁREA DOS GRÁFICOS (AGORA TOTALMENTE RESPONSIVA) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
@@ -56,14 +55,16 @@
                 <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Fluxo de Caixa (Últimos 6 Meses)</h3>
                 <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200" id="dash-ano-grafico">2026</span>
             </div>
-            <div class="h-64 w-full relative">
+            <!-- Ajuste Responsivo: Mais alto no celular (h-72), normal no PC (lg:h-64) -->
+            <div class="h-72 lg:h-64 w-full relative">
                 <canvas id="chartFluxo"></canvas>
             </div>
         </div>
 
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-6">Status da Oficina (O.S)</h3>
-            <div class="h-56 w-full relative flex items-center justify-center">
+            <!-- Ajuste Responsivo: Bem mais alto no celular (h-80) para a legenda empilhar, normal no PC (lg:h-56) -->
+            <div class="h-80 lg:h-56 w-full relative flex items-center justify-center">
                 <canvas id="chartOS"></canvas>
             </div>
         </div>
