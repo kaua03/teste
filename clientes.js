@@ -149,7 +149,10 @@ async function buscarClientesSupabase() {
         if (error) throw error;
         renderizarTabelaClientes(clientes);
     } catch (erro) {
-        document.getElementById('tabela-clientes-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        const tbody = document.getElementById('tabela-clientes-real');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        }
     }
 }
 
@@ -235,10 +238,16 @@ async function executarExclusaoCliente(id) {
 // RENDERIZAÇÃO
 function renderizarTabelaClientes(dados) {
     const tbody = document.getElementById('tabela-clientes-real');
+    
+    // TRAVA DE SEGURANÇA
+    if (!tbody) return;
+
     if (dados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-users text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum cliente cadastrado.</p></td></tr>`; return;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-users text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum cliente cadastrado.</p></td></tr>`; 
+        return;
     }
     
+    // ... restante do mapeamento dos clientes igual ao seu código atual
     tbody.innerHTML = dados.map(cli => {
         const dataStr = new Date(cli.data_criacao).toLocaleDateString('pt-BR');
         const cliJSON = encodeURIComponent(JSON.stringify(cli));
