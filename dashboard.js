@@ -5,9 +5,13 @@
 let dashChartFluxo = null;
 let dashChartOS = null;
 
-// VARIÁVEIS GLOBAIS DE CACHE PARA O MODAL DRILL-DOWN LER RAPIDAMENTE
+// VARIÁVEIS GLOBAIS DE CACHE PARA RECALCULO INSTANTÂNEO
 let dashCacheReceitas = [];
+let dashCacheDespesas = [];
 let dashCacheOrdens = [];
+
+// ESTADO GLOBAL DO PERÍODO SELECIONADO
+let periodoAtualDash = 'mes'; 
 
 async function initDashboard() {
     console.log("🟢 Módulo Dashboard Inicializado.");
@@ -23,98 +27,17 @@ async function compilarDadosReais() {
             window.banco.from('orcamentos').select('*').order('id', { ascending: false })
         ]);
 
-        const receitas = reqReceber.data || [];
-        const despesas = reqPagar.data || [];
-        const ordens = reqOS.data || [];
+        // Guarda os dados na "memória viva"
+        dashCacheReceitas = reqReceber.data || [];
+        dashCacheDespesas = reqPagar.data || [];
+        dashCacheOrdens = reqOS.data || [];
 
-        // Abastece a memória viva da tela
-        dashCacheReceitas = receitas;
-        dashCacheOrdens = ordens;
+        // Força a atualização da interface com base no filtro padrão (Mês)
+        mudarPeriodoDash('mes');
 
-        const hoje = new Date();
-        const mesAtual = hoje.getMonth();
-        const anoAtual = hoje.getFullYear();
-        const hojeISO = hoje.toISOString().split('T')[0];
-
-        // Métrica 1: Faturamento do Mês
-        let faturamentoMes = 0;
-        receitas.forEach(r => {
-            if (r.status === 'Pago' && r.data_pagamento) {
-                const d = new Date(r.data_pagamento + 'T12:00:00Z');
-                if (d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
-                    faturamentoMes += r.valor;
-                }
-            }
-        });
-
-        // Métrica 2: A Receber
-        let aReceber = 0;
-        receitas.forEach(r => {
-            if (r.status === 'Pendente' && r.data_vencimento >= hojeISO) {
-                aReceber += r.valor;
-            }
-        });
-
-        // Métrica 3: Inadimplência
-        let contasAtrasadas = 0;
-        receitas.forEach(r => {
-            if (r.status === 'Pendente' && r.data_vencimento < hojeISO) {
-                contasAtrasadas++;
-            }
-        });
-
-        // Métrica 4: O.S em Andamento
-        let osAbertas = 0;
-        let contagemStatusOS = {};
-        
-        ordens.forEach(o => {
-            contagemStatusOS[o.status] = (contagemStatusOS[o.status] || 0) + 1;
-            if (!['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status)) {
-                osAbertas++;
-            }
-        });
-
-        // INJETANDO NA TELA
-        document.getElementById('dash-fat').innerText = faturamentoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('dash-rec').innerText = aReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('dash-os').innerText = `${osAbertas} `;
-        document.getElementById('dash-inad').innerText = `${contasAtrasadas} `;
-
-        // PROCESSANDO GRÁFICOS
-        const labelsMeses = [];
-        const dadosReceitas = [];
-        const dadosDespesas = [];
-
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            const nomeMes = d.toLocaleString('pt-BR', { month: 'short' });
-            labelsMeses.push(nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1));
-            
-            const mesTarget = d.getMonth();
-            const anoTarget = d.getFullYear();
-
-            const sumRec = receitas.reduce((acc, curr) => {
-                if (curr.status === 'Pago' && curr.data_pagamento) {
-                    const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
-                    if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
-                }
-                return acc;
-            }, 0);
-
-            const sumDesp = despesas.reduce((acc, curr) => {
-                if (curr.status === 'Pago' && curr.data_pagamento) {
-                    const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
-                    if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
-                }
-                return acc;
-            }, 0);
-
-            dadosReceitas.push(sumRec);
-            dadosDespesas.push(sumDesp);
-        }
-
-        renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemStatusOS);
+        // Os gráficos sempre mostram uma foto global/histórica 
+        // (independentes do filtro de cima, para você ver a tendência)
+        renderizarGraficosHistoricos();
 
     } catch(e) {
         console.error("Falha ao compilar dashboard:", e);
@@ -123,7 +46,135 @@ async function compilarDadosReais() {
     }
 }
 
-function renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemStatus) {
+function verificarDentroDoPeriodo(dataStringISO, periodo) {
+    if (!dataStringISO) return false;
+    if (periodo === 'geral') return true;
+    
+    // Converte a string do banco (YYYY-MM-DD) para um objeto de Data Javascript
+    const dataObj = new Date(dataStringISO + 'T12:00:00Z');
+    const hoje = new Date();
+    
+    if (periodo === 'mes') {
+        return dataObj.getMonth() === hoje.getMonth() && dataObj.getFullYear() === hoje.getFullYear();
+    } else if (periodo === 'semana') {
+        // Pega os últimos 7 dias corridos
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(hoje.getDate() - 7);
+        seteDiasAtras.setHours(0,0,0,0);
+        return dataObj >= seteDiasAtras && dataObj <= hoje;
+    }
+    return false;
+}
+
+function mudarPeriodoDash(periodo) {
+    periodoAtualDash = periodo;
+    
+    // 1. Atualiza as Cores dos Botões
+    const btnSemana = document.getElementById('btn-periodo-semana');
+    const btnMes = document.getElementById('btn-periodo-mes');
+    const btnGeral = document.getElementById('btn-periodo-geral');
+    
+    const classesInativo = "px-4 py-2 text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50 transition-colors";
+    const classesAtivo = "px-4 py-2 text-xs font-bold rounded-lg bg-blue-50 text-blue-600 shadow-sm transition-colors";
+
+    btnSemana.className = periodo === 'semana' ? classesAtivo : classesInativo;
+    btnMes.className = periodo === 'mes' ? classesAtivo : classesInativo;
+    btnGeral.className = periodo === 'geral' ? classesAtivo : classesInativo;
+
+    // 2. Atualiza a Escrita Dinâmica nos Cards
+    const labels = document.querySelectorAll('.lbl-periodo');
+    const textoLabel = periodo === 'semana' ? '7 Dias' : (periodo === 'mes' ? 'Mês' : 'Geral');
+    labels.forEach(l => l.innerText = textoLabel);
+
+    // 3. Roda a Matemática Instantânea nos Cards
+    atualizarCardsMatematica();
+}
+
+function atualizarCardsMatematica() {
+    let faturamento = 0;
+    let despesasTotal = 0;
+    let aReceber = 0;
+    let contasAtrasadas = 0;
+    let osAbertas = 0;
+    
+    const hojeISO = new Date().toISOString().split('T')[0];
+
+    // Varredura de Receitas
+    dashCacheReceitas.forEach(r => {
+        if (r.status === 'Pago' && verificarDentroDoPeriodo(r.data_pagamento, periodoAtualDash)) {
+            faturamento += r.valor;
+        }
+        if (r.status === 'Pendente') {
+            if (r.data_vencimento >= hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash)) {
+                aReceber += r.valor;
+            }
+            if (r.data_vencimento < hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash)) {
+                contasAtrasadas++;
+            }
+        }
+    });
+
+    // Varredura de Despesas
+    dashCacheDespesas.forEach(d => {
+        if (d.status === 'Pago' && verificarDentroDoPeriodo(d.data_pagamento, periodoAtualDash)) {
+            despesasTotal += d.valor;
+        }
+    });
+
+    // Varredura de Ordens de Serviço
+    dashCacheOrdens.forEach(o => {
+        if (!['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status)) {
+            // Conta O.S que foram ABERTAS dentro do período selecionado
+            if (verificarDentroDoPeriodo(o.data_criacao, periodoAtualDash)) {
+                osAbertas++;
+            }
+        }
+    });
+
+    // Injeta os resultados processados na UI (Tela)
+    document.getElementById('dash-fat').innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('dash-desp').innerText = despesasTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('dash-rec').innerText = aReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('dash-os').innerText = `${osAbertas}`;
+    document.getElementById('dash-inad').innerText = `${contasAtrasadas}`;
+}
+
+function renderizarGraficosHistoricos() {
+    // Processamento de Dados Históricos (Últimos 6 Meses) - Imune ao botão de filtro
+    const labelsMeses = [];
+    const dadosReceitas = [];
+    const dadosDespesas = [];
+
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const nomeMes = d.toLocaleString('pt-BR', { month: 'short' });
+        labelsMeses.push(nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1));
+        
+        const mesTarget = d.getMonth();
+        const anoTarget = d.getFullYear();
+
+        const sumRec = dashCacheReceitas.reduce((acc, curr) => {
+            if (curr.status === 'Pago' && curr.data_pagamento) {
+                const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
+                if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
+            }
+            return acc;
+        }, 0);
+
+        const sumDesp = dashCacheDespesas.reduce((acc, curr) => {
+            if (curr.status === 'Pago' && curr.data_pagamento) {
+                const dp = new Date(curr.data_pagamento + 'T12:00:00Z');
+                if (dp.getMonth() === mesTarget && dp.getFullYear() === anoTarget) return acc + curr.valor;
+            }
+            return acc;
+        }, 0);
+
+        dadosReceitas.push(sumRec);
+        dadosDespesas.push(sumDesp);
+    }
+
+    // Gráfico de Fluxo de Caixa (Linha)
     const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
     if(dashChartFluxo) dashChartFluxo.destroy();
     
@@ -133,36 +184,15 @@ function renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemS
             labels: labelsMeses,
             datasets: [
                 {
-                    label: 'Entradas (Receitas)',
-                    data: dadosReceitas,
-                    borderColor: '#10b981', 
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#10b981',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
+                    label: 'Entradas (Receitas)', data: dadosReceitas, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', pointBorderWidth: 2, pointRadius: 4
                 },
                 {
-                    label: 'Saídas (Despesas)',
-                    data: dadosDespesas,
-                    borderColor: '#ef4444', 
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#ef4444',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
+                    label: 'Saídas (Despesas)', data: dadosDespesas, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 3, borderDash: [5, 5], tension: 0.4, pointBackgroundColor: '#fff', pointBorderColor: '#ef4444', pointBorderWidth: 2, pointRadius: 4
                 }
             ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { position: 'top', labels: { font: { family: 'Inter', size: 10, weight: 'bold' }, usePointStyle: true, boxWidth: 8 } } },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10, weight: 'bold' }, color: '#94a3b8' } },
@@ -171,8 +201,12 @@ function renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemS
         }
     });
 
-    const labelsOS = Object.keys(contagemStatus);
-    const dadosOS = Object.values(contagemStatus);
+    // Gráfico de Status da Oficina (Pizza)
+    let contagemStatusOS = {};
+    dashCacheOrdens.forEach(o => { contagemStatusOS[o.status] = (contagemStatusOS[o.status] || 0) + 1; });
+
+    const labelsOS = Object.keys(contagemStatusOS);
+    const dadosOS = Object.values(contagemStatusOS);
     const coresOS = ['#3b82f6', '#f59e0b', '#10b981', '#6366f1', '#8b5cf6', '#ec4899', '#64748b'];
 
     const ctxOS = document.getElementById('chartOS').getContext('2d');
@@ -185,23 +219,18 @@ function renderizarGraficos(labelsMeses, dadosReceitas, dadosDespesas, contagemS
             datasets: [{
                 data: dadosOS.length > 0 ? dadosOS : [1],
                 backgroundColor: dadosOS.length > 0 ? coresOS : ['#f1f5f9'],
-                borderWidth: 0,
-                hoverOffset: 4
+                borderWidth: 0, hoverOffset: 4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10, weight: 'bold' }, usePointStyle: true, boxWidth: 8, padding: 15 } }
-            }
+            responsive: true, maintainAspectRatio: false, cutout: '70%',
+            plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10, weight: 'bold' }, usePointStyle: true, boxWidth: 8, padding: 15 } } }
         }
     });
 }
 
 // ========================================================
-// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL)
+// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL COM FILTRO)
 // ========================================================
 function abrirDetalhesDashboard(tipo) {
     const modal = document.getElementById('modal-dash-detalhes');
@@ -210,10 +239,7 @@ function abrirDetalhesDashboard(tipo) {
     const thead = document.getElementById('modal-dash-thead');
     const tbody = document.getElementById('modal-dash-tbody');
 
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    const hojeISO = hoje.toISOString().split('T')[0];
+    const hojeISO = new Date().toISOString().split('T')[0];
 
     let htmlHead = '';
     let htmlBody = '';
@@ -223,15 +249,9 @@ function abrirDetalhesDashboard(tipo) {
         titulo.innerHTML = '<i class="ph-bold ph-trend-up mr-2 text-2xl"></i> Detalhamento do Faturamento';
         htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição do Lançamento</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Recebido</th>`;
         
-        const filtrados = dashCacheReceitas.filter(r => {
-            if (r.status === 'Pago' && r.data_pagamento) {
-                const d = new Date(r.data_pagamento + 'T12:00:00Z');
-                return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
-            }
-            return false;
-        });
+        const filtrados = dashCacheReceitas.filter(r => r.status === 'Pago' && verificarDentroDoPeriodo(r.data_pagamento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhum faturamento registrado neste mês.</td></tr>`;
+        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhum faturamento registrado neste período.</td></tr>`;
         
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
@@ -239,14 +259,30 @@ function abrirDetalhesDashboard(tipo) {
             htmlBody += `<tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${r.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${r.forma_pagamento || '-'}</td><td class="p-4 font-black text-emerald-600 text-right">${valorBr}</td></tr>`;
         });
 
+    } else if (tipo === 'desp') {
+        // NOVO: Detalhe das Despesas
+        header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-rose-500';
+        titulo.innerHTML = '<i class="ph-bold ph-trend-down mr-2 text-2xl"></i> Detalhamento de Saídas (Despesas)';
+        htmlHead = `<th class="p-4 w-32">Data Pagto</th><th class="p-4">Descrição da Despesa</th><th class="p-4 w-32">Método</th><th class="p-4 text-right w-40">Valor Pago</th>`;
+        
+        const filtrados = dashCacheDespesas.filter(d => d.status === 'Pago' && verificarDentroDoPeriodo(d.data_pagamento, periodoAtualDash));
+
+        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma despesa paga neste período.</td></tr>`;
+        
+        filtrados.forEach(d => {
+            const dataBr = new Date(d.data_pagamento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+            const valorBr = d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            htmlBody += `<tr class="hover:bg-slate-50 transition-colors"><td class="p-4 font-bold text-slate-700">${dataBr}</td><td class="p-4 text-slate-600 font-medium">${d.descricao}</td><td class="p-4 text-slate-500 text-xs font-bold uppercase">${d.forma_pagamento || '-'}</td><td class="p-4 font-black text-rose-600 text-right">${valorBr}</td></tr>`;
+        });
+
     } else if (tipo === 'rec') {
         header.className = 'p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl bg-amber-500';
         titulo.innerHTML = '<i class="ph-bold ph-clock mr-2 text-2xl"></i> Entradas Futuras (A Receber)';
         htmlHead = `<th class="p-4 w-32">Vencimento</th><th class="p-4">Descrição do Lançamento</th><th class="p-4 text-right w-40">Valor Projetado</th>`;
         
-        const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento >= hojeISO);
+        const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento >= hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Nenhuma conta a receber pendente no prazo.</td></tr>`;
+        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Nenhuma conta a receber para este período.</td></tr>`;
         
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
@@ -259,9 +295,9 @@ function abrirDetalhesDashboard(tipo) {
         titulo.innerHTML = '<i class="ph-bold ph-wrench mr-2 text-2xl"></i> Ordens de Serviço em Andamento';
         htmlHead = `<th class="p-4 w-24">Nº O.S</th><th class="p-4">Cliente Associado / Placa</th><th class="p-4 text-center w-32">Status Atual</th><th class="p-4 text-right w-40">Valor Parcial</th>`;
         
-        const filtrados = dashCacheOrdens.filter(o => !['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status));
+        const filtrados = dashCacheOrdens.filter(o => !['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status) && verificarDentroDoPeriodo(o.data_criacao, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma O.S em andamento na oficina.</td></tr>`;
+        if(filtrados.length === 0) htmlBody = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold">Nenhuma O.S aberta neste período.</td></tr>`;
         
         filtrados.forEach(o => {
             const valorBr = o.valor_total ? o.valor_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
@@ -273,9 +309,9 @@ function abrirDetalhesDashboard(tipo) {
         titulo.innerHTML = '<i class="ph-bold ph-warning-circle mr-2 text-2xl"></i> Alerta de Inadimplência';
         htmlHead = `<th class="p-4 w-32">Venceu Em</th><th class="p-4">Descrição da Cobrança</th><th class="p-4 text-right w-40">Valor em Atraso</th>`;
         
-        const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento < hojeISO);
+        const filtrados = dashCacheReceitas.filter(r => r.status === 'Pendente' && r.data_vencimento < hojeISO && verificarDentroDoPeriodo(r.data_vencimento, periodoAtualDash));
 
-        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Oficina sem nenhuma inadimplência. Parabéns!</td></tr>`;
+        if(filtrados.length === 0) htmlBody = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Sem inadimplência neste período de filtro!</td></tr>`;
         
         filtrados.forEach(r => {
             const dataBr = new Date(r.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
