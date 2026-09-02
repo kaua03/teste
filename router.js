@@ -99,20 +99,25 @@ async function navegarPara(tela) {
 
         // 4. ACENDE A LUZ: Tudo pronto, mostra a tela suavemente já com os dados preenchidos!
         requestAnimationFrame(() => {
-            visor.classList.remove('opacity-0', 'translate-y-4');
-            visor.classList.add('opacity-100', 'translate-y-0');
+            const visorSeguro = document.getElementById('visor-da-tv');
+            if(visorSeguro) {
+                visorSeguro.classList.remove('opacity-0', 'translate-y-4');
+                visorSeguro.classList.add('opacity-100', 'translate-y-0');
+            }
         });
 
     } catch (erro) {
         console.error("Erro no Roteador:", erro);
-        visor.innerHTML = `
-            <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                <i class="ph-bold ph-warning-circle text-5xl mb-4 text-red-400"></i>
-                <h2 class="text-xl font-bold text-slate-700">Erro 404</h2>
-                <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
-            </div>
-        `;
-        visor.classList.remove('opacity-0', 'translate-y-4');
-        visor.classList.add('opacity-100', 'translate-y-0');
+        const visorErro = document.getElementById('visor-da-tv');
+        if (visorErro) {
+            visorErro.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                    <i class="ph-bold ph-warning-circle text-5xl mb-4 text-red-400"></i>
+                    <h2 class="text-xl font-bold text-slate-700">Erro 404</h2>
+                    <p>O módulo <b>${tela}</b> não pôde ser carregado.</p>
+                </div>
+            `;
+            visorErro.classList.remove('opacity-0', 'translate-y-4');
+            visorErro.classList.add('opacity-100', 'translate-y-0');
+        }
     }
-}
