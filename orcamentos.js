@@ -708,18 +708,34 @@ function mudarAbaOS(aba) {
     const contFin = document.getElementById('aba-conteudo-fin');
     const status = document.getElementById('db-status').value;
 
+    const boxAuditoria = document.getElementById('box-auditoria-financeira');
+    const boxDesconto = document.getElementById('box-desconto');
+    const boxCaixaPreta = document.getElementById('box-caixa-preta');
+
     if (aba === 'dados') {
         btnDados.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm";
         btnFin.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2" + (status === 'Finalizado' || status === 'Fechado' ? '' : ' hidden');
+        
         contDados.classList.remove('hidden');
         contDados.classList.add('block');
         contFin.classList.add('hidden');
+
+        if(boxDesconto) boxDesconto.classList.remove('hidden');
+        if(boxCaixaPreta) boxCaixaPreta.classList.remove('hidden');
+        if(boxAuditoria) boxAuditoria.classList.add('hidden');
+
     } else if (aba === 'fin') {
         btnFin.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2";
         btnDados.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm";
+        
         contFin.classList.remove('hidden');
         contFin.classList.add('block');
         contDados.classList.add('hidden');
+
+        if(boxDesconto) boxDesconto.classList.add('hidden');
+        if(boxCaixaPreta) boxCaixaPreta.classList.add('hidden');
+        if(boxAuditoria) boxAuditoria.classList.remove('hidden');
+
         renderizarAbaFinanceiro();
     }
 }
