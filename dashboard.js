@@ -13,7 +13,7 @@ let dashCacheOrdens = [];
 // ESTADO GLOBAL DO PERÍODO SELECIONADO
 let periodoAtualDash = 'mes'; 
 
-// DICIONÁRIO DE CORES DOS STATUS (SUPERPODER DE UI)
+// DICIONÁRIO DE CORES DOS STATUS
 const getCorStatusDashboard = (status) => {
     const cores = {
         'Em Aberto': 'bg-slate-100 text-slate-700 border-slate-200',
@@ -28,7 +28,8 @@ const getCorStatusDashboard = (status) => {
 
 async function initDashboard() {
     console.log("🟢 Módulo Dashboard Inicializado.");
-    document.getElementById('dash-ano-grafico').innerText = new Date().getFullYear();
+    const elAno = document.getElementById('dash-ano-grafico');
+    if(elAno) elAno.innerText = new Date().getFullYear();
     await compilarDadosReais();
 }
 
@@ -40,22 +41,23 @@ async function compilarDadosReais() {
             window.banco.from('orcamentos').select('*').order('id', { ascending: false })
         ]);
 
-        // Guarda os dados na "memória viva"
         dashCacheReceitas = reqReceber.data || [];
         dashCacheDespesas = reqPagar.data || [];
         dashCacheOrdens = reqOS.data || [];
 
-        // Força a atualização da interface com base no filtro padrão (Mês)
-        mudarPeriodoDash('mes');
+        // Verifica se a tela ainda está ativa antes de continuar
+        if(!document.getElementById('dash-fat')) return;
 
-        // Os gráficos sempre mostram uma foto global/histórica 
-        // (independentes do filtro de cima, para você ver a tendência)
+        mudarPeriodoDash('mes');
         renderizarGraficosHistoricos();
 
     } catch(e) {
         console.error("Falha ao compilar dashboard:", e);
-        document.getElementById('dash-fat').innerText = "Erro";
-        document.getElementById('dash-rec').innerText = "Erro";
+        const elFat = document.getElementById('dash-fat');
+        if(elFat) {
+            elFat.innerText = "Erro";
+            document.getElementById('dash-rec').innerText = "Erro";
+        }
     }
 }
 
@@ -63,14 +65,12 @@ function verificarDentroDoPeriodo(dataStringISO, periodo) {
     if (!dataStringISO) return false;
     if (periodo === 'geral') return true;
     
-    // Converte a string do banco (YYYY-MM-DD) para um objeto de Data Javascript
     const dataObj = new Date(dataStringISO + 'T12:00:00Z');
     const hoje = new Date();
     
     if (periodo === 'mes') {
         return dataObj.getMonth() === hoje.getMonth() && dataObj.getFullYear() === hoje.getFullYear();
     } else if (periodo === 'semana') {
-        // Pega os últimos 7 dias corridos
         const seteDiasAtras = new Date();
         seteDiasAtras.setDate(hoje.getDate() - 7);
         seteDiasAtras.setHours(0,0,0,0);
@@ -82,8 +82,10 @@ function verificarDentroDoPeriodo(dataStringISO, periodo) {
 function mudarPeriodoDash(periodo) {
     periodoAtualDash = periodo;
     
-    // 1. Atualiza as Cores dos Botões
     const btnSemana = document.getElementById('btn-periodo-semana');
+    // TRAVA DE SEGURANÇA: Se o botão não existe, o usuário não está mais nesta tela
+    if (!btnSemana) return; 
+
     const btnMes = document.getElementById('btn-periodo-mes');
     const btnGeral = document.getElementById('btn-periodo-geral');
     
@@ -94,12 +96,10 @@ function mudarPeriodoDash(periodo) {
     btnMes.className = periodo === 'mes' ? classesAtivo : classesInativo;
     btnGeral.className = periodo === 'geral' ? classesAtivo : classesInativo;
 
-    // 2. Atualiza a Escrita Dinâmica nos Cards
     const labels = document.querySelectorAll('.lbl-periodo');
     const textoLabel = periodo === 'semana' ? '7 Dias' : (periodo === 'mes' ? 'Mês' : 'Geral');
     labels.forEach(l => l.innerText = textoLabel);
 
-    // 3. Roda a Matemática Instantânea nos Cards
     atualizarCardsMatematica();
 }
 
@@ -112,7 +112,6 @@ function atualizarCardsMatematica() {
     
     const hojeISO = new Date().toISOString().split('T')[0];
 
-    // Varredura de Receitas
     dashCacheReceitas.forEach(r => {
         if (r.status === 'Pago' && verificarDentroDoPeriodo(r.data_pagamento, periodoAtualDash)) {
             faturamento += r.valor;
@@ -127,25 +126,25 @@ function atualizarCardsMatematica() {
         }
     });
 
-    // Varredura de Despesas
     dashCacheDespesas.forEach(d => {
         if (d.status === 'Pago' && verificarDentroDoPeriodo(d.data_pagamento, periodoAtualDash)) {
             despesasTotal += d.valor;
         }
     });
 
-    // Varredura de Ordens de Serviço
     dashCacheOrdens.forEach(o => {
         if (!['Fechado', 'Finalizado', 'Não Usar', 'Orçamento'].includes(o.status)) {
-            // Conta O.S que foram ABERTAS dentro do período selecionado
             if (verificarDentroDoPeriodo(o.data_criacao, periodoAtualDash)) {
                 osAbertas++;
             }
         }
     });
 
-    // Injeta os resultados processados na UI (Tela)
-    document.getElementById('dash-fat').innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // TRAVA DE SEGURANÇA ANTES DE INJETAR
+    const elFat = document.getElementById('dash-fat');
+    if (!elFat) return;
+
+    elFat.innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('dash-desp').innerText = despesasTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('dash-rec').innerText = aReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('dash-os').innerText = `${osAbertas}`;
@@ -153,7 +152,10 @@ function atualizarCardsMatematica() {
 }
 
 function renderizarGraficosHistoricos() {
-    // Processamento de Dados Históricos (Últimos 6 Meses) - Imune ao botão de filtro
+    const elFluxo = document.getElementById('chartFluxo');
+    // TRAVA DE SEGURANÇA
+    if (!elFluxo) return;
+
     const labelsMeses = [];
     const dadosReceitas = [];
     const dadosDespesas = [];
@@ -187,8 +189,7 @@ function renderizarGraficosHistoricos() {
         dadosDespesas.push(sumDesp);
     }
 
-    // Gráfico de Fluxo de Caixa (Linha)
-    const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
+    const ctxFluxo = elFluxo.getContext('2d');
     if(dashChartFluxo) dashChartFluxo.destroy();
     
     dashChartFluxo = new Chart(ctxFluxo, {
@@ -214,7 +215,6 @@ function renderizarGraficosHistoricos() {
         }
     });
 
-    // Gráfico de Status da Oficina (Pizza)
     let contagemStatusOS = {};
     dashCacheOrdens.forEach(o => { contagemStatusOS[o.status] = (contagemStatusOS[o.status] || 0) + 1; });
 
@@ -242,9 +242,6 @@ function renderizarGraficosHistoricos() {
     });
 }
 
-// ========================================================
-// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL COM FILTRO AVANÇADO E UI LIMPA)
-// ========================================================
 function abrirDetalhesDashboard(tipo) {
     const modal = document.getElementById('modal-dash-detalhes');
     const header = document.getElementById('modal-dash-header');
