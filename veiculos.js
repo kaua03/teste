@@ -127,7 +127,10 @@ async function buscarVeiculosSupabase() {
         if (error) throw error;
         renderizarTabelaVeiculos(veiculos);
     } catch (erro) {
-        document.getElementById('tabela-veiculos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        const tbody = document.getElementById('tabela-veiculos-real');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o banco.</td></tr>`;
+        }
     }
 }
 
@@ -212,10 +215,16 @@ async function executarExclusaoVeiculo(id) {
 // RENDERIZAÇÃO
 function renderizarTabelaVeiculos(dados) {
     const tbody = document.getElementById('tabela-veiculos-real');
+    
+    // TRAVA DE SEGURANÇA
+    if (!tbody) return;
+
     if (dados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-jeep text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; return;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-jeep text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhum veículo cadastrado.</p></td></tr>`; 
+        return;
     }
     
+    // ... (resto do map igual ao seu código atual)
     tbody.innerHTML = dados.map(vei => {
         const dataStr = new Date(vei.data_criacao).toLocaleDateString('pt-BR');
         const veiJSON = encodeURIComponent(JSON.stringify(vei));
