@@ -1,47 +1,45 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (Global, Seguro e de Alta Performance)
+// MOTOR DO MODAL GENÉRICO (Forçado para sobrescrever cache)
 // ========================================================
-if (typeof window.abrirModalConfirmacao === 'undefined') {
+window.acaoConfirmacaoGlobal = null;
+
+window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+    // Título sempre texto puro por segurança
+    document.getElementById('titulo-confirmacao').innerText = titulo;
+    
+    // A MÁGICA AQUI: innerHTML sem trava de segurança para interpretar o Negrito
+    document.getElementById('texto-confirmacao').innerHTML = texto; 
+    
+    const iconeBox = document.getElementById('icone-confirmacao');
+    const btnConfirmar = document.getElementById('btn-confirmar-acao');
+
+    if (tipo === 'perigo') {
+        iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
+        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+        btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
+        btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
+    } else {
+        iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
+        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+        btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
+        btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
+    }
+
+    window.acaoConfirmacaoGlobal = callbackAcao;
+    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+};
+
+window.fecharModalConfirmacao = function() {
     window.acaoConfirmacaoGlobal = null;
+    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+};
 
-    window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-        // Título sempre texto puro por segurança
-        document.getElementById('titulo-confirmacao').innerText = titulo;
-        
-        // A MÁGICA AQUI: innerHTML para interpretar as tags HTML (como o <b> de negrito)
-        document.getElementById('texto-confirmacao').innerHTML = texto; 
-        
-        const iconeBox = document.getElementById('icone-confirmacao');
-        const btnConfirmar = document.getElementById('btn-confirmar-acao');
-
-        if (tipo === 'perigo') {
-            iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-            iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
-            btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
-            btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
-        } else {
-            iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-            iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
-            btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
-            btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
-        }
-
-        window.acaoConfirmacaoGlobal = callbackAcao;
-        document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
-    };
-
-    window.fecharModalConfirmacao = function() {
-        window.acaoConfirmacaoGlobal = null;
-        document.getElementById('modal-confirmacao-generica').classList.add('hidden');
-    };
-
-    window.executarAcaoConfirmada = function() {
-        if (typeof window.acaoConfirmacaoGlobal === 'function') {
-            window.acaoConfirmacaoGlobal();
-        }
-        window.fecharModalConfirmacao();
-    };
-}
+window.executarAcaoConfirmada = function() {
+    if (typeof window.acaoConfirmacaoGlobal === 'function') {
+        window.acaoConfirmacaoGlobal();
+    }
+    window.fecharModalConfirmacao();
+};
 
 // ========================================================
 // AutoManager - Módulo de Clientes
