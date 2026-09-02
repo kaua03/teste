@@ -149,12 +149,17 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
+    
+    // TRAVA DE SEGURANÇA: O usuário mudou de tela rápido demais? Aborta a missão em silêncio.
+    if (!tbody) return; 
+
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
         return; 
     }
     
     tbody.innerHTML = dados.map(orc => {
+        // ... (resto do seu código do map continua igualzinho aqui)
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
@@ -432,7 +437,11 @@ async function buscarOrcamentosSupabase() {
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
-        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
+        const tbody = document.getElementById('tabela-orcamentos-real');
+        // TRAVA DE SEGURANÇA: Só exibe o erro se a tabela ainda existir na tela
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
+        }
     }
 }
 
