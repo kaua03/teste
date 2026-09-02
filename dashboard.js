@@ -27,9 +27,12 @@ const getCorStatusDashboard = (status) => {
 };
 
 async function initDashboard() {
-    console.log("🟢 Módulo Dashboard Inicializado.");
+    // TRAVA 1: Se a tela mudou antes mesmo de iniciar, aborta.
     const elAno = document.getElementById('dash-ano-grafico');
-    if(elAno) elAno.innerText = new Date().getFullYear();
+    if(!elAno) return; 
+
+    console.log("🟢 Módulo Dashboard Inicializado.");
+    elAno.innerText = new Date().getFullYear();
     await compilarDadosReais();
 }
 
@@ -45,7 +48,7 @@ async function compilarDadosReais() {
         dashCacheDespesas = reqPagar.data || [];
         dashCacheOrdens = reqOS.data || [];
 
-        // Verifica se a tela ainda está ativa antes de continuar
+        // TRAVA 2: Tela já mudou durante as consultas? Aborta.
         if(!document.getElementById('dash-fat')) return;
 
         mudarPeriodoDash('mes');
@@ -83,12 +86,12 @@ function mudarPeriodoDash(periodo) {
     periodoAtualDash = periodo;
     
     const btnSemana = document.getElementById('btn-periodo-semana');
-    // TRAVA DE SEGURANÇA: Se o botão não existe, o usuário não está mais nesta tela
-    if (!btnSemana) return; 
-
     const btnMes = document.getElementById('btn-periodo-mes');
     const btnGeral = document.getElementById('btn-periodo-geral');
     
+    // TRAVA 3: Se os botões não existem (usuário mudou de tela), aborta antes de trocar as classes.
+    if (!btnSemana || !btnMes || !btnGeral) return; 
+
     const classesInativo = "px-4 py-2 text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50 transition-colors";
     const classesAtivo = "px-4 py-2 text-xs font-bold rounded-lg bg-blue-50 text-blue-600 shadow-sm transition-colors";
 
@@ -140,7 +143,7 @@ function atualizarCardsMatematica() {
         }
     });
 
-    // TRAVA DE SEGURANÇA ANTES DE INJETAR
+    // TRAVA 4: Segurança antes de tentar colocar os valores nos cards
     const elFat = document.getElementById('dash-fat');
     if (!elFat) return;
 
@@ -153,7 +156,7 @@ function atualizarCardsMatematica() {
 
 function renderizarGraficosHistoricos() {
     const elFluxo = document.getElementById('chartFluxo');
-    // TRAVA DE SEGURANÇA
+    // TRAVA 5: O canvas do gráfico não existe? Aborta.
     if (!elFluxo) return;
 
     const labelsMeses = [];
@@ -222,7 +225,10 @@ function renderizarGraficosHistoricos() {
     const dadosOS = Object.values(contagemStatusOS);
     const coresOS = ['#3b82f6', '#f59e0b', '#10b981', '#6366f1', '#8b5cf6', '#ec4899', '#64748b'];
 
-    const ctxOS = document.getElementById('chartOS').getContext('2d');
+    const chartOSCanvas = document.getElementById('chartOS');
+    if(!chartOSCanvas) return; // Trava final do pizza
+    const ctxOS = chartOSCanvas.getContext('2d');
+    
     if(dashChartOS) dashChartOS.destroy();
 
     dashChartOS = new Chart(ctxOS, {
@@ -242,8 +248,13 @@ function renderizarGraficosHistoricos() {
     });
 }
 
+// ========================================================
+// SISTEMA DE DRILL-DOWN (LISTAGENS EM MODAL COM FILTRO AVANÇADO E UI LIMPA)
+// ========================================================
 function abrirDetalhesDashboard(tipo) {
     const modal = document.getElementById('modal-dash-detalhes');
+    if(!modal) return; // Prevenção Básica
+
     const header = document.getElementById('modal-dash-header');
     const titulo = document.getElementById('modal-dash-titulo');
     const thead = document.getElementById('modal-dash-thead');
@@ -378,7 +389,7 @@ function abrirDetalhesDashboard(tipo) {
 
     document.getElementById('visor-da-tv').classList.add('overflow-y-hidden'); 
     document.getElementById('visor-da-tv').classList.remove('overflow-y-auto');
-    document.getElementById('modal-dash-detalhes').classList.remove('hidden');
+    modal.classList.remove('hidden');
 }
 
 function fecharModalDashDetalhes() {
