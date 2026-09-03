@@ -404,7 +404,7 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (CRIADO VIA DOM PARA BLINDAGEM)
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (DOM PURO)
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
@@ -417,27 +417,23 @@ function renderizarPreviewFotos() {
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
     imagensUploadArray.forEach((base64Str, index) => {
-        // Fabrica a caixa base (CSS)
         const imgBox = document.createElement('div');
         imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
         
-        // Fabrica a Imagem
         const imgEl = document.createElement('img');
         imgEl.src = base64Str;
         imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
-        // Clicar nela abre a tela cheia
         imgEl.onclick = () => abrirVisualizadorImagem(index);
         
         imgBox.appendChild(imgEl);
 
-        // Fabrica o botão de excluir e pluga o evento MANUALMENTE (blindagem total)
         if (!isTravadoGeral) {
             const btnTrash = document.createElement('button');
             btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
             btnTrash.title = "Apagar Foto";
             btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
             btnTrash.onclick = (e) => {
-                e.stopPropagation(); // Trava absoluta do clique
+                e.stopPropagation(); 
                 confirmarExclusaoImagem(index);
             };
             imgBox.appendChild(btnTrash);
@@ -752,9 +748,6 @@ async function processarLancarFinanceiroTab() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
 }
 
-// -----------------------------------------------------------------------------------
-// EXCLUSÃO E CONFIRMAÇÕES USANDO O MOTOR GENÉRICO COM CALLBACKS
-// -----------------------------------------------------------------------------------
 function excluirParcelaManual(id) {
     window.abrirModalConfirmacao(
         "Excluir Lançamento", 
