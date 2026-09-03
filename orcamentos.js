@@ -338,7 +338,7 @@ function renderizarAbaFinanceiro() {
                         <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
-                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button type="button" onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
             </div>`;
         });
         
@@ -346,7 +346,7 @@ function renderizarAbaFinanceiro() {
             html += `
             <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
                  <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
-                <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+                <button type="button" onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
             </div>`;
         }
 
@@ -369,25 +369,28 @@ function renderizarPreviewFotos() {
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
     imagensUploadArray.forEach((base64Str, index) => {
-        // Criando a caixa usando DOM Puro em vez de InnerHTML para proteger os eventos de clique
         const imgBox = document.createElement('div');
         imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
         
         const imgEl = document.createElement('img');
         imgEl.src = base64Str;
         imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
-        // Clicar apenas na imagem aciona o lightbox
         imgEl.onclick = () => abrirVisualizadorImagem(index);
         
         imgBox.appendChild(imgEl);
 
         if (!isTravadoGeral) {
             const btnTrash = document.createElement('button');
+            
+            // BLINDAGEM COMPLETA APLICADA AQUI
+            btnTrash.type = 'button'; 
+            
             btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
             btnTrash.title = "Apagar Foto";
             btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
-            // Clicar na lixeira não deixa o clique passar para a imagem
+            
             btnTrash.onclick = (e) => {
+                e.preventDefault();  
                 e.stopPropagation(); 
                 confirmarExclusaoImagem(index);
             };
@@ -437,7 +440,7 @@ function abrirVisualizadorImagem(index) {
         modal.id = 'modal-visualizador-imagem';
         modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
         modal.innerHTML = `
-            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
+            <button type="button" onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
             </button>
             <img id="imagem-expandida" src="" class="w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
@@ -539,7 +542,6 @@ async function buscarOrcamentosSupabase() {
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         const tbody = document.getElementById('tabela-orcamentos-real');
-        // TRAVA DE SEGURANÇA: Só exibe o erro se a tabela ainda existir na tela
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
         }
