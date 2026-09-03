@@ -4,13 +4,16 @@
 window.acaoConfirmacaoGlobal = null;
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    // Procura se a fábrica já construiu o modal. Se não, constrói na hora e joga direto no Body!
+    // 1. TRAVA A TELA: Impede o usuário de rolar o fundo
+    document.body.style.overflow = 'hidden';
+
+    // 2. CRIA O MODAL DIRETO NO BODY (Imune a animações do Roteador)
     let modal = document.getElementById('modal-confirmacao-dinamico');
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-confirmacao-dinamico';
-        // z-[9999] garante que fique acima de absolutamente qualquer tela do sistema
-        modal.className = 'fixed inset-0 bg-slate-900/80 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none';
+        // z-[99999] garante que seja a camada mais alta do Universo
+        modal.className = 'fixed inset-0 bg-slate-900/80 z-[99999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none';
         modal.innerHTML = `
             <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
                 <div class="p-6 text-center">
@@ -29,7 +32,7 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
         document.body.appendChild(modal);
     }
 
-    // Alimenta os dados do modal
+    // 3. INJETA OS DADOS
     document.getElementById('titulo-confirmacao-dinamico').innerText = titulo;
     document.getElementById('texto-confirmacao-dinamico').innerHTML = texto; 
     
@@ -51,7 +54,7 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
 
     window.acaoConfirmacaoGlobal = callbackAcao;
     
-    // Dispara a animação e mostra na tela
+    // 4. MOSTRA O MODAL NOVO E IGNORA O VELHO!
     requestAnimationFrame(() => {
         modal.classList.remove('opacity-0', 'pointer-events-none');
         document.getElementById('modal-conf-card').classList.remove('scale-95');
@@ -60,6 +63,9 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
 };
 
 window.fecharModalConfirmacao = function() {
+    // DESTRAVA A ROLAGEM DO FUNDO
+    document.body.style.overflow = 'auto';
+
     const modal = document.getElementById('modal-confirmacao-dinamico');
     if (modal) {
         modal.classList.add('opacity-0', 'pointer-events-none');
@@ -67,6 +73,10 @@ window.fecharModalConfirmacao = function() {
         document.getElementById('modal-conf-card').classList.add('scale-95');
         window.acaoConfirmacaoGlobal = null;
     }
+    
+    // Trava de segurança: Esconde o modal velho do HTML caso ele esteja aparecendo como fantasma
+    const modalVelho = document.getElementById('modal-confirmacao-generica');
+    if (modalVelho) modalVelho.classList.add('hidden');
 };
 
 window.executarAcaoConfirmada = function() {
