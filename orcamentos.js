@@ -4,10 +4,7 @@
 window.acaoConfirmacaoGlobal = null;
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    // Título sempre texto puro por segurança
     document.getElementById('titulo-confirmacao').innerText = titulo;
-    
-    // A MÁGICA AQUI: innerHTML sem trava de segurança para interpretar o Negrito
     document.getElementById('texto-confirmacao').innerHTML = texto; 
     
     const iconeBox = document.getElementById('icone-confirmacao');
@@ -149,9 +146,7 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    
-    // TRAVA DE SEGURANÇA: O usuário mudou de tela rápido demais? Aborta a missão em silêncio.
-    if (!tbody) return; 
+    if (!tbody) return; // TRAVA DE SEGURANÇA
 
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -159,7 +154,6 @@ function renderizarTabelaReal(dados) {
     }
     
     tbody.innerHTML = dados.map(orc => {
-        // ... (resto do seu código do map continua igualzinho aqui)
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = obterCorStatus(orc.status);
         const orcJSON = encodeURIComponent(JSON.stringify(orc));
@@ -195,6 +189,8 @@ function renderizarTabelaReal(dados) {
 
 function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
+    if (!divLista) return;
+
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
@@ -248,6 +244,8 @@ function renderizarAbaFinanceiro() {
     const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
     const subtitulo = document.getElementById('fin-aba-subtitulo');
     
+    if(!boxBloqueado) return; // Trava de segurança
+
     document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 
     if (!osEmEdicaoId) {
@@ -357,30 +355,107 @@ function renderizarAbaFinanceiro() {
     }
 }
 
+// ========================================================
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS
+// ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
+    if (!previewContainer) return;
     previewContainer.innerHTML = '';
     
     if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
-    
+    previewContainer.classList.remove('hidden');
+
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-    imagensUploadArray.forEach(base64Str => {
+    imagensUploadArray.forEach((base64Str, index) => {
         const imgBox = document.createElement('div');
-        imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer";
         
-        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        imgBox.onclick = () => abrirVisualizadorImagem(index);
+
+        let trashIcon = isTravadoGeral ? '' : `
+            <button onclick="event.stopPropagation(); removerImagemArray(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md transform translate-y-1 group-hover:translate-y-0 z-10" title="Apagar Foto">
+                <i class="ph-bold ph-trash text-sm"></i>
+            </button>
+        `;
         
-        imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
+        imgBox.innerHTML = `
+            <img src="${base64Str}" class="w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300">
+            ${trashIcon}
+        `;
         previewContainer.appendChild(imgBox);
     });
 }
+
+function processarImagens(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagensUploadArray.push(e.target.result);
+            renderizarPreviewFotos();
+        };
+        reader.readAsDataURL(file);
+    });
+    event.target.value = ''; 
+}
+
+function removerImagemArray(index) {
+    imagensUploadArray.splice(index, 1);
+    renderizarPreviewFotos();
+}
+
+function abrirVisualizadorImagem(index) {
+    const base64Str = imagensUploadArray[index];
+    if (!base64Str) return;
+
+    let modal = document.getElementById('modal-visualizador-imagem');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visualizador-imagem';
+        modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
+        modal.innerHTML = `
+            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
+                <i class="ph-bold ph-x text-2xl"></i>
+            </button>
+            <img id="imagem-expandida" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('imagem-expandida').src = base64Str;
+    modal.classList.remove('hidden');
+    
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('imagem-expandida').classList.remove('scale-95');
+        document.getElementById('imagem-expandida').classList.add('scale-100');
+    });
+}
+
+function fecharVisualizadorImagem() {
+    const modal = document.getElementById('modal-visualizador-imagem');
+    if (modal) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('imagem-expandida').classList.remove('scale-100');
+        document.getElementById('imagem-expandida').classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+}
+// ===================================================================================
 
 function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
     const elSomaBox = document.getElementById('fin-aba-soma-box');
     const elAlerta = document.getElementById('fin-aba-alerta');
     const btnSalvar = document.getElementById(btnIdToBlock);
     
+    if(!elSomaBox) return;
+
     if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
         if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
         if(elAlerta) elAlerta.classList.remove('hidden');
@@ -822,46 +897,6 @@ function mudarAbaOS(aba) {
 
         renderizarAbaFinanceiro();
     }
-}
-
-async function recarregarFinanceiroDaOS() {
-    if (!osEmEdicaoNumero) {
-        currentOSFinanceiro = [];
-        return;
-    }
-    try {
-        const { data, error } = await window.banco.from('contas_receber')
-            .select('*')
-            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
-            .order('data_vencimento', { ascending: true });
-
-        if (error) throw error;
-        currentOSFinanceiro = data || [];
-        renderizarAbaFinanceiro();
-    } catch (error) {
-        console.error("Erro ao carregar financeiro:", error);
-    }
-}
-
-function processarImagens(event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagensUploadArray.push(e.target.result);
-            document.getElementById('preview-anexos').classList.remove('hidden');
-            renderizarPreviewFotos();
-        };
-        reader.readAsDataURL(file);
-    });
-    event.target.value = ''; // Limpa o input para poder enviar a mesma imagem novamente se precisar
-}
-
-function removerImagemArray(base64Str) {
-    imagensUploadArray = imagensUploadArray.filter(img => img !== base64Str);
-    renderizarPreviewFotos();
 }
 
 function mudarTipoFaturamentoTab() {
