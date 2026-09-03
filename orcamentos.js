@@ -1594,6 +1594,25 @@ async function gerarPDFSupabase(dadosCodificados) {
     });
 }
 
+async function recarregarFinanceiroDaOS() {
+    if (!osEmEdicaoNumero) {
+        currentOSFinanceiro = [];
+        return;
+    }
+    try {
+        const { data, error } = await window.banco.from('contas_receber')
+            .select('*')
+            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
+            .order('data_vencimento', { ascending: true });
+
+        if (error) throw error;
+        currentOSFinanceiro = data || [];
+        renderizarAbaFinanceiro();
+    } catch (error) {
+        console.error("Erro ao carregar financeiro:", error);
+    }
+}
+
 // ========================================================
 // 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
 // ========================================================
