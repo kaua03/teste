@@ -146,7 +146,7 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!tbody) return; 
+    if (!tbody) return;
 
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -374,8 +374,6 @@ function renderizarPreviewFotos() {
         
         imgBox.onclick = () => abrirVisualizadorImagem(index);
 
-        // O botão agora SEMPRE aparece no celular, e só no hover no PC
-        // O event.stopPropagation() garante que clicar na lixeira NÃO abre a foto
         let trashIcon = isTravadoGeral ? '' : `
             <button onclick="event.stopPropagation(); confirmarExclusaoImagem(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10" title="Apagar Foto">
                 <i class="ph-bold ph-trash text-sm"></i>
