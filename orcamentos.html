@@ -119,17 +119,14 @@
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
                             
-                            <!-- BLOCO DE FOTOS ATUALIZADO: CÂMERA + GALERIA -->
                             <div id="box-upload-fotos">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
-                                
                                 <div class="flex gap-3">
                                     <label class="flex-1 md:hidden flex flex-col items-center justify-center h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 active:bg-blue-50 transition shadow-sm">
                                         <i class="ph-bold ph-camera text-3xl text-blue-500 mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Tirar Foto</p>
                                         <input type="file" id="input-camera" class="hidden" accept="image/*" capture="environment" onchange="processarImagens(event)" />
                                     </label>
-
                                     <label class="flex-1 flex flex-col items-center justify-center h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition shadow-sm">
                                         <i class="ph-bold ph-image text-3xl md:text-2xl text-slate-400 md:mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider md:hidden mt-1">Galeria</p>
@@ -296,7 +293,6 @@
     </div>
 </div>
 
-<!-- Modal Genérico para Confirmações de Ação -->
 <div id="modal-confirmacao-generica" class="hidden fixed inset-0 bg-slate-900/80 z-[2000] flex items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
