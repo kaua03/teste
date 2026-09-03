@@ -1,37 +1,72 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (Forçado para sobrescrever cache)
+// MOTOR DO MODAL GENÉRICO (FÁBRICA DINÂMICA DE ALTA PRIORIDADE)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    // Título sempre texto puro por segurança
-    document.getElementById('titulo-confirmacao').innerText = titulo;
+    // Procura se a fábrica já construiu o modal. Se não, constrói na hora e joga direto no Body!
+    let modal = document.getElementById('modal-confirmacao-dinamico');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-confirmacao-dinamico';
+        // z-[9999] garante que fique acima de absolutamente qualquer tela do sistema
+        modal.className = 'fixed inset-0 bg-slate-900/80 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none';
+        modal.innerHTML = `
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
+                <div class="p-6 text-center">
+                    <div id="icone-confirmacao-dinamico" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border">
+                        <i id="icone-ph-dinamico" class="text-3xl"></i>
+                    </div>
+                    <h3 id="titulo-confirmacao-dinamico" class="text-xl font-black text-slate-800 mb-2"></h3>
+                    <p id="texto-confirmacao-dinamico" class="text-sm text-slate-500 font-medium"></p>
+                </div>
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                    <button onclick="fecharModalConfirmacao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+                    <button id="btn-confirmar-acao-dinamico" onclick="executarAcaoConfirmada()" class="flex-1 py-3 text-white font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"></button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Alimenta os dados do modal
+    document.getElementById('titulo-confirmacao-dinamico').innerText = titulo;
+    document.getElementById('texto-confirmacao-dinamico').innerHTML = texto; 
     
-    // A MÁGICA AQUI: innerHTML sem trava de segurança para interpretar o Negrito
-    document.getElementById('texto-confirmacao').innerHTML = texto; 
-    
-    const iconeBox = document.getElementById('icone-confirmacao');
-    const btnConfirmar = document.getElementById('btn-confirmar-acao');
+    const iconeBox = document.getElementById('icone-confirmacao-dinamico');
+    const iconePh = document.getElementById('icone-ph-dinamico');
+    const btnConfirmar = document.getElementById('btn-confirmar-acao-dinamico');
 
     if (tipo === 'perigo') {
         iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
+        iconePh.className = "ph-bold ph-warning text-red-500";
         btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
         btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
     } else {
         iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
+        iconePh.className = "ph-bold ph-question text-blue-500";
         btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
         btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
     }
 
     window.acaoConfirmacaoGlobal = callbackAcao;
-    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+    
+    // Dispara a animação e mostra na tela
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('modal-conf-card').classList.remove('scale-95');
+        document.getElementById('modal-conf-card').classList.add('scale-100');
+    });
 };
 
 window.fecharModalConfirmacao = function() {
-    window.acaoConfirmacaoGlobal = null;
-    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    const modal = document.getElementById('modal-confirmacao-dinamico');
+    if (modal) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('modal-conf-card').classList.remove('scale-100');
+        document.getElementById('modal-conf-card').classList.add('scale-95');
+        window.acaoConfirmacaoGlobal = null;
+    }
 };
 
 window.executarAcaoConfirmada = function() {
@@ -149,7 +184,7 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!tbody) return;
+    if (!tbody) return; 
 
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -163,13 +198,13 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button type="button" onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button type="button" onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button type="button" onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -182,8 +217,8 @@ function renderizarTabelaReal(dados) {
                 <div class="flex items-center justify-center gap-1.5">
                     ${btnAcao1}
                     ${btnAcao2}
-                    <button type="button" onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button type="button" onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -205,8 +240,8 @@ function atualizarInterfaceItensETotais() {
             
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
-                <button type="button" onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                <button type="button" onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
 
             return `
@@ -341,7 +376,7 @@ function renderizarAbaFinanceiro() {
                         <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
                     </div>
                 </div>
-                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button type="button" onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
             </div>`;
         });
         
@@ -349,7 +384,7 @@ function renderizarAbaFinanceiro() {
             html += `
             <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
                  <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
-                <button type="button" onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+                <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
             </div>`;
         }
 
@@ -359,41 +394,47 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (CRIADO VIA DOM PARA BLINDAGEM)
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     if (!previewContainer) return;
+    previewContainer.innerHTML = '';
     
-    if (imagensUploadArray.length === 0) { 
-        previewContainer.innerHTML = '';
-        previewContainer.classList.add('hidden'); 
-        return; 
-    }
-    
+    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
     previewContainer.classList.remove('hidden');
 
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-    previewContainer.innerHTML = imagensUploadArray.map((base64Str, index) => {
-        let btnTrashHTML = '';
+    imagensUploadArray.forEach((base64Str, index) => {
+        // Fabrica a caixa base (CSS)
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
         
-        if (!isTravadoGeral) {
-            btnTrashHTML = `
-            <button type="button" 
-                    onclick="event.stopPropagation(); event.preventDefault(); confirmarExclusaoImagem(${index})" 
-                    class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-md z-20" 
-                    title="Apagar Foto">
-                <i class="ph-bold ph-trash text-sm"></i>
-            </button>`;
-        }
+        // Fabrica a Imagem
+        const imgEl = document.createElement('img');
+        imgEl.src = base64Str;
+        imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
+        // Clicar nela abre a tela cheia
+        imgEl.onclick = () => abrirVisualizadorImagem(index);
+        
+        imgBox.appendChild(imgEl);
 
-        return `
-        <div class="w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0" onclick="abrirVisualizadorImagem(${index})">
-            <img src="${base64Str}" class="w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300">
-            ${btnTrashHTML}
-        </div>`;
-    }).join('');
+        // Fabrica o botão de excluir e pluga o evento MANUALMENTE (blindagem total)
+        if (!isTravadoGeral) {
+            const btnTrash = document.createElement('button');
+            btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
+            btnTrash.title = "Apagar Foto";
+            btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
+            btnTrash.onclick = (e) => {
+                e.stopPropagation(); // Trava absoluta do clique
+                confirmarExclusaoImagem(index);
+            };
+            imgBox.appendChild(btnTrash);
+        }
+        
+        previewContainer.appendChild(imgBox);
+    });
 }
 
 function confirmarExclusaoImagem(index) {
@@ -433,10 +474,9 @@ function abrirVisualizadorImagem(index) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
-        // AQUI TAMBÉM: w-screen h-screen para ancoragem perfeita
-        modal.className = 'fixed top-0 left-0 w-screen h-screen bg-slate-900/95 z-[99999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
+        modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
         modal.innerHTML = `
-            <button type="button" onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
+            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
             </button>
             <img id="imagem-expandida" src="" class="w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
@@ -445,7 +485,6 @@ function abrirVisualizadorImagem(index) {
     }
 
     document.getElementById('imagem-expandida').src = base64Str;
-    document.body.style.overflow = 'hidden'; // Trava o fundo
     modal.classList.remove('hidden');
     
     requestAnimationFrame(() => {
@@ -463,11 +502,9 @@ function fecharVisualizadorImagem() {
         document.getElementById('imagem-expandida').classList.add('scale-95');
         setTimeout(() => {
             modal.classList.add('hidden');
-            document.body.style.overflow = ''; // Destrava o fundo
         }, 300);
     }
 }
-
 // ===================================================================================
 
 function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
@@ -492,10 +529,10 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
 // ===================================================================================
 async function initOrcamentos() {
-    ancorarModaisNoBody(); // <- O SUPERPODER EM AÇÃO AQUI
     await carregarListasBD();
     await buscarOrcamentosSupabase();
     
+    // TRAVA DE SEGURANÇA: Verifica se a tela ainda existe antes de alterar as classes
     const viewNovo = document.getElementById('view-novo-orcamento');
     const viewLista = document.getElementById('view-lista-orcamentos');
     
@@ -541,6 +578,7 @@ async function buscarOrcamentosSupabase() {
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         const tbody = document.getElementById('tabela-orcamentos-real');
+        // TRAVA DE SEGURANÇA: Só exibe o erro se a tabela ainda existir na tela
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
         }
@@ -755,25 +793,19 @@ async function executarLimpezaFinanceiroAtual() {
 }
 
 function abrirModalExclusao(id, numero_os) {
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    idParaExcluir = id;
-    document.body.style.overflow = 'hidden'; 
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+    window.abrirModalConfirmacao(
+        "Excluir O.S?",
+        `Você está prestes a apagar a O.S <b class="text-slate-800">#${numero_os}</b> e todos os seus itens. Esta ação não pode ser desfeita.`,
+        function() { executarExclusaoOS(id); },
+        "perigo"
+    );
 }
 
-function fecharModalExclusao() {
-    idParaExcluir = null;
-    document.body.style.overflow = ''; 
-    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden');
-}
-
-async function confirmarExclusao() {
-    if(!idParaExcluir) return;
+async function executarExclusaoOS(id) {
     try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', id);
         if (error) throw error;
         dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        fecharModalExclusao();
         buscarOrcamentosSupabase();
     } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
@@ -1233,12 +1265,10 @@ function abrirModalDestravar(id, orcJSONCodificado) {
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
-    document.body.style.overflow = 'hidden'; 
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
 }
 
 function fecharModalDestravar() { 
-    document.body.style.overflow = ''; 
     document.getElementById('modal-senha-destravar').classList.add('hidden'); 
 }
 
@@ -1340,7 +1370,7 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { 
-    document.body.style.overflow = ''; 
+    document.body.style.overflow = 'auto'; 
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -1562,25 +1592,6 @@ async function gerarPDFSupabase(dadosCodificados) {
         window.open(pdfUrl, '_blank');
         el.style.left = '-9999px'; el.style.top = '-9999px';
     });
-}
-
-async function recarregarFinanceiroDaOS() {
-    if (!osEmEdicaoNumero) {
-        currentOSFinanceiro = [];
-        return;
-    }
-    try {
-        const { data, error } = await window.banco.from('contas_receber')
-            .select('*')
-            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
-            .order('data_vencimento', { ascending: true });
-
-        if (error) throw error;
-        currentOSFinanceiro = data || [];
-        renderizarAbaFinanceiro();
-    } catch (error) {
-        console.error("Erro ao carregar financeiro:", error);
-    }
 }
 
 // ========================================================
