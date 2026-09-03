@@ -417,11 +417,13 @@ function abrirVisualizadorImagem(index) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
         modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
+        
+        // A MÁGICA DO TAMANHO CORRETO ESTÁ AQUI: w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain
         modal.innerHTML = `
             <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
             </button>
-            <img id="imagem-expandida" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
+            <img id="imagem-expandida" src="" class="w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
         `;
         document.body.appendChild(modal);
     }
@@ -1406,6 +1408,25 @@ async function processarSalvamentoModal() {
     }
 }
 
+async function recarregarFinanceiroDaOS() {
+    if (!osEmEdicaoNumero) {
+        currentOSFinanceiro = [];
+        return;
+    }
+    try {
+        const { data, error } = await window.banco.from('contas_receber')
+            .select('*')
+            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
+            .order('data_vencimento', { ascending: true });
+
+        if (error) throw error;
+        currentOSFinanceiro = data || [];
+        renderizarAbaFinanceiro();
+    } catch (error) {
+        console.error("Erro ao carregar financeiro:", error);
+    }
+}
+
 async function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
@@ -1536,25 +1557,6 @@ async function gerarPDFSupabase(dadosCodificados) {
     });
 }
 
-async function recarregarFinanceiroDaOS() {
-    if (!osEmEdicaoNumero) {
-        currentOSFinanceiro = [];
-        return;
-    }
-    try {
-        const { data, error } = await window.banco.from('contas_receber')
-            .select('*')
-            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
-            .order('data_vencimento', { ascending: true });
-
-        if (error) throw error;
-        currentOSFinanceiro = data || [];
-        renderizarAbaFinanceiro();
-    } catch (error) {
-        console.error("Erro ao carregar financeiro:", error);
-    }
-}
-
 // ========================================================
 // 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
 // ========================================================
@@ -1573,7 +1575,7 @@ window.executarExclusaoParcelaManual = executarExclusaoParcelaManual;
 window.adicionarNovaParcelaManual = adicionarNovaParcelaManual;
 window.limparFinanceiroAtual = limparFinanceiroAtual; 
 window.executarLimpezaFinanceiroAtual = executarLimpezaFinanceiroAtual; 
-window.abrirModalExclusao = abrirModalExclusao; // <-- Atualizado pro modal novo!
+window.abrirModalExclusao = abrirModalExclusao; 
 window.executarExclusaoOS = executarExclusaoOS;
 window.processarDestravarOS = processarDestravarOS;
 window.abrirEdicaoOS = abrirEdicaoOS;
