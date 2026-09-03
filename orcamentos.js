@@ -1,5 +1,5 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (Forçado para sobrescrever cache)
+// MOTOR DO MODAL GENÉRICO (CORRIGIDO COM TRAVA DE SCROLL)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
@@ -23,11 +23,23 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
     }
 
     window.acaoConfirmacaoGlobal = callbackAcao;
+    
+    // --------------------------------------------------------
+    // O SUPERPODER: TRAVA DE TELA (SCROLL LOCK)
+    // --------------------------------------------------------
+    document.body.style.overflow = 'hidden'; // Impede a tela de subir/descer
+    
     document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
 };
 
 window.fecharModalConfirmacao = function() {
     window.acaoConfirmacaoGlobal = null;
+    
+    // --------------------------------------------------------
+    // DESTRAVA A TELA 
+    // --------------------------------------------------------
+    document.body.style.overflow = ''; // Devolve a rolagem natural ao fechar
+    
     document.getElementById('modal-confirmacao-generica').classList.add('hidden');
 };
 
