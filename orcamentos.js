@@ -146,7 +146,7 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!tbody) return; // TRAVA DE SEGURANÇA
+    if (!tbody) return;
 
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -244,7 +244,7 @@ function renderizarAbaFinanceiro() {
     const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
     const subtitulo = document.getElementById('fin-aba-subtitulo');
     
-    if(!boxBloqueado) return; // Trava de segurança
+    if(!boxBloqueado) return;
 
     document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 
@@ -1539,6 +1539,9 @@ async function gerarPDFSupabase(dadosCodificados) {
 // ========================================================
 // 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
 // ========================================================
+window.abrirVisualizadorImagem = abrirVisualizadorImagem;
+window.fecharVisualizadorImagem = fecharVisualizadorImagem;
+
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
 window.vincularClienteViceVersa = vincularClienteViceVersa;
