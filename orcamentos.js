@@ -160,13 +160,13 @@ function renderizarTabelaReal(dados) {
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button type="button" onclick="abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<button type="button" onclick="abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button type="button" onclick="abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
@@ -179,8 +179,8 @@ function renderizarTabelaReal(dados) {
                 <div class="flex items-center justify-center gap-1.5">
                     ${btnAcao1}
                     ${btnAcao2}
-                    <button onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button type="button" onclick="abrirModalExclusao(${orc.id}, '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                    <button type="button" onclick="gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -202,8 +202,8 @@ function atualizarInterfaceItensETotais() {
             
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
-                <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
-                <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+                <button type="button" onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button type="button" onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
 
             return `
@@ -356,49 +356,44 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (DOM PURO E BLINDADO)
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (REFATORADO PARA STRINGS HTML)
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     if (!previewContainer) return;
-    previewContainer.innerHTML = '';
     
-    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    if (imagensUploadArray.length === 0) { 
+        previewContainer.innerHTML = '';
+        previewContainer.classList.add('hidden'); 
+        return; 
+    }
+    
     previewContainer.classList.remove('hidden');
 
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-    imagensUploadArray.forEach((base64Str, index) => {
-        const imgBox = document.createElement('div');
-        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
+    // REFATORAÇÃO: Usando Template Literals em vez de document.createElement.
+    // Isso garante que o onclick sempre vai obedecer às ordens do DOM, evitando eventos fantasmas.
+    previewContainer.innerHTML = imagensUploadArray.map((base64Str, index) => {
+        let btnTrashHTML = '';
         
-        const imgEl = document.createElement('img');
-        imgEl.src = base64Str;
-        imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
-        imgEl.onclick = () => abrirVisualizadorImagem(index);
-        
-        imgBox.appendChild(imgEl);
-
         if (!isTravadoGeral) {
-            const btnTrash = document.createElement('button');
-            
-            // BLINDAGEM COMPLETA APLICADA AQUI
-            btnTrash.type = 'button'; 
-            
-            btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
-            btnTrash.title = "Apagar Foto";
-            btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
-            
-            btnTrash.onclick = (e) => {
-                e.preventDefault();  
-                e.stopPropagation(); 
-                confirmarExclusaoImagem(index);
-            };
-            imgBox.appendChild(btnTrash);
+            // A blindagem principal acontece exatamente aqui na linha do onclick do botão.
+            btnTrashHTML = `
+            <button type="button" 
+                    onclick="event.stopPropagation(); event.preventDefault(); confirmarExclusaoImagem(${index})" 
+                    class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-md z-20" 
+                    title="Apagar Foto">
+                <i class="ph-bold ph-trash text-sm"></i>
+            </button>`;
         }
-        
-        previewContainer.appendChild(imgBox);
-    });
+
+        return `
+        <div class="w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0" onclick="abrirVisualizadorImagem(${index})">
+            <img src="${base64Str}" class="w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300">
+            ${btnTrashHTML}
+        </div>`;
+    }).join('');
 }
 
 function confirmarExclusaoImagem(index) {
