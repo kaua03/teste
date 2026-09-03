@@ -1,21 +1,24 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (FÁBRICA DINÂMICA DE ALTA PRIORIDADE)
+// MOTOR DO MODAL GENÉRICO (BLINDAGEM ABSOLUTA DE TELA)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    // 1. TRAVA A TELA: Impede o usuário de rolar o fundo
+    // 1. TRAVA ABSOLUTA DE ROLAGEM (Congela o Body e o HTML)
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    const visor = document.getElementById('visor-da-tv');
+    if (visor) visor.style.overflow = 'hidden';
 
-    // 2. CRIA O MODAL DIRETO NO BODY (Imune a animações do Roteador)
+    // 2. CRIA O MODAL COM ESTILOS INLINE DE FORÇA BRUTA PARA ESCAPAR DO ROTEADOR
     let modal = document.getElementById('modal-confirmacao-dinamico');
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-confirmacao-dinamico';
-        // z-[99999] garante que seja a camada mais alta do Universo
-        modal.className = 'fixed inset-0 bg-slate-900/80 z-[99999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none';
+        // O cssText impõe regras que o Tailwind não consegue sobrescrever
+        modal.style.cssText = "position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100dvh !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.85); transition: opacity 0.3s; opacity: 0; pointer-events: none;";
         modal.innerHTML = `
-            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
+            <div class="bg-white w-full max-w-[90%] md:max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
                 <div class="p-6 text-center">
                     <div id="icone-confirmacao-dinamico" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border">
                         <i id="icone-ph-dinamico" class="text-3xl"></i>
@@ -54,29 +57,30 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
 
     window.acaoConfirmacaoGlobal = callbackAcao;
     
-    // 4. MOSTRA O MODAL NOVO E IGNORA O VELHO!
+    // 4. MOSTRA O MODAL COM ANIMAÇÃO
     requestAnimationFrame(() => {
-        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
         document.getElementById('modal-conf-card').classList.remove('scale-95');
         document.getElementById('modal-conf-card').classList.add('scale-100');
     });
 };
 
 window.fecharModalConfirmacao = function() {
-    // DESTRAVA A ROLAGEM DO FUNDO
-    document.body.style.overflow = 'auto';
+    // 5. DESTRAVA A TELA E ESCONDE O MODAL
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    const visor = document.getElementById('visor-da-tv');
+    if (visor) visor.style.overflow = '';
 
     const modal = document.getElementById('modal-confirmacao-dinamico');
     if (modal) {
-        modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
         document.getElementById('modal-conf-card').classList.remove('scale-100');
         document.getElementById('modal-conf-card').classList.add('scale-95');
         window.acaoConfirmacaoGlobal = null;
     }
-    
-    // Trava de segurança: Esconde o modal velho do HTML caso ele esteja aparecendo como fantasma
-    const modalVelho = document.getElementById('modal-confirmacao-generica');
-    if (modalVelho) modalVelho.classList.add('hidden');
 };
 
 window.executarAcaoConfirmada = function() {
@@ -106,9 +110,6 @@ let currentOSFinanceiro = [];
 let isVisualizacaoModo = false;
 let isOSDestravada = false;
 
-// ========================================================
-// 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
-// ========================================================
 function formataDinheiro(v) {
     const val = Number(v) || 0;
     return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -190,7 +191,7 @@ function filtrarTabelaOS() {
 }
 
 // ========================================================
-// 2. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
+// 2. RENDERIZAÇÕES (TABELA E FINANCEIRO)
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
@@ -404,7 +405,7 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (DOM PURO)
+// SISTEMA DE LIGHTBOX (FOTOS E VÍDEOS) - 100% BLINDADO
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
@@ -418,19 +419,37 @@ function renderizarPreviewFotos() {
 
     imagensUploadArray.forEach((base64Str, index) => {
         const imgBox = document.createElement('div');
-        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-black cursor-pointer flex-shrink-0";
         
-        const imgEl = document.createElement('img');
-        imgEl.src = base64Str;
-        imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
-        imgEl.onclick = () => abrirVisualizadorImagem(index);
-        
-        imgBox.appendChild(imgEl);
+        const isVideo = base64Str.startsWith('data:video');
+
+        // Cria a miniatura (Se for vídeo, desenha uma tag <video> mutada sem controles)
+        if (isVideo) {
+            const vidEl = document.createElement('video');
+            vidEl.src = base64Str;
+            vidEl.className = "w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300";
+            vidEl.muted = true;
+            vidEl.onclick = () => abrirVisualizadorImagem(index);
+            
+            // Ícone de Play por cima da miniatura do vídeo
+            const playIcon = document.createElement('div');
+            playIcon.className = "absolute inset-0 flex items-center justify-center pointer-events-none";
+            playIcon.innerHTML = '<i class="ph-fill ph-play-circle text-white text-3xl drop-shadow-md"></i>';
+            
+            imgBox.appendChild(vidEl);
+            imgBox.appendChild(playIcon);
+        } else {
+            const imgEl = document.createElement('img');
+            imgEl.src = base64Str;
+            imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
+            imgEl.onclick = () => abrirVisualizadorImagem(index);
+            imgBox.appendChild(imgEl);
+        }
 
         if (!isTravadoGeral) {
             const btnTrash = document.createElement('button');
             btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
-            btnTrash.title = "Apagar Foto";
+            btnTrash.title = "Apagar Mídia";
             btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
             btnTrash.onclick = (e) => {
                 e.stopPropagation(); 
@@ -445,8 +464,8 @@ function renderizarPreviewFotos() {
 
 function confirmarExclusaoImagem(index) {
     window.abrirModalConfirmacao(
-        "Excluir Foto?",
-        "Tem certeza que deseja remover esta evidência? A imagem será apagada da O.S.",
+        "Excluir Evidência?",
+        "Tem certeza que deseja remover este arquivo? Ele será apagado da O.S.",
         function() { removerImagemArray(index); },
         "perigo"
     );
@@ -457,6 +476,13 @@ function processarImagens(event) {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach(file => {
+        // Trava de segurança para não explodir o banco de dados com vídeos gigantes
+        const MAX_SIZE = 25 * 1024 * 1024; // 25MB limite
+        if (file.size > MAX_SIZE) {
+            dispararAlerta(`O arquivo "${file.name}" ultrapassa o limite de 25MB.`, "erro");
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
             imagensUploadArray.push(e.target.result);
@@ -480,21 +506,36 @@ function abrirVisualizadorImagem(index) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
-        modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
+        // Ajuste no CSS inline do Modal do Lightbox para garantir imunidade ao roteador
+        modal.style.cssText = "position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100dvh !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.95); transition: opacity 0.3s; opacity: 0; pointer-events: none;";
         modal.innerHTML = `
             <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
             </button>
-            <img id="imagem-expandida" src="" class="w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">
+            <div id="media-container" class="w-full h-full flex items-center justify-center p-4"></div>
         `;
         document.body.appendChild(modal);
+    } else {
+        document.getElementById('media-container').innerHTML = ''; // Limpa o container
     }
 
-    document.getElementById('imagem-expandida').src = base64Str;
-    modal.classList.remove('hidden');
+    const container = document.getElementById('media-container');
+    const isVideo = base64Str.startsWith('data:video');
     
+    // Desenha as dimensões seguras: Nunca cortará a foto e nunca passará da tela
+    if (isVideo) {
+        container.innerHTML = `<video id="imagem-expandida" src="${base64Str}" controls autoplay class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300"></video>`;
+    } else {
+        container.innerHTML = `<img id="imagem-expandida" src="${base64Str}" class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">`;
+    }
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    // Dispara a visualização
     requestAnimationFrame(() => {
-        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
         document.getElementById('imagem-expandida').classList.remove('scale-95');
         document.getElementById('imagem-expandida').classList.add('scale-100');
     });
@@ -503,31 +544,19 @@ function abrirVisualizadorImagem(index) {
 function fecharVisualizadorImagem() {
     const modal = document.getElementById('modal-visualizador-imagem');
     if (modal) {
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        document.getElementById('imagem-expandida').classList.remove('scale-100');
-        document.getElementById('imagem-expandida').classList.add('scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-}
-// ===================================================================================
-
-function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
-    const elSomaBox = document.getElementById('fin-aba-soma-box');
-    const elAlerta = document.getElementById('fin-aba-alerta');
-    const btnSalvar = document.getElementById(btnIdToBlock);
-    
-    if(!elSomaBox) return;
-
-    if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
-        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
-        if(elAlerta) elAlerta.classList.remove('hidden');
-        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
-    } else {
-        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
-        if(elAlerta) elAlerta.classList.add('hidden');
-        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        
+        const mediaEl = document.getElementById('imagem-expandida');
+        if(mediaEl) {
+            mediaEl.classList.remove('scale-100');
+            mediaEl.classList.add('scale-95');
+            // Pausa o vídeo ao fechar
+            if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
+        }
     }
 }
 
@@ -538,6 +567,12 @@ async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
     
+    // INJEÇÃO TÁTICA: Força o input a aceitar vídeo sem precisar mexer no HTML
+    const inputCam = document.getElementById('input-camera');
+    if (inputCam) inputCam.setAttribute('accept', 'image/*,video/*');
+    const inputAnx = document.getElementById('input-anexos');
+    if (inputAnx) inputAnx.setAttribute('accept', 'image/*,video/*');
+
     // TRAVA DE SEGURANÇA: Verifica se a tela ainda existe antes de alterar as classes
     const viewNovo = document.getElementById('view-novo-orcamento');
     const viewLista = document.getElementById('view-lista-orcamentos');
@@ -584,7 +619,6 @@ async function buscarOrcamentosSupabase() {
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         const tbody = document.getElementById('tabela-orcamentos-real');
-        // TRAVA DE SEGURANÇA: Só exibe o erro se a tabela ainda existir na tela
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
         }
