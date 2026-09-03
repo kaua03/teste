@@ -1,9 +1,16 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (CORRIGIDO COM TRAVA DE SCROLL)
+// MOTOR DO MODAL GENÉRICO (BLINDADO E TELETRANSPORTADO)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+    const modal = document.getElementById('modal-confirmacao-generica');
+    
+    // 🚀 SUPERPODER: TELETRANSPORTE DOM
+    // Arranca o modal de qualquer div "tóxica" e joga ele na raiz do documento.
+    // Isso garante que o position: fixed funcione na tela inteira do usuário.
+    document.body.appendChild(modal);
+
     document.getElementById('titulo-confirmacao').innerText = titulo;
     document.getElementById('texto-confirmacao').innerHTML = texto; 
     
@@ -24,23 +31,22 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
 
     window.acaoConfirmacaoGlobal = callbackAcao;
     
-    // --------------------------------------------------------
-    // O SUPERPODER: TRAVA DE TELA (SCROLL LOCK)
-    // --------------------------------------------------------
-    document.body.style.overflow = 'hidden'; // Impede a tela de subir/descer
+    // TRAVA O FUNDO
+    document.body.style.overflow = 'hidden'; 
     
-    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
+    // Força o Tailwind a renderizar na tela toda, removendo o 'hidden' e ativando o 'flex'
+    modal.className = "fixed top-0 left-0 w-full h-full bg-slate-900/80 z-[9999] flex items-center justify-center p-4 fade-in";
 };
 
 window.fecharModalConfirmacao = function() {
     window.acaoConfirmacaoGlobal = null;
     
-    // --------------------------------------------------------
-    // DESTRAVA A TELA 
-    // --------------------------------------------------------
-    document.body.style.overflow = ''; // Devolve a rolagem natural ao fechar
+    // DESTRAVA O FUNDO
+    document.body.style.overflow = ''; 
     
-    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    const modal = document.getElementById('modal-confirmacao-generica');
+    // Esconde o modal removendo o flex e adicionando hidden
+    modal.className = "hidden fixed top-0 left-0 w-full h-full bg-slate-900/80 z-[9999] items-center justify-center p-4";
 };
 
 window.executarAcaoConfirmada = function() {
