@@ -356,7 +356,7 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (DOM PURO E BLINDADO)
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
@@ -369,21 +369,31 @@ function renderizarPreviewFotos() {
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
     imagensUploadArray.forEach((base64Str, index) => {
+        // Criando a caixa usando DOM Puro em vez de InnerHTML para proteger os eventos de clique
         const imgBox = document.createElement('div');
-        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer";
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-slate-100 cursor-pointer flex-shrink-0";
         
-        imgBox.onclick = () => abrirVisualizadorImagem(index);
+        const imgEl = document.createElement('img');
+        imgEl.src = base64Str;
+        imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
+        // Clicar apenas na imagem aciona o lightbox
+        imgEl.onclick = () => abrirVisualizadorImagem(index);
+        
+        imgBox.appendChild(imgEl);
 
-        let trashIcon = isTravadoGeral ? '' : `
-            <button onclick="event.stopPropagation(); confirmarExclusaoImagem(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10" title="Apagar Foto">
-                <i class="ph-bold ph-trash text-sm"></i>
-            </button>
-        `;
+        if (!isTravadoGeral) {
+            const btnTrash = document.createElement('button');
+            btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
+            btnTrash.title = "Apagar Foto";
+            btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
+            // Clicar na lixeira não deixa o clique passar para a imagem
+            btnTrash.onclick = (e) => {
+                e.stopPropagation(); 
+                confirmarExclusaoImagem(index);
+            };
+            imgBox.appendChild(btnTrash);
+        }
         
-        imgBox.innerHTML = `
-            <img src="${base64Str}" class="w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300">
-            ${trashIcon}
-        `;
         previewContainer.appendChild(imgBox);
     });
 }
