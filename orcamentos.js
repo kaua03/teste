@@ -1,16 +1,18 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (BLINDADO E TELETRANSPORTADO)
+// MOTOR DO MODAL GENÉRICO E ANCORAGEM (BLINDADO)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
-window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    const modal = document.getElementById('modal-confirmacao-generica');
-    
-    // 🚀 SUPERPODER: TELETRANSPORTE DOM
-    // Arranca o modal de qualquer div "tóxica" e joga ele na raiz do documento.
-    // Isso garante que o position: fixed funcione na tela inteira do usuário.
-    document.body.appendChild(modal);
+// SUPERPODER: Garante que todos os modais fiquem imunes a erros de CSS de divs pais
+function ancorarModaisNoBody() {
+    const modais = ['modal-confirmacao-generica', 'modal-confirmacao-exclusao', 'modal-senha-destravar', 'modal-cadastro-rapido', 'modal-visualizador-imagem'];
+    modais.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) document.body.appendChild(el);
+    });
+}
 
+window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
     document.getElementById('titulo-confirmacao').innerText = titulo;
     document.getElementById('texto-confirmacao').innerHTML = texto; 
     
@@ -30,23 +32,14 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
     }
 
     window.acaoConfirmacaoGlobal = callbackAcao;
-    
-    // TRAVA O FUNDO
-    document.body.style.overflow = 'hidden'; 
-    
-    // Força o Tailwind a renderizar na tela toda, removendo o 'hidden' e ativando o 'flex'
-    modal.className = "fixed top-0 left-0 w-full h-full bg-slate-900/80 z-[9999] flex items-center justify-center p-4 fade-in";
+    document.body.style.overflow = 'hidden'; // Trava o scroll da página
+    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
 };
 
 window.fecharModalConfirmacao = function() {
     window.acaoConfirmacaoGlobal = null;
-    
-    // DESTRAVA O FUNDO
-    document.body.style.overflow = ''; 
-    
-    const modal = document.getElementById('modal-confirmacao-generica');
-    // Esconde o modal removendo o flex e adicionando hidden
-    modal.className = "hidden fixed top-0 left-0 w-full h-full bg-slate-900/80 z-[9999] items-center justify-center p-4";
+    document.body.style.overflow = ''; // Destrava o scroll da página
+    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
 };
 
 window.executarAcaoConfirmada = function() {
@@ -374,7 +367,7 @@ function renderizarAbaFinanceiro() {
 }
 
 // ========================================================
-// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS (REFATORADO PARA STRINGS HTML)
+// SISTEMA DE LIGHTBOX PARA FOTOS E EVIDÊNCIAS
 // ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
@@ -390,13 +383,10 @@ function renderizarPreviewFotos() {
 
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
 
-    // REFATORAÇÃO: Usando Template Literals em vez de document.createElement.
-    // Isso garante que o onclick sempre vai obedecer às ordens do DOM, evitando eventos fantasmas.
     previewContainer.innerHTML = imagensUploadArray.map((base64Str, index) => {
         let btnTrashHTML = '';
         
         if (!isTravadoGeral) {
-            // A blindagem principal acontece exatamente aqui na linha do onclick do botão.
             btnTrashHTML = `
             <button type="button" 
                     onclick="event.stopPropagation(); event.preventDefault(); confirmarExclusaoImagem(${index})" 
@@ -451,7 +441,8 @@ function abrirVisualizadorImagem(index) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
-        modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
+        // AQUI TAMBÉM: w-screen h-screen para ancoragem perfeita
+        modal.className = 'fixed top-0 left-0 w-screen h-screen bg-slate-900/95 z-[99999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
         modal.innerHTML = `
             <button type="button" onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
@@ -462,6 +453,7 @@ function abrirVisualizadorImagem(index) {
     }
 
     document.getElementById('imagem-expandida').src = base64Str;
+    document.body.style.overflow = 'hidden'; // Trava o fundo
     modal.classList.remove('hidden');
     
     requestAnimationFrame(() => {
@@ -479,9 +471,11 @@ function fecharVisualizadorImagem() {
         document.getElementById('imagem-expandida').classList.add('scale-95');
         setTimeout(() => {
             modal.classList.add('hidden');
+            document.body.style.overflow = ''; // Destrava o fundo
         }, 300);
     }
 }
+
 // ===================================================================================
 
 function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
@@ -506,10 +500,10 @@ function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
 // ===================================================================================
 async function initOrcamentos() {
+    ancorarModaisNoBody(); // <- O SUPERPODER EM AÇÃO AQUI
     await carregarListasBD();
     await buscarOrcamentosSupabase();
     
-    // TRAVA DE SEGURANÇA: Verifica se a tela ainda existe antes de alterar as classes
     const viewNovo = document.getElementById('view-novo-orcamento');
     const viewLista = document.getElementById('view-lista-orcamentos');
     
@@ -769,19 +763,25 @@ async function executarLimpezaFinanceiroAtual() {
 }
 
 function abrirModalExclusao(id, numero_os) {
-    window.abrirModalConfirmacao(
-        "Excluir O.S?",
-        `Você está prestes a apagar a O.S <b class="text-slate-800">#${numero_os}</b> e todos os seus itens. Esta ação não pode ser desfeita.`,
-        function() { executarExclusaoOS(id); },
-        "perigo"
-    );
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    idParaExcluir = id;
+    document.body.style.overflow = 'hidden'; 
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
 }
 
-async function executarExclusaoOS(id) {
+function fecharModalExclusao() {
+    idParaExcluir = null;
+    document.body.style.overflow = ''; 
+    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden');
+}
+
+async function confirmarExclusao() {
+    if(!idParaExcluir) return;
     try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', id);
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
         if (error) throw error;
         dispararAlerta("Ordem de serviço apagada.", "sucesso");
+        fecharModalExclusao();
         buscarOrcamentosSupabase();
     } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
@@ -1241,10 +1241,12 @@ function abrirModalDestravar(id, orcJSONCodificado) {
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
+    document.body.style.overflow = 'hidden'; 
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
 }
 
 function fecharModalDestravar() { 
+    document.body.style.overflow = ''; 
     document.getElementById('modal-senha-destravar').classList.add('hidden'); 
 }
 
@@ -1346,7 +1348,7 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { 
-    document.body.style.overflow = 'auto'; 
+    document.body.style.overflow = ''; 
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
