@@ -1,19 +1,13 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO E ANCORAGEM (BLINDADO)
+// MOTOR DO MODAL GENÉRICO (Forçado para sobrescrever cache)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
-// SUPERPODER: Garante que todos os modais fiquem imunes a erros de CSS de divs pais
-function ancorarModaisNoBody() {
-    const modais = ['modal-confirmacao-generica', 'modal-confirmacao-exclusao', 'modal-senha-destravar', 'modal-cadastro-rapido', 'modal-visualizador-imagem'];
-    modais.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) document.body.appendChild(el);
-    });
-}
-
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+    // Título sempre texto puro por segurança
     document.getElementById('titulo-confirmacao').innerText = titulo;
+    
+    // A MÁGICA AQUI: innerHTML sem trava de segurança para interpretar o Negrito
     document.getElementById('texto-confirmacao').innerHTML = texto; 
     
     const iconeBox = document.getElementById('icone-confirmacao');
@@ -32,13 +26,11 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
     }
 
     window.acaoConfirmacaoGlobal = callbackAcao;
-    document.body.style.overflow = 'hidden'; // Trava o scroll da página
     document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
 };
 
 window.fecharModalConfirmacao = function() {
     window.acaoConfirmacaoGlobal = null;
-    document.body.style.overflow = ''; // Destrava o scroll da página
     document.getElementById('modal-confirmacao-generica').classList.add('hidden');
 };
 
