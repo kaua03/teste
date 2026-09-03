@@ -146,7 +146,7 @@ function filtrarTabelaOS() {
 // ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!tbody) return;
+    if (!tbody) return; 
 
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
@@ -374,8 +374,10 @@ function renderizarPreviewFotos() {
         
         imgBox.onclick = () => abrirVisualizadorImagem(index);
 
+        // O botão agora SEMPRE aparece no celular, e só no hover no PC
+        // O event.stopPropagation() garante que clicar na lixeira NÃO abre a foto
         let trashIcon = isTravadoGeral ? '' : `
-            <button onclick="event.stopPropagation(); removerImagemArray(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md transform translate-y-1 group-hover:translate-y-0 z-10" title="Apagar Foto">
+            <button onclick="event.stopPropagation(); confirmarExclusaoImagem(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10" title="Apagar Foto">
                 <i class="ph-bold ph-trash text-sm"></i>
             </button>
         `;
@@ -386,6 +388,15 @@ function renderizarPreviewFotos() {
         `;
         previewContainer.appendChild(imgBox);
     });
+}
+
+function confirmarExclusaoImagem(index) {
+    window.abrirModalConfirmacao(
+        "Excluir Foto?",
+        "Tem certeza que deseja remover esta evidência? A imagem será apagada da O.S.",
+        function() { removerImagemArray(index); },
+        "perigo"
+    );
 }
 
 function processarImagens(event) {
@@ -417,8 +428,6 @@ function abrirVisualizadorImagem(index) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
         modal.className = 'fixed inset-0 bg-slate-900/95 z-[3000] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none hidden';
-        
-        // A MÁGICA DO TAMANHO CORRETO ESTÁ AQUI: w-auto h-auto max-w-[95vw] max-h-[90vh] object-contain
         modal.innerHTML = `
             <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
@@ -1408,25 +1417,6 @@ async function processarSalvamentoModal() {
     }
 }
 
-async function recarregarFinanceiroDaOS() {
-    if (!osEmEdicaoNumero) {
-        currentOSFinanceiro = [];
-        return;
-    }
-    try {
-        const { data, error } = await window.banco.from('contas_receber')
-            .select('*')
-            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
-            .order('data_vencimento', { ascending: true });
-
-        if (error) throw error;
-        currentOSFinanceiro = data || [];
-        renderizarAbaFinanceiro();
-    } catch (error) {
-        console.error("Erro ao carregar financeiro:", error);
-    }
-}
-
 async function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
@@ -1562,6 +1552,7 @@ async function gerarPDFSupabase(dadosCodificados) {
 // ========================================================
 window.abrirVisualizadorImagem = abrirVisualizadorImagem;
 window.fecharVisualizadorImagem = fecharVisualizadorImagem;
+window.confirmarExclusaoImagem = confirmarExclusaoImagem;
 
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
