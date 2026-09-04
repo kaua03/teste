@@ -1,3 +1,4 @@
+<!-- orcamentos.html -->
 <div class="max-w-7xl mx-auto w-full pb-28 md:pb-4 flex flex-col relative font-sans min-h-screen">
     
     <div id="loading-screen" class="absolute inset-0 bg-slate-50 z-[2000] flex flex-col items-center justify-center transition-opacity duration-300 rounded-2xl hidden">
@@ -10,6 +11,7 @@
         <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Sincronizando Banco de Dados</p>
     </div>
 
+    <!-- LISTAGEM E BARRA DE BUSCA -->
     <div id="view-lista-orcamentos" class="space-y-6 block fade-in">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
@@ -41,12 +43,14 @@
                         </tr>
                     </thead>
                     <tbody id="tabela-orcamentos-real" class="text-xs md:text-sm divide-y divide-slate-100">
-                        </tbody>
+                        <!-- Renderizado via JS -->
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <!-- TELA DE EDIÇÃO -->
     <div id="view-novo-orcamento" class="hidden fade-in space-y-6">
         
         <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
@@ -60,7 +64,8 @@
                 </div>
             </div>
             <div id="badge-os-fechada" class="hidden px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
-                </div>
+                <!-- Injetado -->
+            </div>
         </div>
 
         <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
@@ -72,6 +77,7 @@
             
             <div class="xl:col-span-2 flex flex-col gap-6 relative">
                 
+                <!-- ABA 1: DADOS DA O.S -->
                 <div id="aba-conteudo-dados" class="space-y-6 fade-in block">
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                         <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
@@ -130,6 +136,7 @@
                     </div>
                 </div>
                 
+                <!-- ABA 2: GESTÃO FINANCEIRA -->
                 <div id="aba-conteudo-fin" class="fade-in hidden w-full">
                     
                     <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
@@ -142,6 +149,7 @@
                         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2 mb-1"><i class="ph-fill ph-wallet text-emerald-500 text-2xl"></i> Painel Financeiro</h3>
                         <p class="text-xs text-slate-500 font-medium mb-6 pb-4 border-b border-slate-100" id="fin-aba-subtitulo">Gerencie os pagamentos atrelados a esta Ordem de Serviço.</p>
 
+                        <!-- GERADOR -->
                         <div id="fin-gerador-box" class="space-y-6">
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Modalidade de Acerto</label>
@@ -187,17 +195,21 @@
                             <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
                         </div>
 
+                        <!-- EDITOR DE PARCELAS VIVAS -->
                         <div id="fin-editor-box" class="hidden space-y-4 w-full">
                             <div id="lista-financeiro-vinculado" class="space-y-3 w-full">
-                                </div>
+                                <!-- Injetado via JS -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
             </div>
 
+            <!-- COLUNA DIREITA ESTÁTICA -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
+                <!-- PAINEL DE AUDITORIA (VISÍVEL SÓ NO FINANCEIRO) -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
                         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
@@ -230,6 +242,7 @@
                     </div>
                 </div>
 
+                <!-- DESCONTO DA O.S -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
                     <div class="space-y-3">
@@ -241,6 +254,7 @@
                     </div>
                 </div>
 
+                <!-- CAIXA PRETA PRINCIPAL -->
                 <div id="box-caixa-preta" class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
                     <div class="mb-5" id="box-status">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
@@ -275,6 +289,7 @@
     </div>
 </div>
 
+<!-- MODAIS GLOBAIS DE ORÇAMENTO -->
 <div id="modal-confirmacao-exclusao" class="hidden fixed inset-0 bg-slate-900/80 z-[1000] flex items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
@@ -367,6 +382,7 @@
             </div>
         </div>
         
+        <!-- CONTÊINER DO FINANCEIRO -->
         <div id="pdf-container-financeiro" style="display: none; margin-top: 15px; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB;"></div>
 
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
