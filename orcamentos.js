@@ -507,38 +507,8 @@ function removerImagemArray(index) {
     renderizarPreviewFotos();
 }
 
-function atualizarPlacarAuditoria(somaLancamentos, btnId) {
-    const totalOS = valoresFinais.total || 0;
-    const diff = Math.abs(totalOS - somaLancamentos);
-    const somaBox = document.getElementById('fin-aba-soma-box');
-    const alerta = document.getElementById('fin-aba-alerta');
-    const btn = document.getElementById(btnId);
-
-    if (diff > 0.05) {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
-        }
-        if (alerta) alerta.classList.remove('hidden');
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    } else {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
-            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-        }
-        if (alerta) alerta.classList.add('hidden');
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-}
-
 // ===================================================================================
-// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO
+// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO E UI
 // ===================================================================================
 async function initOrcamentos() {
     await carregarListasBD();
@@ -853,11 +823,6 @@ async function adicionarNovaParcelaManual() {
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
 }
 
-// ========================================================
-// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE E PDF
-// ========================================================
-
-// AQUI ESTÁ A FUNÇÃO RECUPERADA E INCLUÍDA NOVAMENTE!
 async function processarDestravarOS() {
     const senhaDigitada = document.getElementById('input-senha-reabrir').value;
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
@@ -1608,6 +1573,56 @@ async function gerarPDFSupabase(dadosCodificados) {
         window.open(pdfUrl, '_blank');
         el.style.left = '-9999px'; el.style.top = '-9999px';
     });
+}
+
+// AQUI ESTÁ A FUNÇÃO RECUPERADA!
+async function recarregarFinanceiroDaOS() {
+    if (!osEmEdicaoNumero) {
+        currentOSFinanceiro = [];
+        return;
+    }
+    try {
+        const { data, error } = await window.banco.from('contas_receber')
+            .select('*')
+            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
+            .order('data_vencimento', { ascending: true });
+
+        if (error) throw error;
+        currentOSFinanceiro = data || [];
+        renderizarAbaFinanceiro();
+    } catch (error) {
+        console.error("Erro ao carregar financeiro:", error);
+    }
+}
+
+function atualizarPlacarAuditoria(somaLancamentos, btnId) {
+    const totalOS = valoresFinais.total || 0;
+    const diff = Math.abs(totalOS - somaLancamentos);
+    const somaBox = document.getElementById('fin-aba-soma-box');
+    const alerta = document.getElementById('fin-aba-alerta');
+    const btn = document.getElementById(btnId);
+
+    if (diff > 0.05) {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
+        }
+        if (alerta) alerta.classList.remove('hidden');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    } else {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
+            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+        }
+        if (alerta) alerta.classList.add('hidden');
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
 }
 
 // ========================================================
