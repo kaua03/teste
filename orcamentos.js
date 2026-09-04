@@ -1,251 +1,5 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO E TRAVAS DE TELA (FORÇA BRUTA)
-// ========================================================
-window.acaoConfirmacaoGlobal = null;
-
-function travarFundo(modalId) {
-    const modal = document.getElementById(modalId);
-    
-    // 1. O Teletransporte: Tira o modal de containers com overflow hidden
-    if (modal && modal.parentNode !== document.body) {
-        document.body.appendChild(modal);
-    }
-
-    // 2. A Força Bruta CSS: Sobrescreve o Tailwind e força Full Screen
-    if (modal) {
-        modal.style.setProperty('position', 'fixed', 'important');
-        modal.style.setProperty('top', '0', 'important');
-        modal.style.setProperty('left', '0', 'important');
-        modal.style.setProperty('width', '100vw', 'important');
-        modal.style.setProperty('height', '100vh', 'important');
-        modal.style.setProperty('z-index', '2147483647', 'important');
-        modal.style.setProperty('display', 'flex', 'important');
-        modal.style.setProperty('align-items', 'center', 'important');
-        modal.style.setProperty('justify-content', 'center', 'important');
-        
-        modal.classList.remove('hidden');
-    }
-
-    // 3. Trava do Body (Impede o fundo de rolar no iPhone/Android)
-    if (!document.body.dataset.scrollTravado) {
-        const scrollY = window.scrollY;
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-        document.body.dataset.scrollTravado = 'true';
-        document.body.dataset.scrollY = scrollY;
-    }
-}
-
-function destravarFundo(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.removeProperty('position');
-        modal.style.removeProperty('top');
-        modal.style.removeProperty('left');
-        modal.style.removeProperty('width');
-        modal.style.removeProperty('height');
-        modal.style.removeProperty('z-index');
-        modal.style.removeProperty('display');
-        modal.style.removeProperty('align-items');
-        modal.style.removeProperty('justify-content');
-        
-        modal.classList.add('hidden');
-    }
-    
-    // Destrava o Body
-    if (document.body.dataset.scrollTravado) {
-        const scrollY = document.body.dataset.scrollY || 0;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        delete document.body.dataset.scrollTravado;
-        window.scrollTo(0, parseInt(scrollY));
-    }
-}
-
-window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    document.getElementById('titulo-confirmacao').innerText = titulo;
-    document.getElementById('texto-confirmacao').innerHTML = texto; 
-    
-    const iconeBox = document.getElementById('icone-confirmacao');
-    const btnConfirmar = document.getElementById('btn-confirmar-acao');
-
-    if (tipo === 'perigo') {
-        iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
-        btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
-    } else {
-        iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
-        btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
-        btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
-    }
-
-    window.acaoConfirmacaoGlobal = callbackAcao;
-    travarFundo('modal-confirmacao-generica');
-};
-
-window.fecharModalConfirmacao = function() {
-    window.acaoConfirmacaoGlobal = null;
-    destravarFundo('modal-confirmacao-generica');
-};
-
-window.executarAcaoConfirmada = function() {
-    if (typeof window.acaoConfirmacaoGlobal === 'function') {
-        window.acaoConfirmacaoGlobal();
-    }
-    window.fecharModalConfirmacao();
-};
-
-// ========================================================
-// SISTEMA DE LIGHTBOX BLINDADO (FOTOS E VÍDEOS)
-// ========================================================
-function abrirVisualizadorImagem(index) {
-    const base64Str = imagensUploadArray[index];
-    if (!base64Str) return;
-
-    let modal = document.getElementById('modal-visualizador-imagem');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modal-visualizador-imagem';
-        modal.className = 'fixed inset-0 bg-slate-900/95 z-[99999] flex items-center justify-center p-4 pointer-events-none hidden';
-        modal.innerHTML = `
-            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
-                <i class="ph-bold ph-x text-2xl"></i>
-            </button>
-            <div id="media-container" class="w-full h-full flex items-center justify-center p-4"></div>
-        `;
-        document.body.appendChild(modal);
-    } else {
-        document.getElementById('media-container').innerHTML = ''; 
-    }
-
-    const container = document.getElementById('media-container');
-    const isVideo = base64Str.startsWith('data:video');
-    
-    if (isVideo) {
-        container.innerHTML = `<video id="imagem-expandida" src="${base64Str}" controls autoplay class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300"></video>`;
-    } else {
-        container.innerHTML = `<img id="imagem-expandida" src="${base64Str}" class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">`;
-    }
-
-    travarFundo('modal-visualizador-imagem');
-    document.getElementById('modal-visualizador-imagem').style.pointerEvents = 'auto';
-
-    requestAnimationFrame(() => {
-        document.getElementById('imagem-expandida').classList.remove('scale-95');
-        document.getElementById('imagem-expandida').classList.add('scale-100');
-    });
-}
-
-function fecharVisualizadorImagem() {
-    const modal = document.getElementById('modal-visualizador-imagem');
-    if (modal) {
-        modal.style.pointerEvents = 'none';
-        const mediaEl = document.getElementById('imagem-expandida');
-        if(mediaEl) {
-            mediaEl.classList.remove('scale-100');
-            mediaEl.classList.add('scale-95');
-            if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
-        }
-        destravarFundo('modal-visualizador-imagem');
-    }
-}
-
-function renderizarPreviewFotos() {
-    const previewContainer = document.getElementById('preview-anexos');
-    if (!previewContainer) return;
-    previewContainer.innerHTML = '';
-    
-    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
-    previewContainer.classList.remove('hidden');
-
-    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
-
-    imagensUploadArray.forEach((base64Str, index) => {
-        const imgBox = document.createElement('div');
-        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-black cursor-pointer flex-shrink-0";
-        
-        const isVideo = base64Str.startsWith('data:video');
-
-        if (isVideo) {
-            const vidEl = document.createElement('video');
-            vidEl.src = base64Str;
-            vidEl.className = "w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300";
-            vidEl.muted = true;
-            vidEl.onclick = () => abrirVisualizadorImagem(index);
-            
-            const playIcon = document.createElement('div');
-            playIcon.className = "absolute inset-0 flex items-center justify-center pointer-events-none";
-            playIcon.innerHTML = '<i class="ph-fill ph-play-circle text-white text-3xl drop-shadow-md"></i>';
-            
-            imgBox.appendChild(vidEl);
-            imgBox.appendChild(playIcon);
-        } else {
-            const imgEl = document.createElement('img');
-            imgEl.src = base64Str;
-            imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
-            imgEl.onclick = () => abrirVisualizadorImagem(index);
-            imgBox.appendChild(imgEl);
-        }
-
-        if (!isTravadoGeral) {
-            const btnTrash = document.createElement('button');
-            btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
-            btnTrash.title = "Apagar Mídia";
-            btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
-            btnTrash.onclick = (e) => {
-                e.stopPropagation(); 
-                confirmarExclusaoImagem(index);
-            };
-            imgBox.appendChild(btnTrash);
-        }
-        
-        previewContainer.appendChild(imgBox);
-    });
-}
-
-function confirmarExclusaoImagem(index) {
-    window.abrirModalConfirmacao(
-        "Excluir Evidência?",
-        "Tem certeza que deseja remover este arquivo? Ele será apagado da O.S.",
-        function() { removerImagemArray(index); },
-        "perigo"
-    );
-}
-
-function processarImagens(event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(file => {
-        const MAX_SIZE = 25 * 1024 * 1024; // 25MB limite
-        if (file.size > MAX_SIZE) {
-            dispararAlerta(`O arquivo "${file.name}" ultrapassa o limite de 25MB.`, "erro");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagensUploadArray.push(e.target.result);
-            renderizarPreviewFotos();
-        };
-        reader.readAsDataURL(file);
-    });
-    event.target.value = ''; 
-}
-
-function removerImagemArray(index) {
-    imagensUploadArray.splice(index, 1);
-    renderizarPreviewFotos();
-}
-
-// ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. Variáveis
+// AutoManager - Módulo de Orçamentos e O.S.
 // ========================================================
 
 let itensTemporarios = [];
@@ -264,6 +18,9 @@ let currentOSFinanceiro = [];
 let isVisualizacaoModo = false;
 let isOSDestravada = false;
 
+// ========================================================
+// 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
+// ========================================================
 function formataDinheiro(v) {
     const val = Number(v) || 0;
     return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -344,10 +101,11 @@ function filtrarTabelaOS() {
     });
 }
 
+// ========================================================
+// 2. FUNÇÕES DE RENDERIZAÇÃO E CONSTRUÇÃO DE TELA (HTML)
+// ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
-    if (!tbody) return; 
-
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
         return; 
@@ -389,8 +147,6 @@ function renderizarTabelaReal(dados) {
 
 function atualizarInterfaceItensETotais() {
     const divLista = document.getElementById('lista-itens-db');
-    if (!divLista) return;
-
     if (itensTemporarios.length === 0) {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
@@ -435,9 +191,6 @@ function atualizarInterfaceItensETotais() {
     if(finTotalOs) finTotalOs.innerText = formataDinheiro(valoresFinais.total);
 }
 
-// ===================================================================================
-// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO E UI
-// ===================================================================================
 function renderizarAbaFinanceiro() {
     const boxBloqueado = document.getElementById('fin-bloqueado-box');
     const boxLiberado = document.getElementById('fin-liberado-box');
@@ -447,8 +200,6 @@ function renderizarAbaFinanceiro() {
     const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
     const subtitulo = document.getElementById('fin-aba-subtitulo');
     
-    if(!boxBloqueado) return;
-
     document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
 
     if (!osEmEdicaoId) {
@@ -558,22 +309,49 @@ function renderizarAbaFinanceiro() {
     }
 }
 
+function renderizarPreviewFotos() {
+    const previewContainer = document.getElementById('preview-anexos');
+    previewContainer.innerHTML = '';
+    
+    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    
+    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
+
+    imagensUploadArray.forEach(base64Str => {
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group";
+        
+        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="removerImagemArray('${base64Str}')"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        
+        imgBox.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">${trashIcon}`;
+        previewContainer.appendChild(imgBox);
+    });
+}
+
+function atualizarPlacarAuditoria(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
+    const elSomaBox = document.getElementById('fin-aba-soma-box');
+    const elAlerta = document.getElementById('fin-aba-alerta');
+    const btnSalvar = document.getElementById(btnIdToBlock);
+    
+    if (somaFinanceiro > 0 && Math.abs(valoresFinais.total - somaFinanceiro) > 0.05) {
+        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
+        if(elAlerta) elAlerta.classList.remove('hidden');
+        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
+    } else {
+        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
+        if(elAlerta) elAlerta.classList.add('hidden');
+        if(btnSalvar && !isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
+    }
+}
+
+// ===================================================================================
+// 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
+// ===================================================================================
 async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
-    
-    const inputCam = document.getElementById('input-camera');
-    if (inputCam) inputCam.setAttribute('accept', 'image/*,video/*');
-    const inputAnx = document.getElementById('input-anexos');
-    if (inputAnx) inputAnx.setAttribute('accept', 'image/*,video/*');
-
-    const viewNovo = document.getElementById('view-novo-orcamento');
-    const viewLista = document.getElementById('view-lista-orcamentos');
-    
-    if (viewNovo && viewLista) {
-        viewNovo.classList.add('hidden');
-        viewLista.classList.remove('hidden');
-    }
+    document.getElementById('view-novo-orcamento').classList.add('hidden');
+    document.getElementById('view-lista-orcamentos').classList.remove('hidden');
 }
 
 async function carregarListasBD() {
@@ -611,10 +389,7 @@ async function buscarOrcamentosSupabase() {
         renderizarTabelaReal(orcamentos);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
-        const tbody = document.getElementById('tabela-orcamentos-real');
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
-        }
+        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 }
 
@@ -775,69 +550,14 @@ async function processarLancarFinanceiroTab() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
 }
 
-function excluirParcelaManual(id) {
-    window.abrirModalConfirmacao(
-        "Excluir Lançamento", 
-        "Deseja excluir este lançamento definitivamente?", 
-        function() { executarExclusaoParcelaManual(id); }, 
-        "perigo"
-    );
-}
-
-async function executarExclusaoParcelaManual(id) {
+async function excluirParcelaManual(id) {
+    if(!confirm("Atenção: Deseja excluir este lançamento definitivamente?")) return;
     try {
         const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
         if (error) throw error;
         dispararAlerta("Parcela excluída com sucesso.", "sucesso");
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao excluir."); }
-}
-
-function limparFinanceiroAtual() {
-    window.abrirModalConfirmacao(
-        "Apagar Lançamentos", 
-        "Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?", 
-        function() { executarLimpezaFinanceiroAtual(); }, 
-        "perigo"
-    );
-}
-
-async function executarLimpezaFinanceiroAtual() {
-    try {
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
-        
-        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
-        if (oldOrc && oldOrc.itens) {
-            delete oldOrc.itens.financeiro;
-            await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', osEmEdicaoId);
-        } else {
-            await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
-        }
-        
-        document.getElementById('db-status').value = 'Finalizado';
-        
-        currentOSFinanceiro = [];
-        renderizarAbaFinanceiro();
-        dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
-    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
-}
-
-function abrirModalExclusao(id, numero_os) {
-    window.abrirModalConfirmacao(
-        "Excluir O.S?",
-        `Você está prestes a apagar a O.S <b class="text-slate-800">#${numero_os}</b> e todos os seus itens. Esta ação não pode ser desfeita.`,
-        function() { executarExclusaoOS(id); },
-        "perigo"
-    );
-}
-
-async function executarExclusaoOS(id) {
-    try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', id);
-        if (error) throw error;
-        dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        buscarOrcamentosSupabase();
-    } catch (erro) { dispararAlerta("Falha ao excluir."); }
 }
 
 async function adicionarNovaParcelaManual() {
@@ -871,6 +591,39 @@ async function adicionarNovaParcelaManual() {
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
 }
 
+async function limparFinanceiroAtual() {
+    if(!confirm("Atenção: Isso apagará todas as parcelas atuais desta O.S para que você gere o financeiro novamente do zero. Continuar?")) return;
+    try {
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${osEmEdicaoNumero}%`);
+        
+        const { data: oldOrc } = await window.banco.from('orcamentos').select('itens').eq('id', osEmEdicaoId).single();
+        if (oldOrc && oldOrc.itens) {
+            delete oldOrc.itens.financeiro;
+            await window.banco.from('orcamentos').update({ itens: oldOrc.itens, status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        } else {
+            await window.banco.from('orcamentos').update({ status: 'Finalizado' }).eq('id', osEmEdicaoId);
+        }
+        
+        document.getElementById('db-status').value = 'Finalizado';
+        
+        currentOSFinanceiro = [];
+        renderizarAbaFinanceiro();
+        dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao limpar financeiro"); }
+}
+
+async function confirmarExclusao() {
+    if(!idParaExcluir) return;
+    try {
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', idParaExcluir);
+        if (error) throw error;
+        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
+        dispararAlerta("Ordem de serviço apagada.", "sucesso");
+        fecharModalExclusao();
+        buscarOrcamentosSupabase();
+    } catch (erro) { dispararAlerta("Falha ao excluir."); }
+}
+
 async function processarDestravarOS() {
     const senhaDigitada = document.getElementById('input-senha-reabrir').value;
     const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
@@ -887,6 +640,9 @@ async function processarDestravarOS() {
     } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
 }
 
+// ========================================================
+// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS GERAIS)
+// ========================================================
 async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
@@ -943,45 +699,6 @@ function abrirVisualizacaoOS(dadosCodificados) {
 
 function abrirFaturamentoDireto(dadosCodificados) {
     abrirEdicaoOS(dadosCodificados, 'fin', false);
-}
-
-function mudarAbaOS(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-    const status = document.getElementById('db-status').value;
-
-    const boxAuditoria = document.getElementById('box-auditoria-financeira');
-    const boxDesconto = document.getElementById('box-desconto');
-    const boxCaixaPreta = document.getElementById('box-caixa-preta');
-
-    if (aba === 'dados') {
-        btnDados.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm";
-        btnFin.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2" + (status === 'Finalizado' || status === 'Fechado' ? '' : ' hidden');
-        
-        contDados.classList.remove('hidden');
-        contDados.classList.add('block');
-        contFin.classList.add('hidden');
-
-        if(boxDesconto) boxDesconto.classList.remove('hidden');
-        if(boxCaixaPreta) boxCaixaPreta.classList.remove('hidden');
-        if(boxAuditoria) boxAuditoria.classList.add('hidden');
-
-    } else if (aba === 'fin') {
-        btnFin.className = "pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2";
-        btnDados.className = "pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm";
-        
-        contFin.classList.remove('hidden');
-        contFin.classList.add('block');
-        contDados.classList.add('hidden');
-
-        if(boxDesconto) boxDesconto.classList.add('hidden');
-        if(boxCaixaPreta) boxCaixaPreta.classList.add('hidden');
-        if(boxAuditoria) boxAuditoria.classList.remove('hidden');
-
-        renderizarAbaFinanceiro();
-    }
 }
 
 function mudarTipoFaturamentoTab() {
@@ -1137,7 +854,7 @@ function verificarStatusFinanceiro() {
         if(badgeFechada) badgeFechada.classList.add('hidden');
     }
     
-    if (status === 'Finalizado' || status === 'Fechado') {
+    if (status === 'Finalizado' || status === 'Fechado' || currentOSFinanceiro.length > 0) {
         abaFinBtn.classList.remove('hidden');
     } else {
         abaFinBtn.classList.add('hidden');
@@ -1289,7 +1006,6 @@ function calcularTotais() {
 }
 
 function abrirModalDestravar(id, orcJSONCodificado) {
-    travarFundo('modal-senha-destravar');
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
@@ -1297,11 +1013,21 @@ function abrirModalDestravar(id, orcJSONCodificado) {
 }
 
 function fecharModalDestravar() { 
-    destravarFundo('modal-senha-destravar');
+    document.getElementById('modal-senha-destravar').classList.add('hidden'); 
+}
+
+function abrirModalExclusao(id, numero_os) {
+    idParaExcluir = id;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+}
+
+function fecharModalExclusao() { 
+    idParaExcluir = null; 
+    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
 }
 
 function abrirModalCadastro(tipo) {
-    travarFundo('modal-cadastro-rapido');
     modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
@@ -1394,10 +1120,13 @@ function abrirModalCadastro(tipo) {
             </div>
         </div>`;
     }
+    document.body.style.overflow = 'hidden'; 
+    modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { 
-    destravarFundo('modal-cadastro-rapido');
+    document.body.style.overflow = 'auto'; 
+    document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
 async function buscarCEP(cepInput) {
@@ -1620,48 +1349,9 @@ async function gerarPDFSupabase(dadosCodificados) {
     });
 }
 
-function atualizarPlacarAuditoria(somaLancamentos, btnId) {
-    const totalOS = valoresFinais.total || 0;
-    const diff = Math.abs(totalOS - somaLancamentos);
-    const somaBox = document.getElementById('fin-aba-soma-box');
-    const alerta = document.getElementById('fin-aba-alerta');
-    const btn = document.getElementById(btnId);
-
-    if (diff > 0.05) {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
-        }
-        if (alerta) alerta.classList.remove('hidden');
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    } else {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
-            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-        }
-        if (alerta) alerta.classList.add('hidden');
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-}
-
 // ========================================================
-// EXPORTAÇÃO GLOBAL DAS FUNÇÕES (O fantasma foi removido)
+// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
 // ========================================================
-window.travarFundo = travarFundo;
-window.destravarFundo = destravarFundo;
-window.abrirVisualizadorImagem = abrirVisualizadorImagem;
-window.fecharVisualizadorImagem = fecharVisualizadorImagem;
-window.confirmarExclusaoImagem = confirmarExclusaoImagem;
-window.renderizarPreviewFotos = renderizarPreviewFotos;
-window.processarImagens = processarImagens;
-window.removerImagemArray = removerImagemArray;
-
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
 window.vincularClienteViceVersa = vincularClienteViceVersa;
@@ -1669,13 +1359,10 @@ window.buscarOrcamentosSupabase = buscarOrcamentosSupabase;
 window.salvarOrcamentoReal = salvarOrcamentoReal;
 window.salvarFinanceiroEditado = salvarFinanceiroEditado;
 window.processarLancarFinanceiroTab = processarLancarFinanceiroTab;
-window.excluirParcelaManual = excluirParcelaManual; 
-window.executarExclusaoParcelaManual = executarExclusaoParcelaManual;
+window.excluirParcelaManual = excluirParcelaManual;
 window.adicionarNovaParcelaManual = adicionarNovaParcelaManual;
-window.limparFinanceiroAtual = limparFinanceiroAtual; 
-window.executarLimpezaFinanceiroAtual = executarLimpezaFinanceiroAtual; 
-window.abrirModalExclusao = abrirModalExclusao; 
-window.executarExclusaoOS = executarExclusaoOS;
+window.limparFinanceiroAtual = limparFinanceiroAtual;
+window.confirmarExclusao = confirmarExclusao;
 window.processarDestravarOS = processarDestravarOS;
 window.abrirEdicaoOS = abrirEdicaoOS;
 window.abrirVisualizacaoOS = abrirVisualizacaoOS;
@@ -1693,11 +1380,10 @@ window.editarItem = editarItem;
 window.calcularTotais = calcularTotais;
 window.abrirModalDestravar = abrirModalDestravar;
 window.fecharModalDestravar = fecharModalDestravar;
+window.abrirModalExclusao = abrirModalExclusao;
+window.fecharModalExclusao = fecharModalExclusao;
 window.abrirModalCadastro = abrirModalCadastro;
 window.fecharModalCadastro = fecharModalCadastro;
-window.abrirModalConfirmacao = abrirModalConfirmacao; 
-window.fecharModalConfirmacao = fecharModalConfirmacao; 
-window.executarAcaoConfirmada = executarAcaoConfirmada; 
 window.buscarCEP = buscarCEP;
 window.processarSalvamentoModal = processarSalvamentoModal;
 window.gerarPDFSupabase = gerarPDFSupabase;
@@ -1705,6 +1391,9 @@ window.mudarAbaOS = mudarAbaOS;
 window.recarregarFinanceiroDaOS = recarregarFinanceiroDaOS;
 window.renderizarAbaFinanceiro = renderizarAbaFinanceiro;
 window.atualizarPlacarAuditoria = atualizarPlacarAuditoria;
+window.renderizarPreviewFotos = renderizarPreviewFotos;
+window.processarImagens = processarImagens;
+window.removerImagemArray = removerImagemArray;
 window.atualizarInterfaceItensETotais = atualizarInterfaceItensETotais;
 window.renderizarTabelaReal = renderizarTabelaReal;
 window.filtrarTabelaOS = filtrarTabelaOS;
