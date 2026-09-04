@@ -22,7 +22,7 @@
                     <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg"></i>
                     <input type="text" id="input-pesquisa-os" onkeyup="filtrarTabelaOS()" placeholder="Buscar O.S, cliente, status..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white shadow-sm">
                 </div>
-                <button type="button" onclick="alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                <button onclick="alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
                     <i class="ph-bold ph-plus text-lg"></i> Nova O.S.
                 </button>
             </div>
@@ -51,7 +51,7 @@
         
         <div class="flex items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex items-center gap-4">
-                <button type="button" onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                <button onclick="alternarSubTelaOrcamento('lista')" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
                     <i class="ph-bold ph-arrow-left text-lg"></i>
                 </button>
                 <div>
@@ -64,8 +64,8 @@
         </div>
 
         <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
-            <button type="button" id="aba-dados" onclick="mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
-            <button type="button" id="aba-fin" onclick="mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
+            <button id="aba-dados" onclick="mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
+            <button id="aba-fin" onclick="mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -77,13 +77,13 @@
                         <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button type="button" onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Cliente Vinculado <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('cliente')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
                                 <select id="db-cliente-nome" onchange="vincularClienteViceVersa('cliente')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer transition">
                                     <option value="">Carregando Clientes...</option>
                                 </select>
                             </div>
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button type="button" onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
+                                <div class="flex justify-between items-center mb-1"><label class="block text-[10px] font-bold text-slate-400 uppercase">Veículo / Placa <span class="text-red-500">*</span></label><button onclick="abrirModalCadastro('veiculo')" class="btn-cad-rapido text-[10px] text-blue-600 font-bold hover:underline bg-blue-50 px-2 py-0.5 rounded transition">+ Cadastrar</button></div>
                                 <select id="db-veiculo-placa" onchange="vincularClienteViceVersa('veiculo')" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer uppercase transition">
                                     <option value="">Carregando Veículos...</option>
                                 </select>
@@ -105,7 +105,7 @@
                             <div class="flex flex-col md:flex-row gap-3">
                                 <div class="flex-1"><input type="text" id="item-desc" placeholder="Observação do Item (Opcional)..." class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-medium shadow-sm bg-white"></div>
                                 <input type="hidden" id="item-id-edit" value="">
-                                <button type="button" onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
+                                <button onclick="adicionarOuEditarItem()" id="btn-add-item" class="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 rounded-lg font-bold transition-all text-sm shadow-md py-2.5 flex items-center justify-center"><i class="ph-bold ph-plus mr-1"></i> Add Item</button>
                             </div>
                         </div>
                         <div id="lista-itens-db" class="space-y-3 min-h-[100px]"><div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div></div>
@@ -118,24 +118,13 @@
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
-                            
                             <div id="box-upload-fotos">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
-                                <div class="flex gap-3">
-                                    <label class="flex-1 md:hidden flex flex-col items-center justify-center h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 active:bg-blue-50 transition shadow-sm">
-                                        <i class="ph-bold ph-camera text-3xl text-blue-500 mb-1"></i>
-                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Tirar Foto</p>
-                                        <input type="file" id="input-camera" class="hidden" accept="image/*,video/*" capture="environment" onchange="processarImagens(event)" />
-                                    </label>
-                                    <label class="flex-1 flex flex-col items-center justify-center h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition shadow-sm">
-                                        <i class="ph-bold ph-image text-3xl md:text-2xl text-slate-400 md:mb-1"></i>
-                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider md:hidden mt-1">Galeria</p>
-                                        <p class="text-xs text-slate-500 font-bold hidden md:block">Clique para adicionar fotos e arquivos</p>
-                                        <input type="file" id="input-anexos" class="hidden" multiple accept="image/*,video/*" onchange="processarImagens(event)" />
-                                    </label>
-                                </div>
+                                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
+                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="processarImagens(event)" />
+                                </label>
                             </div>
-                            
                             <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
                         </div>
                     </div>
@@ -195,7 +184,7 @@
                                 <div id="tab-fin-simulacao" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm font-medium shadow-inner space-y-2 mt-2 max-h-64 overflow-y-auto"></div>
                             </div>
                             
-                            <button type="button" onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
+                            <button onclick="processarLancarFinanceiroTab()" id="btn-salvar-fin-tab" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.4)] hover:bg-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-2 mt-4"><i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S</button>
                         </div>
 
                         <div id="fin-editor-box" class="hidden space-y-4 w-full">
@@ -209,19 +198,12 @@
 
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden" id="box-auditoria-financeira">
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Resumo e Auditoria</h3>
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
                     </div>
-                    
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 mb-5 shadow-inner">
-                        <div class="flex justify-between text-xs text-slate-500 font-bold"><span>Peças:</span> <span id="fin-resumo-pecas">R$ 0,00</span></div>
-                        <div class="flex justify-between text-xs text-slate-500 font-bold"><span>Serviços:</span> <span id="fin-resumo-servicos">R$ 0,00</span></div>
-                        <div class="flex justify-between text-xs text-red-500 font-bold"><span>Desconto:</span> <span id="fin-resumo-desc">- R$ 0,00</span></div>
-                    </div>
-
                     <div class="space-y-4">
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
                             <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
                         </div>
@@ -239,10 +221,10 @@
                     </div>
 
                     <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
-                        <button type="button" id="btn-salvar-fin-edicao" onclick="salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                        <button id="btn-salvar-fin-edicao" onclick="salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
                             <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
                         </button>
-                        <button type="button" id="btn-estornar-fin" onclick="limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
+                        <button id="btn-estornar-fin" onclick="limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
                             <i class="ph-bold ph-trash text-lg"></i> Apagar Lançamentos
                         </button>
                     </div>
@@ -286,31 +268,14 @@
                         </div>
                     </div>
                     
-                    <button type="button" onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                    <button onclick="salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ================= MODAIS BLINDADOS COM INSET-0 (CORREÇÃO DE SCROLL E POSICIONAMENTO) ================= -->
-<div id="modal-confirmacao-generica" class="hidden fixed inset-0 bg-slate-900/80 z-[99999] flex items-center justify-center p-4 fade-in">
-    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-        <div class="p-6 text-center">
-            <div id="icone-confirmacao" class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
-                <i class="ph-bold ph-warning text-3xl text-red-500"></i>
-            </div>
-            <h3 id="titulo-confirmacao" class="text-xl font-black text-slate-800 mb-2">Atenção!</h3>
-            <p id="texto-confirmacao" class="text-sm text-slate-500 font-medium">Tem certeza que deseja continuar?</p>
-        </div>
-        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button type="button" onclick="fecharModalConfirmacao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-            <button id="btn-confirmar-acao" type="button" onclick="executarAcaoConfirmada()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-check"></i> Confirmar</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-confirmacao-exclusao" class="hidden fixed inset-0 bg-slate-900/80 z-[99999] flex items-center justify-center p-4 fade-in">
+<div id="modal-confirmacao-exclusao" class="hidden fixed inset-0 bg-slate-900/80 z-[1000] flex items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
             <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100"><i class="ph-bold ph-trash text-3xl text-red-500"></i></div>
@@ -318,13 +283,13 @@
             <p class="text-sm text-slate-500 font-medium">Esta ação apagará permanentemente a ordem de serviço e todos os seus itens. <br>Não pode ser desfeita.</p>
         </div>
         <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button type="button" onclick="fecharModalExclusao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-            <button type="button" onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-warning"></i> Excluir</button>
+            <button onclick="fecharModalExclusao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+            <button onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-warning"></i> Excluir</button>
         </div>
     </div>
 </div>
 
-<div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/90 z-[99999] flex items-center justify-center p-4 fade-in">
+<div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/90 z-[1500] flex items-center justify-center p-4 fade-in">
     <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
             <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
@@ -333,22 +298,22 @@
             <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
         </div>
         <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
-            <button type="button" onclick="fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
-            <button type="button" onclick="processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
+            <button onclick="fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
+            <button onclick="processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
         </div>
     </div>
 </div>
 
-<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/80 z-[99999] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
+<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/80 z-[500] flex items-center justify-center p-4 pb-28 md:pb-4 fade-in">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden">
         <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
             <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
-            <button type="button" onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
+            <button onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
         </div>
         <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-            <button type="button" onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
-            <button type="button" onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
+            <button onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
+            <button onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
         </div>
     </div>
 </div>
@@ -415,57 +380,6 @@
                 </div>
                 <p style="font-size: 10px; font-weight: bold; color: #000000; margin: 0; text-transform: uppercase;">Data</p>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= MODAIS BLINDADOS (PADRÃO CLIENTES) ================= -->
-<!-- COLE ISTO NO FINAL DO ARQUIVO, ANTES DE FECHAR A TAG </body> -->
-
-<!-- Modal Genérico para Confirmações (Exclusões, Limpezas, etc) -->
-<div id="modal-confirmacao-generica" class="hidden fixed inset-0 bg-slate-900/80 z-[9999] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-        <div class="p-6 text-center">
-            <div id="icone-confirmacao" class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
-                <i class="ph-bold ph-warning text-3xl text-red-500"></i>
-            </div>
-            <h3 id="titulo-confirmacao" class="text-xl font-black text-slate-800 mb-2">Atenção!</h3>
-            <p id="texto-confirmacao" class="text-sm text-slate-500 font-medium">Tem certeza que deseja continuar?</p>
-        </div>
-        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button type="button" onclick="fecharModalConfirmacao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-            <button id="btn-confirmar-acao" type="button" onclick="executarAcaoConfirmada()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-check"></i> Confirmar</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Destravar O.S -->
-<div id="modal-senha-destravar" class="hidden fixed inset-0 bg-slate-900/90 z-[9999] flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-        <div class="p-6 text-center">
-            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
-            <h3 class="text-xl font-black text-white mb-2">Destravar a O.S?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição temporária. Lembre-se de conferir se o Financeiro bate na Auditoria se alterar valores. <br><br><b>Digite a senha gerencial:</b></p>
-            <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
-        </div>
-        <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
-            <button type="button" onclick="fecharModalDestravar()" class="flex-1 py-3 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors text-sm">Cancelar</button>
-            <button type="button" onclick="processarDestravarOS()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors shadow-md flex items-center justify-center gap-2 text-sm"><i class="ph-bold ph-lock-key-open"></i> Destravar</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Cadastro Rápido -->
-<div id="modal-cadastro-rapido" class="hidden fixed inset-0 bg-slate-900/80 z-[9999] flex items-center justify-center p-4 pb-28 md:pb-4">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div class="bg-blue-600 p-4 md:p-5 flex justify-between items-center text-white shrink-0 rounded-t-2xl">
-            <h3 id="modal-titulo" class="font-bold text-lg tracking-tight">Novo Cadastro</h3>
-            <button type="button" onclick="fecharModalCadastro()" class="hover:bg-blue-700 p-1.5 rounded-lg transition"><i class="ph-bold ph-x text-xl"></i></button>
-        </div>
-        <div class="p-4 md:p-6 overflow-y-auto flex-1" id="modal-conteudo"></div>
-        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-            <button type="button" onclick="fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
-            <button type="button" onclick="processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
         </div>
     </div>
 </div>
