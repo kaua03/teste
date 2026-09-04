@@ -102,7 +102,7 @@ window.executarAcaoConfirmada = function() {
 };
 
 // ========================================================
-// SISTEMA DE LIGHTBOX BLINDADO (FOTOS)
+// SISTEMA DE LIGHTBOX BLINDADO (FOTOS E VÍDEOS)
 // ========================================================
 function abrirVisualizadorImagem(index) {
     const base64Str = imagensUploadArray[index];
@@ -387,9 +387,177 @@ function renderizarTabelaReal(dados) {
     }).join('');
 }
 
+function atualizarInterfaceItensETotais() {
+    const divLista = document.getElementById('lista-itens-db');
+    if (!divLista) return;
+
+    if (itensTemporarios.length === 0) {
+        divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
+    } else {
+        const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
+        
+        divLista.innerHTML = itensTemporarios.map(item => {
+            let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
+            let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
+            
+            let acoes = isTravadoGeral ? '' : `
+            <div class="flex gap-1">
+                <button onclick="editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button onclick="removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
+            </div>`;
+
+            return `
+            <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
+                <div class="flex-1">
+                    <div class="flex items-center"><span class="border ${badgeClass} px-2 py-0.5 rounded text-[10px] font-black uppercase mr-2 shadow-sm">${item.tipo}</span><span class="font-bold text-slate-800 text-sm">${item.quantidade}x ${item.descricao}</span> <span class="text-xs text-slate-400 ml-1">(${formataDinheiro(item.valor_unitario)})</span></div>
+                    ${HTMLdetalhe}
+                </div>
+                <div class="flex items-center gap-3 w-full lg:w-auto justify-between border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
+                    <span class="font-black text-slate-900 text-sm md:text-base">${formataDinheiro(item.subtotal)}</span>
+                    ${acoes}
+                </div>
+            </div>`;
+        }).join('');
+    }
+    
+    document.getElementById('resumo-pecas').innerText = formataDinheiro(valoresFinais.pecas);
+    document.getElementById('resumo-servicos').innerText = formataDinheiro(valoresFinais.servicos);
+    document.getElementById('resumo-desc').innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
+    document.getElementById('db-total').innerText = formataDinheiro(valoresFinais.total);
+    
+    const finPecas = document.getElementById('fin-resumo-pecas');
+    if(finPecas) finPecas.innerText = formataDinheiro(valoresFinais.pecas);
+    const finServicos = document.getElementById('fin-resumo-servicos');
+    if(finServicos) finServicos.innerText = formataDinheiro(valoresFinais.servicos);
+    const finDesc = document.getElementById('fin-resumo-desc');
+    if(finDesc) finDesc.innerText = `- ${formataDinheiro(valoresFinais.desconto)}`;
+    const finTotalOs = document.getElementById('fin-aba-total-os');
+    if(finTotalOs) finTotalOs.innerText = formataDinheiro(valoresFinais.total);
+}
+
 // ===================================================================================
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO E UI
 // ===================================================================================
+function renderizarAbaFinanceiro() {
+    const boxBloqueado = document.getElementById('fin-bloqueado-box');
+    const boxLiberado = document.getElementById('fin-liberado-box');
+    const boxGerador = document.getElementById('fin-gerador-box');
+    const boxEditor = document.getElementById('fin-editor-box');
+    const btnRefazer = document.getElementById('btn-estornar-fin');
+    const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
+    const subtitulo = document.getElementById('fin-aba-subtitulo');
+    
+    if(!boxBloqueado) return;
+
+    document.getElementById('fin-aba-total-os').innerText = formataDinheiro(valoresFinais.total);
+
+    if (!osEmEdicaoId) {
+        boxBloqueado.classList.remove('hidden');
+        boxLiberado.classList.add('hidden');
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+        if(btnRefazer) btnRefazer.classList.add('hidden');
+        return;
+    }
+
+    boxBloqueado.classList.add('hidden');
+    boxLiberado.classList.remove('hidden'); 
+
+    if (!currentOSFinanceiro || currentOSFinanceiro.length === 0) {
+        boxGerador.classList.remove('hidden');
+        boxEditor.classList.add('hidden');
+        if(btnRefazer) btnRefazer.classList.add('hidden');
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+        
+        if (isVisualizacaoModo) {
+            boxGerador.classList.add('hidden');
+            subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
+            document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
+            atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
+        } else {
+            subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
+            document.getElementById('tab-fin-tipo').value = 'avista';
+            mudarTipoFaturamentoTab();
+        }
+    } else {
+        boxGerador.classList.add('hidden');
+        boxEditor.classList.remove('hidden');
+        
+        if (isVisualizacaoModo) {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+            subtitulo.innerText = "Lançamentos financeiros atrelados à O.S.";
+        } else {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
+            subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
+        }
+        
+        const hasPago = currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
+        if (hasPago || isVisualizacaoModo) {
+            if(btnRefazer) btnRefazer.classList.add('hidden'); 
+        } else {
+            if(btnRefazer) btnRefazer.classList.remove('hidden'); 
+        }
+        
+        const listaDiv = document.getElementById('lista-financeiro-vinculado');
+        let html = '';
+        
+        const statusAtual = document.getElementById('db-status').value;
+        const isTravadoGlobal = (statusAtual === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
+
+        currentOSFinanceiro.forEach((rec, idx) => {
+            const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
+            const trancaGeral = isTravadoGlobal ? 'disabled' : '';
+            const trancaParaPago = isPago ? 'disabled' : trancaGeral;
+            
+            let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
+            
+            const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
+            const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
+            const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
+
+            html += `
+            <div class="p-4 rounded-xl border ${corCard} shadow-sm flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${badgeTipo}</span>
+                    ${iconeStatus}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Vencimento / Pagto</label>
+                        <input type="date" id="edit-rec-data-${idx}" value="${rec.data_vencimento}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses}">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Forma de Pagto.</label>
+                        <select id="edit-rec-forma-${idx}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses} cursor-pointer">
+                            <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
+                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
+                            <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
+                            <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
+                            <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
+                            <option value="Transferência" ${rec.forma_pagamento === 'Transferência' ? 'selected' : ''}>Transferência Bancária</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
+                        <input type="text" id="edit-rec-val-${idx}" onkeyup="mascaraMoeda(this); checarSomaFinanceiroEdit()" value="${valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
+                    </div>
+                </div>
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+            </div>`;
+        });
+        
+        if (!isTravadoGlobal) {
+            html += `
+            <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
+                 <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
+                <button onclick="adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+            </div>`;
+        }
+
+        listaDiv.innerHTML = html;
+        checarSomaFinanceiroEdit();
+    }
+}
+
 async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
@@ -702,10 +870,6 @@ async function adicionarNovaParcelaManual() {
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
 }
-
-// ========================================================
-// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE E PDF
-// ========================================================
 
 async function processarDestravarOS() {
     const senhaDigitada = document.getElementById('input-senha-reabrir').value;
@@ -1487,11 +1651,10 @@ function atualizarPlacarAuditoria(somaLancamentos, btnId) {
 }
 
 // ========================================================
-// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
+// EXPORTAÇÃO GLOBAL DAS FUNÇÕES (O fantasma foi removido)
 // ========================================================
 window.travarFundo = travarFundo;
 window.destravarFundo = destravarFundo;
-window.moverModalParaBody = moverModalParaBody;
 window.abrirVisualizadorImagem = abrirVisualizadorImagem;
 window.fecharVisualizadorImagem = fecharVisualizadorImagem;
 window.confirmarExclusaoImagem = confirmarExclusaoImagem;
