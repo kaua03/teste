@@ -15,8 +15,8 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-confirmacao-dinamico';
-        // O cssText impõe regras que o Tailwind não consegue sobrescrever
-        modal.style.cssText = "position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100dvh !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.85); transition: opacity 0.3s; opacity: 0; pointer-events: none;";
+        // CORREÇÃO: Uso do INSET: 0 em vez de 100vw/vh para garantir que o modal fique exatamente no limite da tela sem scroll indesejado.
+        modal.style.cssText = "position: fixed !important; inset: 0 !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.85); transition: opacity 0.3s; opacity: 0;";
         modal.innerHTML = `
             <div class="bg-white w-full max-w-[90%] md:max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
                 <div class="p-6 text-center">
@@ -423,7 +423,6 @@ function renderizarPreviewFotos() {
         
         const isVideo = base64Str.startsWith('data:video');
 
-        // Cria a miniatura (Se for vídeo, desenha uma tag <video> mutada sem controles)
         if (isVideo) {
             const vidEl = document.createElement('video');
             vidEl.src = base64Str;
@@ -431,7 +430,6 @@ function renderizarPreviewFotos() {
             vidEl.muted = true;
             vidEl.onclick = () => abrirVisualizadorImagem(index);
             
-            // Ícone de Play por cima da miniatura do vídeo
             const playIcon = document.createElement('div');
             playIcon.className = "absolute inset-0 flex items-center justify-center pointer-events-none";
             playIcon.innerHTML = '<i class="ph-fill ph-play-circle text-white text-3xl drop-shadow-md"></i>';
@@ -476,7 +474,6 @@ function processarImagens(event) {
     if (!files || files.length === 0) return;
 
     Array.from(files).forEach(file => {
-        // Trava de segurança para não explodir o banco de dados com vídeos gigantes
         const MAX_SIZE = 25 * 1024 * 1024; // 25MB limite
         if (file.size > MAX_SIZE) {
             dispararAlerta(`O arquivo "${file.name}" ultrapassa o limite de 25MB.`, "erro");
@@ -506,8 +503,8 @@ function abrirVisualizadorImagem(index) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'modal-visualizador-imagem';
-        // Ajuste no CSS inline do Modal do Lightbox para garantir imunidade ao roteador
-        modal.style.cssText = "position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100dvh !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.95); transition: opacity 0.3s; opacity: 0; pointer-events: none;";
+        // CORREÇÃO: Uso do INSET: 0 em vez de 100vw/vh para impedir rolagem com fotos
+        modal.style.cssText = "position: fixed !important; inset: 0 !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.95); transition: opacity 0.3s; opacity: 0;";
         modal.innerHTML = `
             <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
@@ -516,13 +513,12 @@ function abrirVisualizadorImagem(index) {
         `;
         document.body.appendChild(modal);
     } else {
-        document.getElementById('media-container').innerHTML = ''; // Limpa o container
+        document.getElementById('media-container').innerHTML = ''; 
     }
 
     const container = document.getElementById('media-container');
     const isVideo = base64Str.startsWith('data:video');
     
-    // Desenha as dimensões seguras: Nunca cortará a foto e nunca passará da tela
     if (isVideo) {
         container.innerHTML = `<video id="imagem-expandida" src="${base64Str}" controls autoplay class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300"></video>`;
     } else {
@@ -532,7 +528,6 @@ function abrirVisualizadorImagem(index) {
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    // Dispara a visualização
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
         modal.style.pointerEvents = 'auto';
@@ -554,7 +549,6 @@ function fecharVisualizadorImagem() {
         if(mediaEl) {
             mediaEl.classList.remove('scale-100');
             mediaEl.classList.add('scale-95');
-            // Pausa o vídeo ao fechar
             if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
         }
     }
@@ -567,13 +561,11 @@ async function initOrcamentos() {
     await carregarListasBD();
     await buscarOrcamentosSupabase();
     
-    // INJEÇÃO TÁTICA: Força o input a aceitar vídeo sem precisar mexer no HTML
     const inputCam = document.getElementById('input-camera');
     if (inputCam) inputCam.setAttribute('accept', 'image/*,video/*');
     const inputAnx = document.getElementById('input-anexos');
     if (inputAnx) inputAnx.setAttribute('accept', 'image/*,video/*');
 
-    // TRAVA DE SEGURANÇA: Verifica se a tela ainda existe antes de alterar as classes
     const viewNovo = document.getElementById('view-novo-orcamento');
     const viewLista = document.getElementById('view-lista-orcamentos');
     
@@ -1647,6 +1639,40 @@ async function recarregarFinanceiroDaOS() {
         renderizarAbaFinanceiro();
     } catch (error) {
         console.error("Erro ao carregar financeiro:", error);
+    }
+}
+
+// ========================================================
+// CRIADA A FUNÇÃO FALTANTE QUE DAVA REFERENCE ERROR
+// ========================================================
+function atualizarPlacarAuditoria(somaLancamentos, btnId) {
+    const totalOS = valoresFinais.total || 0;
+    const diff = Math.abs(totalOS - somaLancamentos);
+    const somaBox = document.getElementById('fin-aba-soma-box');
+    const alerta = document.getElementById('fin-aba-alerta');
+    const btn = document.getElementById(btnId);
+
+    // Damos uma tolerância de 5 centavos para não travar por dízimas
+    if (diff > 0.05) {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
+        }
+        if (alerta) alerta.classList.remove('hidden');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    } else {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
+            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+        }
+        if (alerta) alerta.classList.add('hidden');
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
     }
 }
 
