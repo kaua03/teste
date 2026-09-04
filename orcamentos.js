@@ -1,24 +1,49 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO (BLINDAGEM ABSOLUTA DE TELA)
+// MOTOR DO MODAL GENÉRICO E TRAVA ABSOLUTA DE TELA
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
-window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    // 1. TRAVA ABSOLUTA DE ROLAGEM (Congela o Body e o HTML)
-    document.documentElement.style.overflow = 'hidden';
+// 1. TRAVA ABSOLUTA DE SCROLL (Imune ao bug do iOS/Mobile)
+window.travarScrollGlobal = function() {
+    if (document.body.classList.contains('scroll-travado')) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
-    const visor = document.getElementById('visor-da-tv');
-    if (visor) visor.style.overflow = 'hidden';
+    document.body.dataset.scrollY = scrollY;
+    document.body.classList.add('scroll-travado');
+};
 
-    // 2. CRIA O MODAL COM ESTILOS INLINE DE FORÇA BRUTA PARA ESCAPAR DO ROTEADOR
+// 2. DESTRAVA E RESTAURA POSIÇÃO ORIGINAL
+window.destravarScrollGlobal = function() {
+    if (!document.body.classList.contains('scroll-travado')) return;
+    const scrollY = document.body.dataset.scrollY || 0;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    document.body.classList.remove('scroll-travado');
+    window.scrollTo(0, parseInt(scrollY));
+};
+
+window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
+    window.travarScrollGlobal(); // Congela a tela
+
+    // 3. USO DO <dialog> NATIVO (Escapa de qualquer container quebrado)
     let modal = document.getElementById('modal-confirmacao-dinamico');
     if (!modal) {
-        modal = document.createElement('div');
+        modal = document.createElement('dialog');
         modal.id = 'modal-confirmacao-dinamico';
-        // CORREÇÃO: Uso do INSET: 0 em vez de 100vw/vh para garantir que o modal fique exatamente no limite da tela sem scroll indesejado.
-        modal.style.cssText = "position: fixed !important; inset: 0 !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.85); transition: opacity 0.3s; opacity: 0;";
+        
+        modal.style.cssText = "margin: auto; padding: 0; border: none; background: transparent; max-width: 24rem; width: 100%; outline: none; overflow: visible;";
+        
+        const style = document.createElement('style');
+        style.innerHTML = "#modal-confirmacao-dinamico::backdrop { background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); }";
+        document.head.appendChild(style);
+
         modal.innerHTML = `
-            <div class="bg-white w-full max-w-[90%] md:max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95" id="modal-conf-card">
+            <div class="bg-white w-full rounded-2xl shadow-2xl overflow-hidden p-0 m-0 scale-95 transition-transform duration-300" id="modal-conf-card">
                 <div class="p-6 text-center">
                     <div id="icone-confirmacao-dinamico" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border">
                         <i id="icone-ph-dinamico" class="text-3xl"></i>
@@ -27,15 +52,24 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
                     <p id="texto-confirmacao-dinamico" class="text-sm text-slate-500 font-medium"></p>
                 </div>
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                    <button onclick="fecharModalConfirmacao()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-                    <button id="btn-confirmar-acao-dinamico" onclick="executarAcaoConfirmada()" class="flex-1 py-3 text-white font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"></button>
+                    <button id="btn-cancelar-dinamico" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+                    <button id="btn-confirmar-acao-dinamico" class="flex-1 py-3 text-white font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"></button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
+
+        document.getElementById('btn-cancelar-dinamico').onclick = window.fecharModalConfirmacao;
+        document.getElementById('btn-confirmar-acao-dinamico').onclick = window.executarAcaoConfirmada;
+        
+        modal.addEventListener('click', function(event) {
+            const rect = modal.getBoundingClientRect();
+            if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) {
+                window.fecharModalConfirmacao();
+            }
+        });
     }
 
-    // 3. INJETA OS DADOS
     document.getElementById('titulo-confirmacao-dinamico').innerText = titulo;
     document.getElementById('texto-confirmacao-dinamico').innerHTML = texto; 
     
@@ -57,29 +91,25 @@ window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'per
 
     window.acaoConfirmacaoGlobal = callbackAcao;
     
-    // 4. MOSTRA O MODAL COM ANIMAÇÃO
-    requestAnimationFrame(() => {
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-        document.getElementById('modal-conf-card').classList.remove('scale-95');
-        document.getElementById('modal-conf-card').classList.add('scale-100');
-    });
+    if (!modal.open) modal.showModal();
+    
+    setTimeout(() => {
+        const card = document.getElementById('modal-conf-card');
+        if(card) { card.classList.remove('scale-95'); card.classList.add('scale-100'); }
+    }, 10);
 };
 
 window.fecharModalConfirmacao = function() {
-    // 5. DESTRAVA A TELA E ESCONDE O MODAL
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-    const visor = document.getElementById('visor-da-tv');
-    if (visor) visor.style.overflow = '';
-
     const modal = document.getElementById('modal-confirmacao-dinamico');
-    if (modal) {
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        document.getElementById('modal-conf-card').classList.remove('scale-100');
-        document.getElementById('modal-conf-card').classList.add('scale-95');
-        window.acaoConfirmacaoGlobal = null;
+    if (modal && modal.open) {
+        const card = document.getElementById('modal-conf-card');
+        if(card) { card.classList.remove('scale-100'); card.classList.add('scale-95'); }
+        
+        setTimeout(() => {
+            modal.close();
+            window.acaoConfirmacaoGlobal = null;
+            window.destravarScrollGlobal();
+        }, 150);
     }
 };
 
@@ -176,6 +206,9 @@ function obterCorStatus(status) {
     return cores[status] || 'bg-slate-50 text-slate-500';
 }
 
+// ========================================================
+// 2. RENDERIZAÇÕES (TABELA E FINANCEIRO) E LIGHTBOX
+// ========================================================
 function filtrarTabelaOS() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
@@ -190,9 +223,6 @@ function filtrarTabelaOS() {
     });
 }
 
-// ========================================================
-// 2. RENDERIZAÇÕES (TABELA E FINANCEIRO)
-// ========================================================
 function renderizarTabelaReal(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     if (!tbody) return; 
@@ -404,9 +434,6 @@ function renderizarAbaFinanceiro() {
     }
 }
 
-// ========================================================
-// SISTEMA DE LIGHTBOX (FOTOS E VÍDEOS) - 100% BLINDADO
-// ========================================================
 function renderizarPreviewFotos() {
     const previewContainer = document.getElementById('preview-anexos');
     if (!previewContainer) return;
@@ -499,12 +526,18 @@ function abrirVisualizadorImagem(index) {
     const base64Str = imagensUploadArray[index];
     if (!base64Str) return;
 
+    window.travarScrollGlobal(); // Congela o scroll de fundo
+
     let modal = document.getElementById('modal-visualizador-imagem');
     if (!modal) {
-        modal = document.createElement('div');
+        modal = document.createElement('dialog');
         modal.id = 'modal-visualizador-imagem';
-        // CORREÇÃO: Uso do INSET: 0 em vez de 100vw/vh para impedir rolagem com fotos
-        modal.style.cssText = "position: fixed !important; inset: 0 !important; z-index: 999999 !important; display: flex; align-items: center; justify-content: center; background-color: rgba(15, 23, 42, 0.95); transition: opacity 0.3s; opacity: 0;";
+        modal.style.cssText = "margin: auto; padding: 0; border: none; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; outline: none; overflow: hidden;";
+        
+        const style = document.createElement('style');
+        style.innerHTML = "#modal-visualizador-imagem::backdrop { background-color: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); }";
+        document.head.appendChild(style);
+        
         modal.innerHTML = `
             <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
                 <i class="ph-bold ph-x text-2xl"></i>
@@ -525,12 +558,9 @@ function abrirVisualizadorImagem(index) {
         container.innerHTML = `<img id="imagem-expandida" src="${base64Str}" class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">`;
     }
 
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
+    if (!modal.open) modal.showModal();
 
     requestAnimationFrame(() => {
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
         document.getElementById('imagem-expandida').classList.remove('scale-95');
         document.getElementById('imagem-expandida').classList.add('scale-100');
     });
@@ -538,24 +568,23 @@ function abrirVisualizadorImagem(index) {
 
 function fecharVisualizadorImagem() {
     const modal = document.getElementById('modal-visualizador-imagem');
-    if (modal) {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        
+    if (modal && modal.open) {
         const mediaEl = document.getElementById('imagem-expandida');
         if(mediaEl) {
             mediaEl.classList.remove('scale-100');
             mediaEl.classList.add('scale-95');
             if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
         }
+        
+        setTimeout(() => {
+            modal.close();
+            window.destravarScrollGlobal(); // Libera o scroll de fundo
+        }, 200);
     }
 }
 
 // ===================================================================================
-// 3. COMUNICAÇÃO COM O BANCO DE DADOS E INIT GERAL
+// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO
 // ===================================================================================
 async function initOrcamentos() {
     await carregarListasBD();
@@ -1291,6 +1320,7 @@ function calcularTotais() {
 }
 
 function abrirModalDestravar(id, orcJSONCodificado) {
+    window.travarScrollGlobal(); // <--- Trava da tela injetada
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
@@ -1298,10 +1328,12 @@ function abrirModalDestravar(id, orcJSONCodificado) {
 }
 
 function fecharModalDestravar() { 
+    window.destravarScrollGlobal(); // <--- Destrava da tela injetada
     document.getElementById('modal-senha-destravar').classList.add('hidden'); 
 }
 
 function abrirModalCadastro(tipo) {
+    window.travarScrollGlobal(); // <--- Trava da tela injetada
     modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
@@ -1394,12 +1426,11 @@ function abrirModalCadastro(tipo) {
             </div>
         </div>`;
     }
-    document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
 }
 
 function fecharModalCadastro() { 
-    document.body.style.overflow = 'auto'; 
+    window.destravarScrollGlobal(); // <--- Destrava da tela injetada
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -1642,9 +1673,6 @@ async function recarregarFinanceiroDaOS() {
     }
 }
 
-// ========================================================
-// CRIADA A FUNÇÃO FALTANTE QUE DAVA REFERENCE ERROR
-// ========================================================
 function atualizarPlacarAuditoria(somaLancamentos, btnId) {
     const totalOS = valoresFinais.total || 0;
     const diff = Math.abs(totalOS - somaLancamentos);
@@ -1652,7 +1680,6 @@ function atualizarPlacarAuditoria(somaLancamentos, btnId) {
     const alerta = document.getElementById('fin-aba-alerta');
     const btn = document.getElementById(btnId);
 
-    // Damos uma tolerância de 5 centavos para não travar por dízimas
     if (diff > 0.05) {
         if (somaBox) {
             somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
@@ -1682,6 +1709,8 @@ function atualizarPlacarAuditoria(somaLancamentos, btnId) {
 window.abrirVisualizadorImagem = abrirVisualizadorImagem;
 window.fecharVisualizadorImagem = fecharVisualizadorImagem;
 window.confirmarExclusaoImagem = confirmarExclusaoImagem;
+window.travarScrollGlobal = travarScrollGlobal;
+window.destravarScrollGlobal = destravarScrollGlobal;
 
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
