@@ -1,11 +1,11 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO E TRAVAS DE TELA (O TELETRANSPORTE)
+// MOTOR DO MODAL GENÉRICO E TRAVAS DE TELA (TELETRANSPORTE)
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
 function travarFundo() {
     document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden'; // Garante o bloqueio no iOS
+    document.documentElement.style.overflow = 'hidden';
 }
 
 function destravarFundo() {
@@ -13,7 +13,6 @@ function destravarFundo() {
     document.documentElement.style.overflow = '';
 }
 
-// A MÁGICA: Esta função arranca o modal de dentro da tela e joga no Body
 function moverModalParaBody(idModal) {
     const modal = document.getElementById(idModal);
     if (modal && modal.parentNode !== document.body) {
@@ -22,7 +21,7 @@ function moverModalParaBody(idModal) {
 }
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    moverModalParaBody('modal-confirmacao-generica'); // Teletransporta para a raiz
+    moverModalParaBody('modal-confirmacao-generica');
     travarFundo();
     
     document.getElementById('titulo-confirmacao').innerText = titulo;
@@ -61,7 +60,7 @@ window.executarAcaoConfirmada = function() {
 };
 
 // ========================================================
-// SISTEMA DE LIGHTBOX BLINDADO (FOTOS E VÍDEOS)
+// SISTEMA DE LIGHTBOX BLINDADO E FOTOS (RECUPERADO)
 // ========================================================
 function abrirVisualizadorImagem(index) {
     const base64Str = imagensUploadArray[index];
@@ -80,7 +79,7 @@ function abrirVisualizadorImagem(index) {
             </button>
             <div id="media-container" class="w-full h-full flex items-center justify-center p-4"></div>
         `;
-        document.body.appendChild(modal); // Já nasce teletransportado
+        document.body.appendChild(modal);
     } else {
         document.getElementById('media-container').innerHTML = ''; 
     }
@@ -119,8 +118,96 @@ function fecharVisualizadorImagem() {
     }
 }
 
+function renderizarPreviewFotos() {
+    const previewContainer = document.getElementById('preview-anexos');
+    if (!previewContainer) return;
+    previewContainer.innerHTML = '';
+    
+    if(imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    previewContainer.classList.remove('hidden');
+
+    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !isOSDestravada) || isVisualizacaoModo;
+
+    imagensUploadArray.forEach((base64Str, index) => {
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group bg-black cursor-pointer flex-shrink-0";
+        
+        const isVideo = base64Str.startsWith('data:video');
+
+        if (isVideo) {
+            const vidEl = document.createElement('video');
+            vidEl.src = base64Str;
+            vidEl.className = "w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300";
+            vidEl.muted = true;
+            vidEl.onclick = () => abrirVisualizadorImagem(index);
+            
+            const playIcon = document.createElement('div');
+            playIcon.className = "absolute inset-0 flex items-center justify-center pointer-events-none";
+            playIcon.innerHTML = '<i class="ph-fill ph-play-circle text-white text-3xl drop-shadow-md"></i>';
+            
+            imgBox.appendChild(vidEl);
+            imgBox.appendChild(playIcon);
+        } else {
+            const imgEl = document.createElement('img');
+            imgEl.src = base64Str;
+            imgEl.className = "w-full h-full object-cover hover:opacity-75 hover:scale-110 transition-all duration-300";
+            imgEl.onclick = () => abrirVisualizadorImagem(index);
+            imgBox.appendChild(imgEl);
+        }
+
+        if (!isTravadoGeral) {
+            const btnTrash = document.createElement('button');
+            btnTrash.className = "absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md z-10";
+            btnTrash.title = "Apagar Mídia";
+            btnTrash.innerHTML = '<i class="ph-bold ph-trash text-sm"></i>';
+            btnTrash.onclick = (e) => {
+                e.stopPropagation(); 
+                confirmarExclusaoImagem(index);
+            };
+            imgBox.appendChild(btnTrash);
+        }
+        
+        previewContainer.appendChild(imgBox);
+    });
+}
+
+function confirmarExclusaoImagem(index) {
+    window.abrirModalConfirmacao(
+        "Excluir Evidência?",
+        "Tem certeza que deseja remover este arquivo? Ele será apagado da O.S.",
+        function() { removerImagemArray(index); },
+        "perigo"
+    );
+}
+
+function processarImagens(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+        const MAX_SIZE = 25 * 1024 * 1024; // 25MB limite
+        if (file.size > MAX_SIZE) {
+            dispararAlerta(`O arquivo "${file.name}" ultrapassa o limite de 25MB.`, "erro");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagensUploadArray.push(e.target.result);
+            renderizarPreviewFotos();
+        };
+        reader.readAsDataURL(file);
+    });
+    event.target.value = ''; 
+}
+
+function removerImagemArray(index) {
+    imagensUploadArray.splice(index, 1);
+    renderizarPreviewFotos();
+}
+
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. Variáveis
+// AutoManager - Variáveis e Helpers
 // ========================================================
 
 let itensTemporarios = [];
@@ -431,7 +518,7 @@ function renderizarAbaFinanceiro() {
 }
 
 // ===================================================================================
-// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO
+// 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO E UI
 // ===================================================================================
 async function initOrcamentos() {
     await carregarListasBD();
