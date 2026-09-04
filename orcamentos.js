@@ -507,6 +507,36 @@ function removerImagemArray(index) {
     renderizarPreviewFotos();
 }
 
+function atualizarPlacarAuditoria(somaLancamentos, btnId) {
+    const totalOS = valoresFinais.total || 0;
+    const diff = Math.abs(totalOS - somaLancamentos);
+    const somaBox = document.getElementById('fin-aba-soma-box');
+    const alerta = document.getElementById('fin-aba-alerta');
+    const btn = document.getElementById(btnId);
+
+    if (diff > 0.05) {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
+        }
+        if (alerta) alerta.classList.remove('hidden');
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    } else {
+        if (somaBox) {
+            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
+            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+        }
+        if (alerta) alerta.classList.add('hidden');
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+}
+
 // ===================================================================================
 // 3. COMUNICAÇÃO COM O BANCO DE DADOS E LÓGICA DE SALVAMENTO
 // ===================================================================================
@@ -824,8 +854,26 @@ async function adicionarNovaParcelaManual() {
 }
 
 // ========================================================
-// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE (UI / EVENTOS GERAIS)
+// 4. MÉTODOS DE AÇÃO E INTERATIVIDADE E PDF
 // ========================================================
+
+// AQUI ESTÁ A FUNÇÃO RECUPERADA E INCLUÍDA NOVAMENTE!
+async function processarDestravarOS() {
+    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
+    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
+    if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    const usuarioLogado = JSON.parse(usuarioLogadoStr);
+
+    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    
+    try {
+        fecharModalDestravar();
+        isOSDestravada = true;
+        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
+        dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
+    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
+}
+
 async function abrirEdicaoOS(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     osEmEdicaoId = orc.id;
@@ -1562,58 +1610,11 @@ async function gerarPDFSupabase(dadosCodificados) {
     });
 }
 
-async function recarregarFinanceiroDaOS() {
-    if (!osEmEdicaoNumero) {
-        currentOSFinanceiro = [];
-        return;
-    }
-    try {
-        const { data, error } = await window.banco.from('contas_receber')
-            .select('*')
-            .like('descricao', `%O.S #${osEmEdicaoNumero}%`)
-            .order('data_vencimento', { ascending: true });
-
-        if (error) throw error;
-        currentOSFinanceiro = data || [];
-        renderizarAbaFinanceiro();
-    } catch (error) {
-        console.error("Erro ao carregar financeiro:", error);
-    }
-}
-
-function atualizarPlacarAuditoria(somaLancamentos, btnId) {
-    const totalOS = valoresFinais.total || 0;
-    const diff = Math.abs(totalOS - somaLancamentos);
-    const somaBox = document.getElementById('fin-aba-soma-box');
-    const alerta = document.getElementById('fin-aba-alerta');
-    const btn = document.getElementById(btnId);
-
-    if (diff > 0.05) {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-            somaBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
-        }
-        if (alerta) alerta.classList.remove('hidden');
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    } else {
-        if (somaBox) {
-            somaBox.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-800', 'border-red-300', 'bg-red-50', 'text-red-700');
-            somaBox.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
-        }
-        if (alerta) alerta.classList.add('hidden');
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-}
-
 // ========================================================
-// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES
+// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
 // ========================================================
+window.travarFundo = travarFundo;
+window.destravarFundo = destravarFundo;
 window.abrirVisualizadorImagem = abrirVisualizadorImagem;
 window.fecharVisualizadorImagem = fecharVisualizadorImagem;
 window.confirmarExclusaoImagem = confirmarExclusaoImagem;
@@ -1668,4 +1669,4 @@ window.atualizarInterfaceItensETotais = atualizarInterfaceItensETotais;
 window.renderizarTabelaReal = renderizarTabelaReal;
 window.filtrarTabelaOS = filtrarTabelaOS;
 
-console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso!");
+console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso Absoluto!");
