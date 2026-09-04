@@ -11,7 +11,6 @@ let osEmEdicaoNumero = null;
 let idParaExcluir = null;
 let osParaDestravarId = null;
 let osParaDestravarDados = null; 
-
 let globalClientes = [];
 let globalVeiculos = [];
 let currentOSFinanceiro = []; 
@@ -1219,6 +1218,21 @@ async function processarSalvamentoModal() {
     }
 }
 
+function processarImagens(event) {
+    const files = event.target.files;
+    if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => { imagensUploadArray.push(e.target.result); renderizarPreviewFotos(); };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removerImagemArray(strToRem) { 
+    imagensUploadArray = imagensUploadArray.filter(i => i !== strToRem); 
+    renderizarPreviewFotos(); 
+}
+
 async function gerarPDFSupabase(dadosCodificados) {
     const orc = JSON.parse(decodeURIComponent(dadosCodificados));
     
@@ -1350,8 +1364,22 @@ async function gerarPDFSupabase(dadosCodificados) {
 }
 
 // ========================================================
-// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
+// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (O ELO COM O HTML)
 // ========================================================
+window.formataDinheiro = formataDinheiro;
+window.mascaraMoeda = mascaraMoeda;
+window.formatarDataISO = formatarDataISO;
+window.valorParaInput = valorParaInput;
+window.reverterMoeda = reverterMoeda;
+window.mascaraGeral = mascaraGeral;
+window.dispararAlerta = dispararAlerta;
+window.obterCorStatus = obterCorStatus;
+window.filtrarTabelaOS = filtrarTabelaOS;
+window.renderizarTabelaReal = renderizarTabelaReal;
+window.atualizarInterfaceItensETotais = atualizarInterfaceItensETotais;
+window.renderizarAbaFinanceiro = renderizarAbaFinanceiro;
+window.renderizarPreviewFotos = renderizarPreviewFotos;
+window.atualizarPlacarAuditoria = atualizarPlacarAuditoria;
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
 window.vincularClienteViceVersa = vincularClienteViceVersa;
@@ -1389,13 +1417,7 @@ window.processarSalvamentoModal = processarSalvamentoModal;
 window.gerarPDFSupabase = gerarPDFSupabase;
 window.mudarAbaOS = mudarAbaOS;
 window.recarregarFinanceiroDaOS = recarregarFinanceiroDaOS;
-window.renderizarAbaFinanceiro = renderizarAbaFinanceiro;
-window.atualizarPlacarAuditoria = atualizarPlacarAuditoria;
-window.renderizarPreviewFotos = renderizarPreviewFotos;
 window.processarImagens = processarImagens;
 window.removerImagemArray = removerImagemArray;
-window.atualizarInterfaceItensETotais = atualizarInterfaceItensETotais;
-window.renderizarTabelaReal = renderizarTabelaReal;
-window.filtrarTabelaOS = filtrarTabelaOS;
 
-console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso Absoluto!");
+console.log("🟢 Módulo Orçamentos Carregado, Ancorado e Blindado 100%!");
