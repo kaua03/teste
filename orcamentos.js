@@ -1,116 +1,43 @@
 // ========================================================
-// MOTOR DO MODAL GENÉRICO E TRAVA ABSOLUTA DE TELA
+// MOTOR DO MODAL GENÉRICO E TRAVAS DE TELA
 // ========================================================
 window.acaoConfirmacaoGlobal = null;
 
-// 1. TRAVA ABSOLUTA DE SCROLL (Imune ao bug do iOS/Mobile)
-window.travarScrollGlobal = function() {
-    if (document.body.classList.contains('scroll-travado')) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
+function travarFundo() {
     document.body.style.overflow = 'hidden';
-    document.body.dataset.scrollY = scrollY;
-    document.body.classList.add('scroll-travado');
-};
-
-// 2. DESTRAVA E RESTAURA POSIÇÃO ORIGINAL
-window.destravarScrollGlobal = function() {
-    if (!document.body.classList.contains('scroll-travado')) return;
-    const scrollY = document.body.dataset.scrollY || 0;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
+}
+function destravarFundo() {
     document.body.style.overflow = '';
-    document.body.classList.remove('scroll-travado');
-    window.scrollTo(0, parseInt(scrollY));
-};
+}
 
 window.abrirModalConfirmacao = function(titulo, texto, callbackAcao, tipo = 'perigo') {
-    window.travarScrollGlobal(); // Congela a tela
-
-    // 3. USO DO <dialog> NATIVO (Escapa de qualquer container quebrado)
-    let modal = document.getElementById('modal-confirmacao-dinamico');
-    if (!modal) {
-        modal = document.createElement('dialog');
-        modal.id = 'modal-confirmacao-dinamico';
-        
-        modal.style.cssText = "margin: auto; padding: 0; border: none; background: transparent; max-width: 24rem; width: 100%; outline: none; overflow: visible;";
-        
-        const style = document.createElement('style');
-        style.innerHTML = "#modal-confirmacao-dinamico::backdrop { background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); }";
-        document.head.appendChild(style);
-
-        modal.innerHTML = `
-            <div class="bg-white w-full rounded-2xl shadow-2xl overflow-hidden p-0 m-0 scale-95 transition-transform duration-300" id="modal-conf-card">
-                <div class="p-6 text-center">
-                    <div id="icone-confirmacao-dinamico" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border">
-                        <i id="icone-ph-dinamico" class="text-3xl"></i>
-                    </div>
-                    <h3 id="titulo-confirmacao-dinamico" class="text-xl font-black text-slate-800 mb-2"></h3>
-                    <p id="texto-confirmacao-dinamico" class="text-sm text-slate-500 font-medium"></p>
-                </div>
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                    <button id="btn-cancelar-dinamico" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
-                    <button id="btn-confirmar-acao-dinamico" class="flex-1 py-3 text-white font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"></button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('btn-cancelar-dinamico').onclick = window.fecharModalConfirmacao;
-        document.getElementById('btn-confirmar-acao-dinamico').onclick = window.executarAcaoConfirmada;
-        
-        modal.addEventListener('click', function(event) {
-            const rect = modal.getBoundingClientRect();
-            if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) {
-                window.fecharModalConfirmacao();
-            }
-        });
-    }
-
-    document.getElementById('titulo-confirmacao-dinamico').innerText = titulo;
-    document.getElementById('texto-confirmacao-dinamico').innerHTML = texto; 
+    travarFundo();
+    document.getElementById('titulo-confirmacao').innerText = titulo;
+    document.getElementById('texto-confirmacao').innerHTML = texto; 
     
-    const iconeBox = document.getElementById('icone-confirmacao-dinamico');
-    const iconePh = document.getElementById('icone-ph-dinamico');
-    const btnConfirmar = document.getElementById('btn-confirmar-acao-dinamico');
+    const iconeBox = document.getElementById('icone-confirmacao');
+    const btnConfirmar = document.getElementById('btn-confirmar-acao');
 
     if (tipo === 'perigo') {
         iconeBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100";
-        iconePh.className = "ph-bold ph-warning text-red-500";
+        iconeBox.innerHTML = '<i class="ph-bold ph-warning text-3xl text-red-500"></i>';
         btnConfirmar.className = "flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2";
         btnConfirmar.innerHTML = '<i class="ph-bold ph-trash"></i> Excluir';
     } else {
         iconeBox.className = "w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100";
-        iconePh.className = "ph-bold ph-question text-blue-500";
+        iconeBox.innerHTML = '<i class="ph-bold ph-question text-3xl text-blue-500"></i>';
         btnConfirmar.className = "flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2";
         btnConfirmar.innerHTML = '<i class="ph-bold ph-check"></i> Confirmar';
     }
 
     window.acaoConfirmacaoGlobal = callbackAcao;
-    
-    if (!modal.open) modal.showModal();
-    
-    setTimeout(() => {
-        const card = document.getElementById('modal-conf-card');
-        if(card) { card.classList.remove('scale-95'); card.classList.add('scale-100'); }
-    }, 10);
+    document.getElementById('modal-confirmacao-generica').classList.remove('hidden');
 };
 
 window.fecharModalConfirmacao = function() {
-    const modal = document.getElementById('modal-confirmacao-dinamico');
-    if (modal && modal.open) {
-        const card = document.getElementById('modal-conf-card');
-        if(card) { card.classList.remove('scale-100'); card.classList.add('scale-95'); }
-        
-        setTimeout(() => {
-            modal.close();
-            window.acaoConfirmacaoGlobal = null;
-            window.destravarScrollGlobal();
-        }, 150);
-    }
+    window.acaoConfirmacaoGlobal = null;
+    document.getElementById('modal-confirmacao-generica').classList.add('hidden');
+    destravarFundo();
 };
 
 window.executarAcaoConfirmada = function() {
@@ -121,7 +48,68 @@ window.executarAcaoConfirmada = function() {
 };
 
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S.
+// SISTEMA DE LIGHTBOX BLINDADO (FOTOS)
+// ========================================================
+function abrirVisualizadorImagem(index) {
+    const base64Str = imagensUploadArray[index];
+    if (!base64Str) return;
+
+    travarFundo();
+
+    let modal = document.getElementById('modal-visualizador-imagem');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visualizador-imagem';
+        modal.className = 'fixed inset-0 bg-slate-900/95 z-[9999] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none';
+        modal.innerHTML = `
+            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
+                <i class="ph-bold ph-x text-2xl"></i>
+            </button>
+            <div id="media-container" class="w-full h-full flex items-center justify-center p-4"></div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        document.getElementById('media-container').innerHTML = ''; 
+    }
+
+    const container = document.getElementById('media-container');
+    const isVideo = base64Str.startsWith('data:video');
+    
+    if (isVideo) {
+        container.innerHTML = `<video id="imagem-expandida" src="${base64Str}" controls autoplay class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300"></video>`;
+    } else {
+        container.innerHTML = `<img id="imagem-expandida" src="${base64Str}" class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">`;
+    }
+
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+        document.getElementById('imagem-expandida').classList.remove('scale-95');
+        document.getElementById('imagem-expandida').classList.add('scale-100');
+    });
+}
+
+function fecharVisualizadorImagem() {
+    const modal = document.getElementById('modal-visualizador-imagem');
+    if (modal) {
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        
+        const mediaEl = document.getElementById('imagem-expandida');
+        if(mediaEl) {
+            mediaEl.classList.remove('scale-100');
+            mediaEl.classList.add('scale-95');
+            if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
+        }
+        
+        setTimeout(() => {
+            destravarFundo();
+        }, 300);
+    }
+}
+
+// ========================================================
+// AutoManager - Módulo de Orçamentos e O.S. Variáveis
 // ========================================================
 
 let itensTemporarios = [];
@@ -206,9 +194,6 @@ function obterCorStatus(status) {
     return cores[status] || 'bg-slate-50 text-slate-500';
 }
 
-// ========================================================
-// 2. RENDERIZAÇÕES (TABELA E FINANCEIRO) E LIGHTBOX
-// ========================================================
 function filtrarTabelaOS() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
@@ -520,67 +505,6 @@ function processarImagens(event) {
 function removerImagemArray(index) {
     imagensUploadArray.splice(index, 1);
     renderizarPreviewFotos();
-}
-
-function abrirVisualizadorImagem(index) {
-    const base64Str = imagensUploadArray[index];
-    if (!base64Str) return;
-
-    window.travarScrollGlobal(); // Congela o scroll de fundo
-
-    let modal = document.getElementById('modal-visualizador-imagem');
-    if (!modal) {
-        modal = document.createElement('dialog');
-        modal.id = 'modal-visualizador-imagem';
-        modal.style.cssText = "margin: auto; padding: 0; border: none; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; outline: none; overflow: hidden;";
-        
-        const style = document.createElement('style');
-        style.innerHTML = "#modal-visualizador-imagem::backdrop { background-color: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); }";
-        document.head.appendChild(style);
-        
-        modal.innerHTML = `
-            <button onclick="fecharVisualizadorImagem()" class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/10 hover:bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center transition-colors backdrop-blur-md shadow-lg z-50">
-                <i class="ph-bold ph-x text-2xl"></i>
-            </button>
-            <div id="media-container" class="w-full h-full flex items-center justify-center p-4"></div>
-        `;
-        document.body.appendChild(modal);
-    } else {
-        document.getElementById('media-container').innerHTML = ''; 
-    }
-
-    const container = document.getElementById('media-container');
-    const isVideo = base64Str.startsWith('data:video');
-    
-    if (isVideo) {
-        container.innerHTML = `<video id="imagem-expandida" src="${base64Str}" controls autoplay class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300"></video>`;
-    } else {
-        container.innerHTML = `<img id="imagem-expandida" src="${base64Str}" class="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl transform scale-95 transition-transform duration-300">`;
-    }
-
-    if (!modal.open) modal.showModal();
-
-    requestAnimationFrame(() => {
-        document.getElementById('imagem-expandida').classList.remove('scale-95');
-        document.getElementById('imagem-expandida').classList.add('scale-100');
-    });
-}
-
-function fecharVisualizadorImagem() {
-    const modal = document.getElementById('modal-visualizador-imagem');
-    if (modal && modal.open) {
-        const mediaEl = document.getElementById('imagem-expandida');
-        if(mediaEl) {
-            mediaEl.classList.remove('scale-100');
-            mediaEl.classList.add('scale-95');
-            if (mediaEl.tagName === 'VIDEO') mediaEl.pause();
-        }
-        
-        setTimeout(() => {
-            modal.close();
-            window.destravarScrollGlobal(); // Libera o scroll de fundo
-        }, 200);
-    }
 }
 
 // ===================================================================================
@@ -897,22 +821,6 @@ async function adicionarNovaParcelaManual() {
         dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
         await recarregarFinanceiroDaOS();
     } catch(e) { dispararAlerta("Erro ao criar lançamento extra."); }
-}
-
-async function processarDestravarOS() {
-    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
-    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    const usuarioLogado = JSON.parse(usuarioLogadoStr);
-
-    if(senhaDigitada !== usuarioLogado.senha) { dispararAlerta("Senha incorreta. Acesso negado."); return; }
-    
-    try {
-        fecharModalDestravar();
-        isOSDestravada = true;
-        abrirEdicaoOS(encodeURIComponent(JSON.stringify(osParaDestravarDados)), 'dados', false);
-        dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
-    } catch(e) { dispararAlerta("Erro ao destravar a O.S no banco."); }
 }
 
 // ========================================================
@@ -1320,7 +1228,7 @@ function calcularTotais() {
 }
 
 function abrirModalDestravar(id, orcJSONCodificado) {
-    window.travarScrollGlobal(); // <--- Trava da tela injetada
+    travarFundo();
     osParaDestravarId = id; 
     osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     document.getElementById('input-senha-reabrir').value = '';
@@ -1328,12 +1236,12 @@ function abrirModalDestravar(id, orcJSONCodificado) {
 }
 
 function fecharModalDestravar() { 
-    window.destravarScrollGlobal(); // <--- Destrava da tela injetada
+    destravarFundo();
     document.getElementById('modal-senha-destravar').classList.add('hidden'); 
 }
 
 function abrirModalCadastro(tipo) {
-    window.travarScrollGlobal(); // <--- Trava da tela injetada
+    travarFundo();
     modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
     const titulo = document.getElementById('modal-titulo'); 
@@ -1430,7 +1338,7 @@ function abrirModalCadastro(tipo) {
 }
 
 function fecharModalCadastro() { 
-    window.destravarScrollGlobal(); // <--- Destrava da tela injetada
+    destravarFundo();
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 }
 
@@ -1704,13 +1612,11 @@ function atualizarPlacarAuditoria(somaLancamentos, btnId) {
 }
 
 // ========================================================
-// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES (PARA O HTML ENCONTRAR)
+// 5. EXPORTAÇÃO GLOBAL DAS FUNÇÕES
 // ========================================================
 window.abrirVisualizadorImagem = abrirVisualizadorImagem;
 window.fecharVisualizadorImagem = fecharVisualizadorImagem;
 window.confirmarExclusaoImagem = confirmarExclusaoImagem;
-window.travarScrollGlobal = travarScrollGlobal;
-window.destravarScrollGlobal = destravarScrollGlobal;
 
 window.initOrcamentos = initOrcamentos;
 window.carregarListasBD = carregarListasBD;
@@ -1762,4 +1668,4 @@ window.atualizarInterfaceItensETotais = atualizarInterfaceItensETotais;
 window.renderizarTabelaReal = renderizarTabelaReal;
 window.filtrarTabelaOS = filtrarTabelaOS;
 
-console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso Absoluto!");
+console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso!");
