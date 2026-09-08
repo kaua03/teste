@@ -18,6 +18,7 @@ window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
 window.indexAnexoParaExcluir = null;
 window.globalOrcamentosList = [];
+window.osTemAlteracoesNaoSalvas = false;
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
@@ -184,7 +185,7 @@ window.atualizarInterfaceItensETotais = function() {
 };
 
 // ========================================================
-// 3. FOTOS, VÍDEOS E COMPRESSÃO
+// 3. FOTOS, VÍDEOS E UPLOAD (SUPABASE STORAGE)
 // ========================================================
 
 window.processarImagens = async function(event) {
@@ -194,31 +195,29 @@ window.processarImagens = async function(event) {
     window.dispararAlerta("Enviando mídia para a nuvem. Aguarde...", "sucesso");
     
     for (let file of files) {
-        // Trava de segurança para arquivos monstruosos (Ex: 50MB)
         if (file.size > 50 * 1024 * 1024) { 
             window.dispararAlerta(`O arquivo ${file.name} passou de 50MB.`, "erro");
             continue;
         }
 
-        // Cria um RG único para o arquivo não substituir outro
         const extensao = file.name.split('.').pop();
         const nomeUnico = `os_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${extensao}`;
 
         try {
-            // 1. Envia para o Bucket
             const { data, error } = await window.banco.storage
                 .from('anexos_os')
                 .upload(nomeUnico, file);
 
             if (error) throw error;
 
-            // 2. Pega o link público gerado
             const { data: publicUrlData } = window.banco.storage
                 .from('anexos_os')
                 .getPublicUrl(nomeUnico);
 
-            // 3. Salva só o link levinho na nossa matriz
             window.imagensUploadArray.push(publicUrlData.publicUrl);
+            
+            // 🔥 MARCA COMO ALTERADO APÓS UPLOAD
+            if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         } catch (e) {
             console.error("Erro no Upload:", e);
@@ -249,7 +248,6 @@ window.renderizarPreviewFotos = function() {
         
         let midiaHTML = '';
         
-        // Verifica se é vídeo pelo Base64 antigo ou pela URL nova
         const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
         if(isVideo) {
@@ -263,38 +261,32 @@ window.renderizarPreviewFotos = function() {
         previewContainer.appendChild(imgBox);
     });
 };
+
 // ========================================================
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
 
-// 🔥 GOLPE DE MESTRE: Anexando os modais ao document.body na hora de abrir
 window.abrirVisualizadorMidia = function(index) {
     const midiaStr = window.imagensUploadArray[index];
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    // 1. Mudamos de overflow-hidden para overflow-auto para permitir arrastar a foto no modo Zoom
     container.className = "w-full h-full flex items-center justify-center relative overflow-auto p-2 scrollbar-hide";
 
     let midiaHTML = '';
     
-    // Verifica se é vídeo ou imagem
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
     if(isVideo) {
-        // Vídeo: object-contain garante que nunca seja cortado
         midiaHTML = `<video src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain"></video>`;
     } else {
-        // Imagem: Lógica de clique para alternar entre Visão Global (cabe no ecrã) e Zoom (tamanho real)
         midiaHTML = `<img src="${midiaStr}" 
             class="max-w-full max-h-[90dvh] rounded-lg shadow-2xl object-contain transition-all duration-300 cursor-zoom-in" 
             onclick="
                 if(this.classList.contains('max-w-full')) {
-                    // Ativa o Zoom: Remove os limites e mostra o detalhe real
                     this.classList.remove('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
                     this.classList.add('cursor-zoom-out', 'm-auto');
                 } else {
-                    // Desativa o Zoom: Encolhe novamente para caber no ecrã sem cortes
                     this.classList.add('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
                     this.classList.remove('cursor-zoom-out', 'm-auto');
                 }
@@ -319,7 +311,7 @@ window.abrirModalExcluirAnexo = function(index) {
     window.indexAnexoParaExcluir = index;
     const modal = document.getElementById('modal-excluir-anexo');
     
-    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
@@ -335,6 +327,9 @@ window.confirmarExclusaoAnexo = function() {
         window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
         window.renderizarPreviewFotos();
         window.dispararAlerta("Evidência removida.", "sucesso");
+        
+        // 🔥 MARCA COMO ALTERADO APÓS REMOVER ANEXO
+        if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
     }
     window.fecharModalExcluirAnexo();
 };
@@ -347,7 +342,7 @@ window.abrirModalDestravar = function(id) {
     if(inputSenha) inputSenha.value = '';
     
     const modal = document.getElementById('modal-senha-destravar');
-    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
     
@@ -366,7 +361,7 @@ window.abrirModalExclusao = function(id, numero_os) {
     document.getElementById('exc-os-num').innerText = `#${numero_os}`;
     
     const modal = document.getElementById('modal-confirmacao-exclusao');
-    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
@@ -470,7 +465,7 @@ window.abrirModalCadastro = function(tipo) {
             </div>
         </div>`;
     }
-    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    document.body.appendChild(modal);
     document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
 };
@@ -658,7 +653,7 @@ window.congelarCamposOS = function(travar) {
     camposFinEdit.forEach(el => el.disabled = travar);
 };
 
-window.alternarSubTelaOrcamento = function(modo) {
+window.alternarSubTelaOrcamento = function(modo, ignorarAviso = false) {
     const viewLista = document.getElementById('view-lista-orcamentos');
     const viewNovo = document.getElementById('view-novo-orcamento');
 
@@ -668,6 +663,8 @@ window.alternarSubTelaOrcamento = function(modo) {
         window.currentOSFinanceiro = []; 
         window.isOSDestravada = false;
         window.isVisualizacaoModo = false;
+        
+        window.osTemAlteracoesNaoSalvas = false; 
         
         document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
         document.getElementById('db-cliente-nome').value = '';
@@ -691,6 +688,12 @@ window.alternarSubTelaOrcamento = function(modo) {
         viewLista.classList.add('hidden');
         viewNovo.classList.remove('hidden');
     } else {
+        if (window.osTemAlteracoesNaoSalvas && !ignorarAviso && !window.isVisualizacaoModo) {
+            window.abrirModalConfirmarSaida();
+            return; 
+        }
+
+        window.osTemAlteracoesNaoSalvas = false;
         viewNovo.classList.add('hidden');
         viewLista.classList.remove('hidden');
         window.isOSDestravada = false;
@@ -725,12 +728,19 @@ window.adicionarOuEditarItem = function() {
     }
 
     document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
+    
     window.calcularTotais();
+    
+    // 🔥 MARCA COMO ALTERADO APÓS ADICIONAR/EDITAR ITEM
+    if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 };
 
 window.removerItemDB = function(id) { 
     window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
     window.calcularTotais(); 
+    
+    // 🔥 MARCA COMO ALTERADO APÓS REMOVER ITEM
+    if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 };
 
 window.editarItem = function(id) {
@@ -1117,6 +1127,7 @@ window.abrirEdicaoOS = async function(id, abaAlvo = 'dados', isVisualizacao = fa
     window.osParaDestravarDados = orc; 
     window.isVisualizacaoModo = isVisualizacao;
     if (isVisualizacao) window.isOSDestravada = false;
+    window.osTemAlteracoesNaoSalvas = false;
     
     document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
     
@@ -1181,6 +1192,7 @@ window.processarDestravarOS = async function() {
         window.isOSDestravada = true;
         await window.abrirEdicaoOS(window.osParaDestravarId, 'dados', false);
         window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
+        window.osTemAlteracoesNaoSalvas = false;
     } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
@@ -1221,11 +1233,13 @@ window.salvarOrcamentoReal = async function() {
             if (error) throw error;
             
             window.dispararAlerta("O.S atualizada com sucesso!", "sucesso");
+            window.osTemAlteracoesNaoSalvas = false;
             window.alternarSubTelaOrcamento('lista');
         } else {
             const { error } = await window.banco.from('orcamentos').insert([{ cliente_nome: nome, veiculo_placa: placa, valor_total: window.valoresFinais.total, status: status, observacao: obs, anexos: window.imagensUploadArray, itens: payloadJSONB }]);
             if (error) throw error;
             window.dispararAlerta("O.S salva! Vá em 'Gestão Financeira' se desejar faturar agora.", "sucesso");
+            window.osTemAlteracoesNaoSalvas = false;
             window.alternarSubTelaOrcamento('lista');
         }
     } catch (erro) { window.dispararAlerta("Falha de comunicação com o servidor."); } 
@@ -1276,6 +1290,7 @@ window.salvarFinanceiroEditado = async function() {
         }
 
         window.dispararAlerta("Lançamentos financeiros salvos e atualizados!", "sucesso");
+        window.osTemAlteracoesNaoSalvas = false;
         await window.recarregarFinanceiroDaOS();
     } catch(e) { 
         window.dispararAlerta("Erro ao salvar o financeiro no banco."); 
@@ -1336,6 +1351,7 @@ window.processarLancarFinanceiroTab = async function() {
         if (records.length > 0) await window.banco.from('contas_receber').insert(records);
         
         window.dispararAlerta("O.S Faturada com sucesso!", "sucesso");
+        window.osTemAlteracoesNaoSalvas = false;
         window.alternarSubTelaOrcamento('lista');
     } catch (e) { window.dispararAlerta("Erro ao faturar no banco."); } 
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
@@ -1548,5 +1564,31 @@ window.gerarPDFSupabase = async function(id) {
         el.style.left = '-9999px'; el.style.top = '-9999px';
     });
 };
+
+window.abrirModalConfirmarSaida = function() {
+    const modal = document.getElementById('modal-confirmacao-saida');
+    document.body.appendChild(modal); // Teletransporte anti-bug
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; 
+};
+
+window.fecharModalConfirmarSaida = function() {
+    document.getElementById('modal-confirmacao-saida').classList.add('hidden');
+    document.body.style.overflow = 'auto'; 
+};
+
+window.confirmarSaida = function() {
+    window.fecharModalConfirmarSaida();
+    // Chama a função de voltar, mas desta vez manda ignorar o aviso!
+    window.alternarSubTelaOrcamento('lista', true); 
+};
+
+// Escuta tudo o que for digitado ou clicado na tela de edição para "sujar" a bandeira
+// Removido o DOMContentLoaded para garantir a leitura correta dos eventos logo que o script carregar
+const telaEdicao = document.getElementById('view-novo-orcamento');
+if(telaEdicao) {
+    telaEdicao.addEventListener('input', () => { if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true; });
+    telaEdicao.addEventListener('change', () => { if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true; });
+}
 
 console.log("🟢 Módulo Orçamentos Carregado, 100% Ancorado no Window e Inquebrável!");
