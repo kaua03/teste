@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL)
+// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL 2.0)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -17,6 +17,7 @@ window.currentOSFinanceiro = [];
 window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
 window.indexAnexoParaExcluir = null;
+window.globalOrcamentosList = []; // Banco de memória rápido
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
@@ -76,7 +77,7 @@ window.dispararAlerta = function(msg, tipo = 'erro') {
     if (alertaAntigo) alertaAntigo.remove();
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
-    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
+    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter z-[9999]`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
@@ -87,23 +88,18 @@ window.obterCorStatus = function(status) {
     return cores[status] || 'bg-slate-50 text-slate-500';
 };
 
+// ========================================================
+// 2. BUSCA, COMPRESSÃO DE IMAGEM E RENDERIZAÇÃO
+// ========================================================
 window.filtrarTabelaOS = function() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
-    
     linhas.forEach(linha => {
         const textoLinha = linha.innerText.toLowerCase();
-        if (textoLinha.includes(termo)) {
-            linha.style.display = '';
-        } else {
-            linha.style.display = 'none';
-        }
+        linha.style.display = textoLinha.includes(termo) ? '' : 'none';
     });
 };
 
-// ========================================================
-// 2. RENDERIZAÇÃO DE TELA E INTERFACE
-// ========================================================
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     if (!dados || dados.length === 0) { 
@@ -114,21 +110,20 @@ window.renderizarTabelaReal = function(dados) {
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = window.obterCorStatus(orc.status);
-        const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="window.abrirEdicaoOS('${orcJSON}', 'dados', false); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button onclick="window.abrirEdicaoOS('${orc.id}', 'dados', false); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="window.abrirModalDestravar('${orc.id}', '${orcJSON}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<button onclick="window.abrirModalDestravar('${orc.id}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="window.abrirFaturamentoDireto('${orcJSON}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="window.abrirFaturamentoDireto('${orc.id}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
-        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.abrirVisualizacaoOS('${orcJSON}')">
+        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.abrirVisualizacaoOS('${orc.id}')">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${window.formataDinheiro(orc.valor_total)}</td>
@@ -138,7 +133,7 @@ window.renderizarTabelaReal = function(dados) {
                     ${btnAcao1}
                     ${btnAcao2}
                     <button onclick="window.abrirModalExclusao('${orc.id}', '${orc.numero_os}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="window.gerarPDFSupabase('${orcJSON}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="window.gerarPDFSupabase('${orc.id}'); event.stopPropagation();" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -151,17 +146,14 @@ window.atualizarInterfaceItensETotais = function() {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
         const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-        
         divLista.innerHTML = window.itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
-            
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
                 <button onclick="window.editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
                 <button onclick="window.removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
-
             return `
             <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
@@ -191,9 +183,6 @@ window.atualizarInterfaceItensETotais = function() {
     if(finTotalOs) finTotalOs.innerText = window.formataDinheiro(window.valoresFinais.total);
 };
 
-// ========================================================
-// 3. FOTOS, VÍDEOS, COMPRESSÃO E MODAIS
-// ========================================================
 window.comprimirImagem = function(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -215,7 +204,7 @@ window.comprimirImagem = function(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.6)); 
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); 
             };
             img.src = event.target.result;
         };
@@ -231,8 +220,8 @@ window.processarImagens = async function(event) {
     
     for (let file of files) {
         if (file.type.startsWith('video/')) {
-            if (file.size > 4 * 1024 * 1024) {
-                window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 4MB).`, "erro");
+            if (file.size > 5 * 1024 * 1024) {
+                window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 5MB).`, "erro");
                 continue;
             }
             const base64 = await new Promise(r => { const reader = new FileReader(); reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
@@ -250,7 +239,6 @@ window.processarImagens = async function(event) {
 window.renderizarPreviewFotos = function() {
     const previewContainer = document.getElementById('preview-anexos');
     previewContainer.innerHTML = '';
-    
     if(window.imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
     previewContainer.classList.remove('hidden');
 
@@ -261,7 +249,6 @@ window.renderizarPreviewFotos = function() {
         imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900 cursor-pointer";
         
         let trashIcon = isTravadoGeral ? '' : `<button type="button" onclick="event.stopPropagation(); window.abrirModalExcluirAnexo(${index})" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center shadow-md transition-all z-10"><i class="ph-bold ph-trash"></i></button>`;
-        
         let viewIcon = `<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><i class="ph-bold ph-magnifying-glass-plus text-white text-2xl"></i></div>`;
         
         let midiaHTML = '';
@@ -270,18 +257,20 @@ window.renderizarPreviewFotos = function() {
         } else {
             midiaHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
         }
-
         imgBox.innerHTML = `${midiaHTML}${viewIcon}${trashIcon}`;
         imgBox.onclick = function() { window.abrirVisualizadorMidia(index); };
         previewContainer.appendChild(imgBox);
     });
 };
 
+// ========================================================
+// 3. MODAIS DE MÍDIA E TELA CHEIA (TRAVA DE SCROLL)
+// ========================================================
 window.abrirVisualizadorMidia = function(index) {
     const base64Str = window.imagensUploadArray[index];
     const container = document.getElementById('container-visualizador');
     if(base64Str.startsWith('data:video')) {
-        container.innerHTML = `<video src="${base64Str}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl"></video>`;
+        container.innerHTML = `<video src="${base64Str}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl outline-none"></video>`;
     } else {
         container.innerHTML = `<img src="${base64Str}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">`;
     }
@@ -316,12 +305,42 @@ window.confirmarExclusaoAnexo = function() {
     window.fecharModalExcluirAnexo();
 };
 
+window.abrirModalDestravar = function(id) {
+    window.osParaDestravarId = id; 
+    window.osParaDestravarDados = window.globalOrcamentosList.find(o => o.id == id);
+    const inputSenha = document.getElementById('input-senha-reabrir');
+    if(inputSenha) inputSenha.value = '';
+    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { if(inputSenha) inputSenha.focus(); }, 150);
+};
+
+window.fecharModalDestravar = function() { 
+    document.getElementById('modal-senha-destravar').classList.add('hidden'); 
+    document.body.style.overflow = 'auto';
+};
+
+window.abrirModalExclusao = function(id, numero_os) {
+    window.idParaExcluir = id;
+    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
+    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+};
+
+window.fecharModalExclusao = function() { 
+    window.idParaExcluir = null; 
+    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
+    document.body.style.overflow = 'auto';
+};
+
+// ========================================================
+// 4. ABAS E COMPONENTES
+// ========================================================
 window.mudarAbaOS = function(aba) {
     const btnDados = document.getElementById('aba-dados');
     const btnFin = document.getElementById('aba-fin');
     const contDados = document.getElementById('aba-conteudo-dados');
     const contFin = document.getElementById('aba-conteudo-fin');
-    
     const colDados = document.getElementById('coluna-direita-dados');
     const colFin = document.getElementById('coluna-direita-fin');
     
@@ -330,25 +349,182 @@ window.mudarAbaOS = function(aba) {
     if (aba === 'dados') {
         btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
         btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
-        
         contDados.classList.remove('hidden');
         contFin.classList.add('hidden');
         if(colDados) colDados.classList.remove('hidden');
         if(colFin) colFin.classList.add('hidden');
-        
     } else {
         btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
         btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        
         contFin.classList.remove('hidden');
         contDados.classList.add('hidden');
         if(colFin) colFin.classList.remove('hidden');
         if(colDados) colDados.classList.add('hidden');
-        
         window.renderizarAbaFinanceiro();
     }
 };
 
+window.alternarSubTelaOrcamento = function(modo) {
+    const viewLista = document.getElementById('view-lista-orcamentos');
+    const viewNovo = document.getElementById('view-novo-orcamento');
+
+    if (modo === 'novo') {
+        window.osEmEdicaoId = null; 
+        window.osEmEdicaoNumero = null;
+        window.currentOSFinanceiro = []; 
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        
+        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
+        document.getElementById('db-cliente-nome').value = '';
+        document.getElementById('db-veiculo-placa').value = '';
+        document.getElementById('db-status').value = 'Em Aberto';
+        document.getElementById('desc-val').value = '';
+        document.getElementById('db-obs').value = '';
+        
+        window.itensTemporarios = [];
+        window.imagensUploadArray = [];
+        const preview = document.getElementById('preview-anexos');
+        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+        
+        const abaFinBtn = document.getElementById('aba-fin');
+        if (abaFinBtn) abaFinBtn.classList.add('hidden');
+        
+        window.mudarAbaOS('dados'); 
+        window.calcularTotais();
+        window.verificarStatusFinanceiro(); 
+        
+        viewLista.classList.add('hidden');
+        viewNovo.classList.remove('hidden');
+    } else {
+        viewNovo.classList.add('hidden');
+        viewLista.classList.remove('hidden');
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        window.buscarOrcamentosSupabase();
+    }
+};
+
+window.adicionarOuEditarItem = function() {
+    const tipo = document.getElementById('item-tipo').value;
+    const nome = document.getElementById('item-nome').value;
+    const desc = document.getElementById('item-desc').value;
+    const qtd = parseFloat(document.getElementById('item-qtd').value);
+    const valString = document.getElementById('item-val').value;
+    const idEdit = document.getElementById('item-id-edit').value;
+
+    if(!nome) { window.dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
+    if(!qtd || qtd <= 0) { window.dispararAlerta("A quantidade deve ser maior que zero."); return; }
+    const valFloat = window.reverterMoeda(valString);
+    if(valFloat <= 0) { window.dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
+
+    const sub = qtd * valFloat;
+
+    if (idEdit) {
+        const index = window.itensTemporarios.findIndex(i => i.id_temp == idEdit);
+        if (index > -1) window.itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        document.getElementById('item-id-edit').value = '';
+        document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
+        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
+    } else {
+        window.itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
+    }
+
+    document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
+    window.calcularTotais();
+};
+
+window.removerItemDB = function(id) { 
+    window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
+    window.calcularTotais(); 
+};
+
+window.editarItem = function(id) {
+    const item = window.itensTemporarios.find(i => i.id_temp === id);
+    if (!item) return;
+
+    document.getElementById('item-tipo').value = item.tipo || 'Peça';
+    document.getElementById('item-nome').value = item.descricao;
+    document.getElementById('item-desc').value = item.detalhe || '';
+    document.getElementById('item-qtd').value = item.quantidade;
+    const inputVal = document.getElementById('item-val');
+    inputVal.value = (item.valor_unitario * 100).toString(); 
+    window.mascaraMoeda(inputVal);
+    document.getElementById('item-id-edit').value = item.id_temp;
+    
+    const btn = document.getElementById('btn-add-item');
+    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
+    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+};
+
+window.calcularTotais = function() {
+    let sumPecas = 0; let sumServicos = 0;
+    window.itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
+    let totalBruto = sumPecas + sumServicos;
+    let descValor = 0;
+    const descTipo = document.getElementById('desc-tipo').value; 
+    const descAlvo = document.getElementById('desc-alvo').value; 
+    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
+
+    if (descFator > 0) {
+        let baseDeCalculo = 0;
+        if (descAlvo === 'total') baseDeCalculo = totalBruto;
+        else if (descAlvo === 'pecas') baseDeCalculo = sumPecas;
+        else if (descAlvo === 'servicos') baseDeCalculo = sumServicos;
+        descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
+    }
+
+    window.valoresFinais.pecas = sumPecas; 
+    window.valoresFinais.servicos = sumServicos; 
+    window.valoresFinais.desconto = descValor; 
+    window.valoresFinais.total = totalBruto - descValor;
+    
+    window.atualizarInterfaceItensETotais();
+    
+    if(document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
+        if(window.currentOSFinanceiro.length > 0) {
+            window.checarSomaFinanceiroEdit();
+        } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
+            window.checarSomaGeradorTab();
+        }
+    }
+};
+
+window.verificarStatusFinanceiro = function() {
+    const status = document.getElementById('db-status').value;
+    const badgeFechada = document.getElementById('badge-os-fechada');
+    const abaFinBtn = document.getElementById('aba-fin');
+    
+    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+
+    if (isTravadoLocalmente) {
+        if(badgeFechada) {
+            badgeFechada.classList.remove('hidden');
+            if (window.isVisualizacaoModo) {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
+                badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            } else {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-lock-key text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Fechada / Leitura</span>';
+                badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            }
+        }
+        window.congelarCamposOS(true);
+    } else {
+        window.congelarCamposOS(false);
+        if(badgeFechada) badgeFechada.classList.add('hidden');
+    }
+    
+    if (status === 'Finalizado' || status === 'Fechado' || window.currentOSFinanceiro.length > 0) {
+        if(abaFinBtn) abaFinBtn.classList.remove('hidden');
+    } else {
+        if(abaFinBtn) abaFinBtn.classList.add('hidden');
+        if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
+    }
+};
+
+// ========================================================
+// 5. MÉTODOS FINANCEIROS E AUDITORIA
+// ========================================================
 window.recarregarFinanceiroDaOS = async function() {
     if(!window.osEmEdicaoNumero) return;
     const { data: finRecords } = await window.banco.from('contas_receber')
@@ -624,239 +800,8 @@ window.gerarLinhasParcelasTab = function() {
 };
 
 // ========================================================
-// 3. TELA E EVENTOS DE O.S (ESTADOS E FLUXO)
+// 6. CADASTRO DE CLIENTE/VEÍCULO (MODAL RÁPIDO) E CEP
 // ========================================================
-window.verificarStatusFinanceiro = function() {
-    const status = document.getElementById('db-status').value;
-    const badgeFechada = document.getElementById('badge-os-fechada');
-    const abaFinBtn = document.getElementById('aba-fin');
-    
-    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-
-    if (isTravadoLocalmente) {
-        if(badgeFechada) {
-            badgeFechada.classList.remove('hidden');
-            if (window.isVisualizacaoModo) {
-                badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
-                badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
-            } else {
-                badgeFechada.innerHTML = '<i class="ph-fill ph-lock-key text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Fechada / Leitura</span>';
-                badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
-            }
-        }
-        window.congelarCamposOS(true);
-    } else {
-        window.congelarCamposOS(false);
-        if(badgeFechada) badgeFechada.classList.add('hidden');
-    }
-    
-    if (status === 'Finalizado' || status === 'Fechado' || window.currentOSFinanceiro.length > 0) {
-        if(abaFinBtn) abaFinBtn.classList.remove('hidden');
-    } else {
-        if(abaFinBtn) abaFinBtn.classList.add('hidden');
-        if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
-    }
-};
-
-window.congelarCamposOS = function(travar) {
-    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
-    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
-
-    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
-    botoesAcao.forEach(btn => btn.disabled = travar);
-    
-    const btnSalvarObj = document.getElementById('btn-salvar-db');
-    if(btnSalvarObj) {
-        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
-        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-    
-    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
-    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
-    
-    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
-    camposFinEdit.forEach(el => el.disabled = travar);
-};
-
-window.alternarSubTelaOrcamento = function(modo) {
-    const viewLista = document.getElementById('view-lista-orcamentos');
-    const viewNovo = document.getElementById('view-novo-orcamento');
-
-    if (modo === 'novo') {
-        window.osEmEdicaoId = null; 
-        window.osEmEdicaoNumero = null;
-        window.currentOSFinanceiro = []; 
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        
-        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
-        document.getElementById('db-cliente-nome').value = '';
-        document.getElementById('db-veiculo-placa').value = '';
-        document.getElementById('db-status').value = 'Em Aberto';
-        document.getElementById('desc-val').value = '';
-        document.getElementById('db-obs').value = '';
-        
-        window.itensTemporarios = [];
-        window.imagensUploadArray = [];
-        const preview = document.getElementById('preview-anexos');
-        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
-        
-        document.getElementById('aba-fin').classList.add('hidden');
-        
-        window.calcularTotais();
-        window.verificarStatusFinanceiro(); 
-        window.mudarAbaOS('dados'); 
-        
-        viewLista.classList.add('hidden');
-        viewNovo.classList.remove('hidden');
-    } else {
-        viewNovo.classList.add('hidden');
-        viewLista.classList.remove('hidden');
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        window.buscarOrcamentosSupabase();
-    }
-};
-
-window.adicionarOuEditarItem = function() {
-    const tipo = document.getElementById('item-tipo').value;
-    const nome = document.getElementById('item-nome').value;
-    const desc = document.getElementById('item-desc').value;
-    const qtd = parseFloat(document.getElementById('item-qtd').value);
-    const valString = document.getElementById('item-val').value;
-    const idEdit = document.getElementById('item-id-edit').value;
-
-    if(!nome) { window.dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
-    if(!qtd || qtd <= 0) { window.dispararAlerta("A quantidade deve ser maior que zero."); return; }
-    const valFloat = window.reverterMoeda(valString);
-    if(valFloat <= 0) { window.dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
-
-    const sub = qtd * valFloat;
-
-    if (idEdit) {
-        const index = window.itensTemporarios.findIndex(i => i.id_temp == idEdit);
-        if (index > -1) window.itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
-        document.getElementById('item-id-edit').value = '';
-        document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
-        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
-    } else {
-        window.itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
-    }
-
-    document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
-    window.calcularTotais();
-};
-
-window.removerItemDB = function(id) { 
-    window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
-    window.calcularTotais(); 
-};
-
-window.editarItem = function(id) {
-    const item = window.itensTemporarios.find(i => i.id_temp === id);
-    if (!item) return;
-
-    document.getElementById('item-tipo').value = item.tipo || 'Peça';
-    document.getElementById('item-nome').value = item.descricao;
-    document.getElementById('item-desc').value = item.detalhe || '';
-    document.getElementById('item-qtd').value = item.quantidade;
-    const inputVal = document.getElementById('item-val');
-    inputVal.value = (item.valor_unitario * 100).toString(); 
-    window.mascaraMoeda(inputVal);
-    document.getElementById('item-id-edit').value = item.id_temp;
-    
-    const btn = document.getElementById('btn-add-item');
-    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
-    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
-};
-
-window.calcularTotais = function() {
-    let sumPecas = 0; let sumServicos = 0;
-    window.itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
-    let totalBruto = sumPecas + sumServicos;
-    let descValor = 0;
-    const descTipo = document.getElementById('desc-tipo').value; 
-    const descAlvo = document.getElementById('desc-alvo').value; 
-    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
-
-    if (descFator > 0) {
-        let baseDeCalculo = 0;
-        if (descAlvo === 'total') baseDeCalculo = totalBruto;
-        else if (descAlvo === 'pecas') baseDeCalculo = sumPecas;
-        else if (descAlvo === 'servicos') baseDeCalculo = sumServicos;
-        descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
-    }
-
-    window.valoresFinais.pecas = sumPecas; 
-    window.valoresFinais.servicos = sumServicos; 
-    window.valoresFinais.desconto = descValor; 
-    window.valoresFinais.total = totalBruto - descValor;
-    
-    window.atualizarInterfaceItensETotais();
-    
-    if(document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
-        if(window.currentOSFinanceiro.length > 0) {
-            window.checarSomaFinanceiroEdit();
-        } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
-            window.checarSomaGeradorTab();
-        }
-    }
-};
-
-window.abrirModalDestravar = function(id, orcJSONCodificado) {
-    window.osParaDestravarId = id; 
-    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
-    
-    const inputSenha = document.getElementById('input-senha-reabrir');
-    if(inputSenha) inputSenha.value = '';
-    
-    document.getElementById('modal-senha-destravar').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    
-    setTimeout(() => {
-        if(inputSenha) inputSenha.focus();
-    }, 150);
-};
-
-window.fecharModalDestravar = function() { 
-    document.getElementById('modal-senha-destravar').classList.add('hidden'); 
-    document.body.style.overflow = 'auto';
-};
-
-window.abrirModalExclusao = function(id, numero_os) {
-    window.idParaExcluir = id;
-    document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-};
-
-window.fecharModalExclusao = function() { 
-    window.idParaExcluir = null; 
-    document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
-    document.body.style.overflow = 'auto';
-};
-
-window.abrirModalExcluirAnexo = function(index) {
-    window.indexAnexoParaExcluir = index;
-    document.getElementById('modal-excluir-anexo').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-};
-
-window.fecharModalExcluirAnexo = function() {
-    window.indexAnexoParaExcluir = null;
-    document.getElementById('modal-excluir-anexo').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-};
-
-window.confirmarExclusaoAnexo = function() {
-    if (window.indexAnexoParaExcluir !== null) {
-        window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
-        window.renderizarPreviewFotos();
-        window.dispararAlerta("Evidência removida.", "sucesso");
-    }
-    window.fecharModalExcluirAnexo();
-};
-
 window.abrirModalCadastro = function(tipo) {
     window.modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
@@ -1050,7 +995,7 @@ window.processarSalvamentoModal = async function() {
 };
 
 // ===================================================================================
-// 6. INTEGRAÇÃO SUPABASE E FLUXOS
+// 7. BANCO DE DADOS (SUPABASE) E FLUXOS PRINCIPAIS DA O.S
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -1091,16 +1036,18 @@ window.buscarOrcamentosSupabase = async function() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
-        window.renderizarTabelaReal(orcamentos);
+        window.globalOrcamentosList = orcamentos || []; 
+        window.renderizarTabelaReal(window.globalOrcamentosList);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
 };
 
-window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
-    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    
+window.abrirEdicaoOS = async function(id, abaAlvo = 'dados', isVisualizacao = false) {
+    const orc = window.globalOrcamentosList.find(o => o.id == id);
+    if (!orc) return;
+
     window.osEmEdicaoId = orc.id;
     window.osEmEdicaoNumero = orc.numero_os; 
     window.osParaDestravarDados = orc; 
@@ -1149,12 +1096,12 @@ window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVis
     window.mudarAbaOS(abaAlvo); 
 };
 
-window.abrirVisualizacaoOS = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'dados', true);
+window.abrirVisualizacaoOS = function(id) {
+    window.abrirEdicaoOS(id, 'dados', true);
 };
 
-window.abrirFaturamentoDireto = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'fin', false);
+window.abrirFaturamentoDireto = function(id) {
+    window.abrirEdicaoOS(id, 'fin', false);
 };
 
 window.processarDestravarOS = async function() {
@@ -1168,8 +1115,7 @@ window.processarDestravarOS = async function() {
     try {
         window.fecharModalDestravar();
         window.isOSDestravada = true;
-        const encoded = encodeURIComponent(JSON.stringify(window.osParaDestravarDados));
-        await window.abrirEdicaoOS(encoded, 'dados', false);
+        await window.abrirEdicaoOS(window.osParaDestravarId, 'dados', false);
         window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
     } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
@@ -1367,7 +1313,7 @@ window.adicionarNovaParcelaManual = async function() {
     });
     
     let valorSugerido = window.valoresFinais.total - somaAtual;
-    if(valorSugerido < 0) window.valorSugerido = 0;
+    if(valorSugerido < 0) valorSugerido = 0;
 
     const novaParcela = {
         descricao: `Parcela O.S #${window.osEmEdicaoNumero} - ${cliente}`,
@@ -1420,8 +1366,9 @@ window.confirmarExclusao = async function() {
     } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
 };
 
-window.gerarPDFSupabase = async function(dadosCodificados) {
-    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
+window.gerarPDFSupabase = async function(id) {
+    const orc = window.globalOrcamentosList.find(o => o.id == id);
+    if (!orc) return;
     
     document.getElementById('pdf-id').innerText = orc.numero_os;
     const dataAbertura = new Date(orc.data_criacao);
@@ -1550,4 +1497,4 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
     });
 };
 
-console.log("🟢 Módulo Orçamentos Carregado, Ancorado na Raiz do JS e Inquebrável!");
+console.log("🟢 Módulo Orçamentos Carregado, 100% Ancorado no Window e Inquebrável!");
