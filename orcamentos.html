@@ -124,13 +124,22 @@
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
+                            
+                            <!-- PAINEL DE FOTOS E CÂMERA (CORRIGIDO) -->
                             <div id="box-upload-fotos">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
-                                <!-- Modificado aqui para aceitar vídeo e câmera no celular nativamente -->
-                                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos ou vídeos</p></div>
-                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*,video/*" onchange="window.processarImagens(event)" />
-                                </label>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                        <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
+                                        <p class="text-[10px] text-slate-500 font-bold">Usar Câmera</p>
+                                        <input type="file" id="input-anexos-camera" class="hidden" accept="image/*,video/*" capture="environment" onchange="window.processarImagens(event)" />
+                                    </label>
+                                    <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                        <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
+                                        <p class="text-[10px] text-slate-500 font-bold">Galeria / Arquivos</p>
+                                        <input type="file" id="input-anexos-galeria" class="hidden" multiple accept="image/*,video/*" onchange="window.processarImagens(event)" />
+                                    </label>
+                                </div>
                             </div>
                             <div id="preview-anexos" class="flex overflow-x-auto gap-3 mt-4 pb-2 hidden scrollbar-hide"></div>
                         </div>
@@ -310,7 +319,7 @@
         <div class="p-6 text-center">
             <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-600"><i class="ph-bold ph-lock-key-open text-3xl text-blue-500"></i></div>
             <h3 class="text-xl font-black text-white mb-2">Destravar a O.S?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição temporária. Lembre-se de conferir se o Financeiro bate na Auditoria se alterar valores. <br><br><b>Digite a senha gerencial:</b></p>
+            <p class="text-xs text-slate-400 font-medium mb-6">A O.S entrará em modo de edição temporária. O financeiro atual se manterá intacto. <br><br><b>Digite a senha gerencial:</b></p>
             <input type="password" id="input-senha-reabrir" placeholder="Senha..." class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-center text-white font-bold outline-none focus:border-blue-500 tracking-widest text-lg">
         </div>
         <div class="p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
