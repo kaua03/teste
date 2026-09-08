@@ -710,8 +710,16 @@ window.calcularTotais = function() {
 window.abrirModalDestravar = function(id, orcJSONCodificado) {
     window.osParaDestravarId = id; 
     window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
-    document.getElementById('input-senha-reabrir').value = '';
+    
+    const inputSenha = document.getElementById('input-senha-reabrir');
+    inputSenha.value = '';
+    
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
+    
+    // Foco automático e aguardando o usuário digitar (SUPERPODER DO CURSOR)
+    setTimeout(() => {
+        inputSenha.focus();
+    }, 150);
 };
 
 window.fecharModalDestravar = function() { 
@@ -836,7 +844,10 @@ window.processarImagens = function(event) {
     if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
     Array.from(files).forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => { window.imagensUploadArray.push(e.target.result); window.renderizarPreviewFotos(); };
+        reader.onload = (e) => { 
+            window.imagensUploadArray.push(e.target.result); 
+            window.renderizarPreviewFotos(); 
+        };
         reader.readAsDataURL(file);
     });
 };
@@ -1360,4 +1371,4 @@ window.confirmarExclusao = async function() {
     } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
 };
 
-console.log("🟢 Módulo Orçamentos Carregado, Ancorado e Blindado 100%!");
+console.log("🟢 Módulo Orçamentos Carregado com Sucesso Absoluto!");
