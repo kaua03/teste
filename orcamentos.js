@@ -266,39 +266,98 @@ window.renderizarPreviewFotos = function() {
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
 
+window.zoomLevel = 1;
+
 window.abrirVisualizadorMidia = function(index) {
     const midiaStr = window.imagensUploadArray[index];
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    container.className = "w-full h-full flex items-center justify-center relative overflow-auto p-2 scrollbar-hide";
+    window.zoomLevel = 1; // Reseta o zoom sempre que abre
 
-    let midiaHTML = '';
+    // Prepara o container para permitir rolagem e arrasto (Pan)
+    container.className = "w-full h-full flex items-center justify-center relative overflow-auto p-2 scrollbar-hide cursor-grab active:cursor-grabbing";
     
+    let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
+    // Painel de Controle de Zoom Flutuante
+    const controlesZoom = `
+        <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full z-[100005] shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-700">
+            <button onclick="event.stopPropagation(); window.alterarZoom(-0.25)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
+            <span id="indicador-zoom" class="text-white font-black text-sm min-w-[50px] text-center tracking-widest">100%</span>
+            <button onclick="event.stopPropagation(); window.alterarZoom(0.25)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-plus text-2xl"></i></button>
+            <div class="w-px h-6 bg-slate-600 mx-1"></div>
+            <button onclick="event.stopPropagation(); window.resetarZoom()" class="text-slate-400 hover:text-white transition transform active:scale-90" title="Restaurar Tela"><i class="ph-bold ph-arrows-in-simple text-2xl"></i></button>
+        </div>
+    `;
+
     if(isVideo) {
-        midiaHTML = `<video src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain"></video>`;
+        // Vídeos mantêm o tamanho mas ganham os botões
+        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-all duration-200"></video>`;
     } else {
-        midiaHTML = `<img src="${midiaStr}" 
-            class="max-w-full max-h-[90dvh] rounded-lg shadow-2xl object-contain transition-all duration-300 cursor-zoom-in" 
-            onclick="
-                if(this.classList.contains('max-w-full')) {
-                    this.classList.remove('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
-                    this.classList.add('cursor-zoom-out', 'm-auto');
-                } else {
-                    this.classList.add('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
-                    this.classList.remove('cursor-zoom-out', 'm-auto');
-                }
-            " 
-            title="Clique para dar Zoom">`;
+        // Imagens preparadas para crescer
+        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-all duration-200">`;
     }
     
     container.innerHTML = midiaHTML;
-    
     document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
+    
+    // Motor de Arrasto (Para navegar pela imagem gigante no Computador)
+    let isDragging = false;
+    let startX, startY, scrollLeft, scrollTop;
+    
+    container.onmousedown = (e) => {
+        if(e.target.closest('button') || e.target.tagName === 'VIDEO') return; 
+        isDragging = true;
+        startX = e.pageX - container.offsetLeft;
+        startY = e.pageY - container.offsetTop;
+        scrollLeft = container.scrollLeft;
+        scrollTop = container.scrollTop;
+    };
+    container.onmouseleave = () => { isDragging = false; };
+    container.onmouseup = () => { isDragging = false; };
+    container.onmousemove = (e) => {
+        if (!isDragging || window.zoomLevel === 1) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const y = e.pageY - container.offsetTop;
+        container.scrollLeft = scrollLeft - (x - startX);
+        container.scrollTop = scrollTop - (y - startY);
+    };
+};
+
+window.alterarZoom = function(fator) {
+    window.zoomLevel += fator;
+    if(window.zoomLevel < 0.5) window.zoomLevel = 0.5; // Limite mínimo 50%
+    if(window.zoomLevel > 4) window.zoomLevel = 4;     // Limite máximo 400%
+    window.aplicarZoom();
+};
+
+window.resetarZoom = function() {
+    window.zoomLevel = 1;
+    window.aplicarZoom();
+};
+
+window.aplicarZoom = function() {
+    const el = document.getElementById('elemento-midia-zoom');
+    const ind = document.getElementById('indicador-zoom');
+    if(el) {
+        if (window.zoomLevel === 1) {
+            // Modo Padrão: Trava para caber perfeitamente na tela (Visão Global)
+            el.style.width = '';
+            el.style.height = '';
+            el.classList.add('max-w-full', 'max-h-[90dvh]');
+        } else {
+            // Modo Zoom: Estoura os limites do CSS
+            el.classList.remove('max-w-full', 'max-h-[90dvh]');
+            el.style.width = `${window.zoomLevel * 100}vw`;
+            el.style.height = 'auto'; // Mantém proporção
+        }
+    }
+    if(ind) ind.innerText = `${Math.round(window.zoomLevel * 100)}%`;
 };
 
 window.fecharVisualizadorMidia = function() {
@@ -322,16 +381,77 @@ window.fecharModalExcluirAnexo = function() {
     document.body.style.overflow = 'auto'; 
 };
 
-window.confirmarExclusaoAnexo = function() {
+window.confirmarExclusaoAnexo = async function() {
     if (window.indexAnexoParaExcluir !== null) {
+        const urlMidia = window.imagensUploadArray[window.indexAnexoParaExcluir];
+        
+        // Se a mídia estiver hospedada no Supabase, avisamos o Storage para destruí-la
+        if (urlMidia.includes('supabase.co')) {
+            const btnExcluir = document.querySelector('#modal-excluir-anexo button:last-child');
+            const textoOriginal = btnExcluir.innerHTML;
+            btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
+            btnExcluir.disabled = true;
+
+            try {
+                // Extraímos apenas o nome do arquivo da URL completa
+                const nomeArquivo = urlMidia.split('/anexos_os/')[1].split('?')[0];
+                
+                // Manda a ordem de exclusão para o bucket
+                const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
+                if (error) throw error;
+            } catch (e) {
+                window.dispararAlerta("Falha ao excluir arquivo da nuvem.", "erro");
+                btnExcluir.innerHTML = textoOriginal;
+                btnExcluir.disabled = false;
+                return; // Pára aqui e não apaga da tela se falhar na nuvem
+            }
+        }
+
+        // Se chegou aqui, removemos da tela com segurança
         window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
         window.renderizarPreviewFotos();
-        window.dispararAlerta("Evidência removida.", "sucesso");
+        window.dispararAlerta("Evidência removida com sucesso.", "sucesso");
         
-        // 🔥 MARCA COMO ALTERADO APÓS REMOVER ANEXO
+        // Levanta a bandeira vermelha avisando que a O.S foi alterada
         if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
+        
+        // Reseta o botão para uso futuro
+        const btnExcluirFinal = document.querySelector('#modal-excluir-anexo button:last-child');
+        if(btnExcluirFinal) {
+            btnExcluirFinal.innerHTML = 'Excluir';
+            btnExcluirFinal.disabled = false;
+        }
     }
     window.fecharModalExcluirAnexo();
+};
+
+window.confirmarExclusao = async function() {
+    if (!window.idParaExcluir) return;
+    
+    // 1. Acha a OS no sistema para pegar todos os anexos atrelados a ela
+    const orc = window.globalOrcamentosList.find(o => o.id == window.idParaExcluir);
+    
+    try {
+        // 2. Destruição Logística (Apaga todas as fotos da O.S. lá do Supabase Storage)
+        if (orc && orc.anexos && orc.anexos.length > 0) {
+            const arquivosParaApagar = orc.anexos
+                .filter(url => url.includes('supabase.co'))
+                .map(url => url.split('/anexos_os/')[1].split('?')[0]);
+            
+            if (arquivosParaApagar.length > 0) {
+                await window.banco.storage.from('anexos_os').remove(arquivosParaApagar);
+            }
+        }
+
+        // 3. Extermina a O.S do banco de dados principal
+        await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
+        
+        window.dispararAlerta("O.S e arquivos excluídos permanentemente.", "sucesso");
+        window.buscarOrcamentosSupabase();
+    } catch (e) {
+        window.dispararAlerta("Erro ao excluir O.S.", "erro");
+    }
+    window.fecharModalExclusao();
 };
 
 window.abrirModalDestravar = function(id) {
