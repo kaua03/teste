@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S.
+// AutoManager - Módulo de Orçamentos e O.S. (BLINDADO)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -16,6 +16,7 @@ window.globalVeiculos = [];
 window.currentOSFinanceiro = []; 
 window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
+window.indexAnexoParaExcluir = null; // Controle do modal de anexos
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
@@ -202,7 +203,7 @@ window.renderizarPreviewFotos = function() {
         const imgBox = document.createElement('div');
         imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900";
         
-        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.removerImagemArray(${index})"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.abrirModalExcluirAnexo(${index})"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
         
         let midiaHTML = '';
         if(base64Str.startsWith('data:video')) {
@@ -224,8 +225,7 @@ window.mudarAbaOS = function(aba) {
     
     const boxAuditoria = document.getElementById('box-auditoria-financeira');
     const boxDesconto = document.getElementById('box-desconto');
-    const boxStatusSelect = document.getElementById('box-status');
-    const boxBtnSalvar = document.getElementById('btn-salvar-db');
+    const boxCaixaPreta = document.getElementById('box-caixa-preta');
 
     if (aba === 'dados') {
         btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
@@ -236,8 +236,7 @@ window.mudarAbaOS = function(aba) {
         
         if(boxAuditoria) boxAuditoria.classList.add('hidden');
         if(boxDesconto) boxDesconto.classList.remove('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
+        if(boxCaixaPreta) boxCaixaPreta.classList.remove('hidden');
         
     } else {
         btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
@@ -248,8 +247,7 @@ window.mudarAbaOS = function(aba) {
         
         if(boxAuditoria) boxAuditoria.classList.remove('hidden');
         if(boxDesconto) boxDesconto.classList.add('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
+        if(boxCaixaPreta) boxCaixaPreta.classList.add('hidden');
         
         window.renderizarAbaFinanceiro();
     }
@@ -712,11 +710,10 @@ window.abrirModalDestravar = function(id, orcJSONCodificado) {
     window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
     
     const inputSenha = document.getElementById('input-senha-reabrir');
-    inputSenha.value = '';
+    if(inputSenha) inputSenha.value = '';
     
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
     
-    // O Superpoder: O cursor vai pular automaticamente para a senha
     setTimeout(() => {
         if(inputSenha) inputSenha.focus();
     }, 150);
@@ -735,6 +732,25 @@ window.abrirModalExclusao = function(id, numero_os) {
 window.fecharModalExclusao = function() { 
     window.idParaExcluir = null; 
     document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
+};
+
+window.abrirModalExcluirAnexo = function(index) {
+    window.indexAnexoParaExcluir = index;
+    document.getElementById('modal-excluir-anexo').classList.remove('hidden');
+};
+
+window.fecharModalExcluirAnexo = function() {
+    window.indexAnexoParaExcluir = null;
+    document.getElementById('modal-excluir-anexo').classList.add('hidden');
+};
+
+window.confirmarExclusaoAnexo = function() {
+    if (window.indexAnexoParaExcluir !== null) {
+        window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
+        window.renderizarPreviewFotos();
+        window.dispararAlerta("Evidência removida.", "sucesso");
+    }
+    window.fecharModalExcluirAnexo();
 };
 
 window.abrirModalCadastro = function(tipo) {
@@ -850,12 +866,6 @@ window.processarImagens = function(event) {
         };
         reader.readAsDataURL(file);
     });
-};
-
-window.removerImagemArray = function(index) { 
-    if(!confirm("Tem certeza que deseja excluir este arquivo?")) return;
-    window.imagensUploadArray.splice(index, 1); 
-    window.renderizarPreviewFotos(); 
 };
 
 window.buscarCEP = async function(cepInput) {
@@ -1079,7 +1089,7 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
 };
 
 // ===================================================================================
-// 5. BANCO DE DADOS (SUPABASE) E FLUXOS
+// 4. BANCO DE DADOS E EVENTOS GERAIS
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
