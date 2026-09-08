@@ -266,38 +266,41 @@ window.renderizarPreviewFotos = function() {
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
 
+// ==========================================
+// MOTOR DE ZOOM E ARRASTO (FOCAL-POINT NATIVO)
+// ==========================================
+
 window.zoomScale = 1;
 window.posX = 0;
 window.posY = 0;
 
-// 🔥 GOLPE DE MESTRE: Anexando os modais ao document.body na hora de abrir
 window.abrirVisualizadorMidia = function(index) {
     const midiaStr = window.imagensUploadArray[index];
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    // Reseta as variáveis da lupa virtual
+    // Reseta as variáveis da lupa
     window.zoomScale = 1;
     window.posX = 0;
     window.posY = 0;
 
-    // touch-none é crucial para impedir o navegador do celular de tentar rolar a página enquanto damos zoom
+    // touch-none é crucial para o celular não interferir no nosso motor
     container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
 
     let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
+    // Botões agora chamam acionarZoomBotao para centralizar matematicamente
     const controlesZoom = `
         <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full z-[100005] shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-700">
-            <button onclick="event.stopPropagation(); window.alterarZoom(-0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
+            <button onclick="event.stopPropagation(); window.acionarZoomBotao(-0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
             <span id="indicador-zoom" class="text-white font-black text-sm min-w-[50px] text-center tracking-widest">100%</span>
-            <button onclick="event.stopPropagation(); window.alterarZoom(0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-plus text-2xl"></i></button>
+            <button onclick="event.stopPropagation(); window.acionarZoomBotao(0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-plus text-2xl"></i></button>
             <div class="w-px h-6 bg-slate-600 mx-1"></div>
             <button onclick="event.stopPropagation(); window.resetarZoom()" class="text-slate-400 hover:text-white transition transform active:scale-90" title="Restaurar Tela"><i class="ph-bold ph-arrows-in-simple text-2xl"></i></button>
         </div>
     `;
 
-    // Usamos transition-transform para as animações ficarem a cargo da Placa de Vídeo (GPU)
     if(isVideo) {
         midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out"></video>`;
     } else {
@@ -311,9 +314,6 @@ window.abrirVisualizadorMidia = function(index) {
 
     const el = document.getElementById('elemento-midia-zoom');
     
-    // ==========================================
-    // MOTOR DE ZOOM, PINÇA E ARRASTO (NATIVO)
-    // ==========================================
     let isDragging = false;
     let startX, startY;
     let startDist = 0;
@@ -322,18 +322,45 @@ window.abrirVisualizadorMidia = function(index) {
         if(window.zoomScale <= 1) {
             window.zoomScale = 1;
             window.posX = 0; 
-            window.posY = 0;
+            window.posY = 0; // Se tirar o zoom, a foto gruda de volta no centro
         }
-        // Aplica o Zoom e a Posição usando hardware acceleration
         if(el) el.style.transform = `translate(${window.posX}px, ${window.posY}px) scale(${window.zoomScale})`;
         const ind = document.getElementById('indicador-zoom');
         if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
     };
 
-    window.alterarZoom = function(fator) {
+    // 🔥 O SEGREDO MATEMÁTICO DO CURSOR (Focal Zoom)
+    window.alterarZoom = function(fator, focalX, focalY) {
+        const oldScale = window.zoomScale;
         window.zoomScale += fator;
-        if(window.zoomScale > 5) window.zoomScale = 5; // Limite máximo de 500%
+        
+        // Limites do Zoom
+        if(window.zoomScale < 1) window.zoomScale = 1;
+        if(window.zoomScale > 8) window.zoomScale = 8; // Máximo 800%
+        
+        const ratio = window.zoomScale / oldScale;
+
+        if (window.zoomScale > 1) {
+            // Acha o centro absoluto da tela
+            const rect = container.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Empurra a imagem na direção contrária para ancorar o pixel sob o mouse
+            window.posX -= (focalX - centerX - window.posX) * (ratio - 1);
+            window.posY -= (focalY - centerY - window.posY) * (ratio - 1);
+        } else {
+            window.posX = 0;
+            window.posY = 0;
+        }
+        
         window.atualizarTransform();
+    };
+
+    // Botões fixos focam no centro da tela
+    window.acionarZoomBotao = function(fator) {
+        const rect = container.getBoundingClientRect();
+        window.alterarZoom(fator, rect.left + rect.width / 2, rect.top + rect.height / 2);
     };
 
     window.resetarZoom = function() {
@@ -343,12 +370,11 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    // 1. Início do toque ou clique
     const onStart = (e) => {
-        if(e.target.closest('.fixed')) return; // Ignora se clicou nos botões de controle
+        if(e.target.closest('.fixed')) return; 
         if(e.touches && e.touches.length === 2) {
-            // Se forem 2 dedos, calcula a distância entre eles para o Pinch-to-Zoom
-            startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            // Pega a distância inicial dos dois dedos
+            startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             return;
         }
         isDragging = true;
@@ -356,22 +382,26 @@ window.abrirVisualizadorMidia = function(index) {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         startX = clientX - window.posX;
         startY = clientY - window.posY;
-        el.style.transition = 'none'; // Desliga a animação para arrastar grudado no dedo
+        el.style.transition = 'none'; // Desliga a animação para não ter atraso no dedo
         if(window.zoomScale > 1) el.style.cursor = 'grabbing';
     };
 
-    // 2. Movimento (Arrastar ou Afastar/Aproximar os dedos)
     const onMove = (e) => {
         if(e.touches && e.touches.length === 2) {
-            // Lógica da Pinça (Pinch)
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            e.preventDefault();
+            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             const delta = dist - startDist;
             startDist = dist;
-            window.alterarZoom(delta * 0.01); // O 0.01 ajusta a velocidade do zoom pelo dedo
+            
+            // Acha o meio exato entre os dois dedos para usar como alvo
+            const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const focalY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            
+            window.alterarZoom(delta * 0.015, focalX, focalY); // 0.015 ajusta a sensibilidade da pinça
             return;
         }
         if (!isDragging || window.zoomScale === 1) return;
-        e.preventDefault(); // Impede o navegador de bugar rolando a tela atrás
+        e.preventDefault(); 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         window.posX = clientX - startX;
@@ -379,21 +409,20 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    // 3. Fim do toque ou clique
     const onEnd = () => {
         isDragging = false;
-        el.style.transition = 'transform 0.1s ease-out'; // Devolve a suavidade
+        el.style.transition = 'transform 0.1s ease-out'; // Volta a suavidade
         if(window.zoomScale > 1) el.style.cursor = 'grab';
     };
 
-    // 4. Bolinha do Mouse (Scroll / Wheel)
+    // Pega a posição do ponteiro do mouse na hora que gira a bolinha
     container.onwheel = (e) => {
         e.preventDefault();
-        const zoomAmount = e.deltaY * -0.005;
-        window.alterarZoom(zoomAmount);
+        const zoomAmount = e.deltaY * -0.003; 
+        window.alterarZoom(zoomAmount, e.clientX, e.clientY);
     };
 
-    // Escutadores de Evento
+    // Amarra todos os escutadores na tela
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
     window.addEventListener('mousemove', onMove, {passive: false});
@@ -401,7 +430,7 @@ window.abrirVisualizadorMidia = function(index) {
     window.addEventListener('mouseup', onEnd);
     window.addEventListener('touchend', onEnd);
 
-    // Proteção: Limpa os rastreadores do mouse/dedo quando fechar o modal
+    // Evita vazamento de memória ao fechar a janela
     window._limparEventosZoom = () => {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
