@@ -126,12 +126,13 @@
                             </div>
                             <div id="box-upload-fotos">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Evidências (Salvas apenas no sistema)</label>
+                                <!-- Modificado aqui para aceitar vídeo e câmera no celular nativamente -->
                                 <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos</p></div>
-                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*" onchange="window.processarImagens(event)" />
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6"><i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i><p class="text-xs text-slate-500 font-bold">Clique para adicionar fotos ou vídeos</p></div>
+                                    <input type="file" id="input-anexos" class="hidden" multiple accept="image/*,video/*" onchange="window.processarImagens(event)" />
                                 </label>
                             </div>
-                            <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
+                            <div id="preview-anexos" class="flex overflow-x-auto gap-3 mt-4 pb-2 hidden scrollbar-hide"></div>
                         </div>
                     </div>
                 </div>
