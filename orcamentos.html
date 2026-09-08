@@ -126,17 +126,15 @@
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
                             
-                            <!-- PAINEL DE FOTOS E CÂMERA (CORREÇÃO MOBILE/DESKTOP) -->
+                            <!-- PAINEL DE FOTOS E CÂMERA -->
                             <div id="box-upload-fotos">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
                                 <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
-                                    <!-- Botão Câmera (Obriga abrir a câmera do celular nativamente) -->
-                                    <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                    <label class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                         <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Usar<br>Câmera</p>
                                         <input type="file" id="input-anexos-camera" class="hidden" accept="image/*,video/*" capture="environment" onchange="window.processarImagens(event)" />
                                     </label>
-                                    <!-- Botão Galeria/Arquivos -->
                                     <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                         <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Galeria /<br>Arquivos</p>
@@ -266,7 +264,6 @@
                 <div id="coluna-direita-fin" class="hidden space-y-6 fade-in">
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 flex flex-col" id="box-auditoria-financeira">
                         
-                        <!-- Resumo Específico para Financeiro -->
                         <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-receipt text-blue-500 mr-2 text-lg"></i> Resumo da O.S</h3>
                         <div class="space-y-3 mb-6 pb-6 border-b border-slate-100">
                             <div class="flex justify-between text-xs text-slate-500 font-medium"><span>Peças:</span> <span id="fin-resumo-pecas">R$ 0,00</span></div>
@@ -419,7 +416,6 @@
             </div>
         </div>
         
-        <!-- CONTÊINER DO FINANCEIRO -->
         <div id="pdf-container-financeiro" style="display: none; margin-top: 15px; border: 1px solid #000000; border-radius: 4px; padding: 10px; background-color: #F9FAFB;"></div>
 
         <div style="margin-top: 50px; display: flex; justify-content: center; gap: 60px; padding: 0 30px;">
