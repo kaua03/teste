@@ -190,6 +190,82 @@ window.atualizarInterfaceItensETotais = function() {
     if(finTotalOs) finTotalOs.innerText = window.formataDinheiro(window.valoresFinais.total);
 };
 
+window.renderizarPreviewFotos = function() {
+    const previewContainer = document.getElementById('preview-anexos');
+    previewContainer.innerHTML = '';
+    
+    if(window.imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
+    
+    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+
+    window.imagensUploadArray.forEach((base64Str, index) => {
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900";
+        
+        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.removerImagemArray(${index})"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        
+        let midiaHTML = '';
+        if(base64Str.startsWith('data:video')) {
+            midiaHTML = `<video src="${base64Str}" class="w-full h-full object-cover" muted></video><div class="absolute top-1 right-1 bg-black/50 rounded p-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i></div>`;
+        } else {
+            midiaHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
+        }
+
+        imgBox.innerHTML = `${midiaHTML}${trashIcon}`;
+        previewContainer.appendChild(imgBox);
+    });
+};
+
+window.mudarAbaOS = function(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+    
+    const boxAuditoria = document.getElementById('box-auditoria-financeira');
+    const boxDesconto = document.getElementById('box-desconto');
+    const boxStatusSelect = document.getElementById('box-status');
+    const boxBtnSalvar = document.getElementById('btn-salvar-db');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+        
+        if(boxAuditoria) boxAuditoria.classList.add('hidden');
+        if(boxDesconto) boxDesconto.classList.remove('hidden');
+        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
+        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
+        
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        
+        if(boxAuditoria) boxAuditoria.classList.remove('hidden');
+        if(boxDesconto) boxDesconto.classList.add('hidden');
+        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
+        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
+        
+        window.renderizarAbaFinanceiro();
+    }
+};
+
+window.recarregarFinanceiroDaOS = async function() {
+    if(!window.osEmEdicaoNumero) return;
+    const { data: finRecords } = await window.banco.from('contas_receber')
+        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
+    
+    window.currentOSFinanceiro = finRecords || [];
+    if (document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
+        window.renderizarAbaFinanceiro();
+    }
+};
+
 window.renderizarAbaFinanceiro = function() {
     const boxBloqueado = document.getElementById('fin-bloqueado-box');
     const boxLiberado = document.getElementById('fin-liberado-box');
@@ -305,101 +381,6 @@ window.renderizarAbaFinanceiro = function() {
 
         listaDiv.innerHTML = html;
         window.checarSomaFinanceiroEdit();
-    }
-};
-
-window.renderizarPreviewFotos = function() {
-    const previewContainer = document.getElementById('preview-anexos');
-    previewContainer.innerHTML = '';
-    
-    if(window.imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
-    
-    const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-
-    window.imagensUploadArray.forEach((base64Str, index) => {
-        const imgBox = document.createElement('div');
-        imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900";
-        
-        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.removerImagemArray(${index})"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
-        
-        let midiaHTML = '';
-        if(base64Str.startsWith('data:video')) {
-            midiaHTML = `<video src="${base64Str}" class="w-full h-full object-cover" muted></video><div class="absolute top-1 right-1 bg-black/50 rounded p-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i></div>`;
-        } else {
-            midiaHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
-        }
-
-        imgBox.innerHTML = `${midiaHTML}${trashIcon}`;
-        previewContainer.appendChild(imgBox);
-    });
-};
-
-window.processarImagens = function(event) {
-    const files = event.target.files;
-    if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => { 
-            window.imagensUploadArray.push(e.target.result); 
-            window.renderizarPreviewFotos(); 
-        };
-        reader.readAsDataURL(file);
-    });
-};
-
-window.removerImagemArray = function(index) { 
-    if(!confirm("Tem certeza que deseja excluir este arquivo?")) return;
-    window.imagensUploadArray.splice(index, 1); 
-    window.renderizarPreviewFotos(); 
-};
-
-window.mudarAbaOS = function(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-    
-    const boxAuditoria = document.getElementById('box-auditoria-financeira');
-    const boxDesconto = document.getElementById('box-desconto');
-    const boxStatusSelect = document.getElementById('box-status');
-    const boxBtnSalvar = document.getElementById('btn-salvar-db');
-
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-        
-        if(boxAuditoria) boxAuditoria.classList.add('hidden');
-        if(boxDesconto) boxDesconto.classList.remove('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
-        
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        
-        if(boxAuditoria) boxAuditoria.classList.remove('hidden');
-        if(boxDesconto) boxDesconto.classList.add('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
-        
-        window.renderizarAbaFinanceiro();
-    }
-};
-
-window.recarregarFinanceiroDaOS = async function() {
-    if(!window.osEmEdicaoNumero) return;
-    const { data: finRecords } = await window.banco.from('contas_receber')
-        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
-    
-    window.currentOSFinanceiro = finRecords || [];
-    if (document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
-        window.renderizarAbaFinanceiro();
     }
 };
 
@@ -548,6 +529,9 @@ window.gerarLinhasParcelasTab = function() {
     window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 };
 
+// ========================================================
+// 3. TELA E EVENTOS DE O.S (ESTADOS E FLUXO)
+// ========================================================
 window.verificarStatusFinanceiro = function() {
     const status = document.getElementById('db-status').value;
     const badgeFechada = document.getElementById('badge-os-fechada');
@@ -847,6 +831,22 @@ window.fecharModalCadastro = function() {
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 };
 
+window.processarImagens = function(event) {
+    const files = event.target.files;
+    if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => { window.imagensUploadArray.push(e.target.result); window.renderizarPreviewFotos(); };
+        reader.readAsDataURL(file);
+    });
+};
+
+window.removerImagemArray = function(index) { 
+    if(!confirm("Tem certeza que deseja excluir este arquivo?")) return;
+    window.imagensUploadArray.splice(index, 1); 
+    window.renderizarPreviewFotos(); 
+};
+
 window.buscarCEP = async function(cepInput) {
     const cep = cepInput.replace(/\D/g, '');
     if (cep.length !== 8) return;
@@ -1068,7 +1068,7 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
 };
 
 // ===================================================================================
-// 4. BANCO DE DADOS (SUPABASE) E FLUXOS
+// 4. BANCO DE DADOS E EVENTOS GERAIS
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -1360,20 +1360,4 @@ window.confirmarExclusao = async function() {
     } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
 };
 
-window.processarDestravarOS = async function() {
-    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
-    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    const usuarioLogado = JSON.parse(usuarioLogadoStr);
-
-    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
-    
-    try {
-        window.fecharModalDestravar();
-        window.isOSDestravada = true;
-        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
-        window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
-};
-
-console.log("🟢 Módulo Orçamentos Carregado com Sucesso Absoluto!");
+console.log("🟢 Módulo Orçamentos Carregado, Ancorado e Blindado 100%!");
