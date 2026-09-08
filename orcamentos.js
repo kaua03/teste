@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. (BLINDAGEM TOTAL)
+// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL 3.0)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -17,7 +17,7 @@ window.currentOSFinanceiro = [];
 window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
 window.indexAnexoParaExcluir = null;
-window.globalOrcamentosList = []; 
+window.globalOrcamentosList = [];
 
 // ========================================================
 // 1. FUNÇÕES UTILITÁRIAS E MÁSCARAS
@@ -77,7 +77,7 @@ window.dispararAlerta = function(msg, tipo = 'erro') {
     if (alertaAntigo) alertaAntigo.remove();
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
-    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter z-[9999]`;
+    toast.className = `fixed top-20 right-4 md:right-8 z-[9999] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
@@ -91,14 +91,9 @@ window.obterCorStatus = function(status) {
 window.filtrarTabelaOS = function() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
-    
     linhas.forEach(linha => {
         const textoLinha = linha.innerText.toLowerCase();
-        if (textoLinha.includes(termo)) {
-            linha.style.display = '';
-        } else {
-            linha.style.display = 'none';
-        }
+        linha.style.display = textoLinha.includes(termo) ? '' : 'none';
     });
 };
 
@@ -115,7 +110,6 @@ window.renderizarTabelaReal = function(dados) {
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = window.obterCorStatus(orc.status);
-        const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
@@ -152,17 +146,14 @@ window.atualizarInterfaceItensETotais = function() {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
         const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-        
         divLista.innerHTML = window.itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
-            
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
                 <button onclick="window.editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
                 <button onclick="window.removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
-
             return `
             <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
@@ -202,7 +193,7 @@ window.comprimirImagem = function(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // Reduzido para garantir que o Supabase nunca exploda o limite
+                const MAX_WIDTH = 800; // Resolução comprimida para evitar erro de payload no Supabase
                 const MAX_HEIGHT = 800;
                 let width = img.width;
                 let height = img.height;
@@ -351,6 +342,198 @@ window.fecharModalExclusao = function() {
     window.idParaExcluir = null; 
     document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
     document.body.style.overflow = 'auto'; 
+};
+
+window.abrirModalCadastro = function(tipo) {
+    window.modalTipoAberto = tipo;
+    const modal = document.getElementById('modal-cadastro-rapido'); 
+    const titulo = document.getElementById('modal-titulo'); 
+    const conteudo = document.getElementById('modal-conteudo');
+    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+    
+    if (tipo === 'cliente') {
+        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
+        conteudo.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo <span class="text-red-500 text-sm">*</span></label>
+                <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
+                <input type="text" id="cad-doc" onkeyup="window.mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp <span class="text-red-500 text-sm">*</span></label>
+                <input type="text" id="cad-tel" onkeyup="window.mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
+                <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+            </div>
+            <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
+                <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label>
+                <input type="text" id="cad-cep" onkeyup="window.mascaraGeral('cep', this)" onblur="window.buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
+            </div>
+            <div class="md:col-span-2 flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label>
+                    <input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+                </div>
+                <div class="w-20">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label>
+                    <input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
+                <input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label>
+                <input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
+            </div>
+        </div>`;
+    } else {
+        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
+        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
+        
+        let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
+        const clienteOS = document.getElementById('db-cliente-nome').value;
+        window.globalClientes.forEach(c => {
+            const selected = (c.nome === clienteOS) ? 'selected' : '';
+            optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
+        });
+
+        conteudo.innerHTML = `
+        <div class="space-y-4">
+            <div class="border-b border-slate-100 pb-4 mb-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
+                <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
+                    ${optionsDono}
+                </select>
+                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="cad-placa" onkeyup="window.mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
+                </div>
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo <span class="text-red-500 text-sm">*</span></label>
+                    <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
+                    <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
+                    <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
+                </div>
+            </div>
+        </div>`;
+    }
+    document.body.style.overflow = 'hidden'; 
+    modal.classList.remove('hidden');
+};
+
+window.fecharModalCadastro = function() { 
+    document.body.style.overflow = 'auto'; 
+    document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
+};
+
+window.buscarCEP = async function(cepInput) {
+    const cep = cepInput.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const statusSpan = document.getElementById('cep-status');
+    if(statusSpan) {
+        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
+        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
+    }
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const dados = await response.json();
+        
+        if (!dados.erro) {
+            document.getElementById('cad-rua').value = dados.logradouro;
+            document.getElementById('cad-bairro').value = dados.bairro;
+            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
+            document.getElementById('cad-num').focus();
+            
+            if(statusSpan) {
+                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
+                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
+                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
+            }
+        } else {
+            window.dispararAlerta("CEP não encontrado.");
+            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
+        }
+    } catch (e) { 
+        window.dispararAlerta("Falha ao buscar CEP.");
+        if(statusSpan) statusSpan.classList.add('hidden');
+    }
+};
+
+window.processarSalvamentoModal = async function() {
+    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+    const textoOriginal = window.modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
+    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
+    btnSalvar.disabled = true;
+
+    try {
+        if (window.modalTipoAberto === 'cliente') {
+            const nome = document.getElementById('cad-nome').value;
+            const doc = document.getElementById('cad-doc').value;
+            const tel = document.getElementById('cad-tel').value;
+            const email = document.getElementById('cad-email').value;
+            const cep = document.getElementById('cad-cep').value;
+            const rua = document.getElementById('cad-rua').value;
+            const num = document.getElementById('cad-num').value;
+            const bairro = document.getElementById('cad-bairro').value;
+            const cidade = document.getElementById('cad-cidade').value;
+
+            if(!nome || !tel) { window.dispararAlerta("Nome e Celular são obrigatórios."); return; }
+            
+            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
+            if (error) throw error;
+            
+            await window.carregarListasBD(); 
+            document.getElementById('db-cliente-nome').value = nome; 
+            window.dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
+        } else {
+            const placa = document.getElementById('cad-placa').value;
+            const modelo = document.getElementById('cad-modelo').value;
+            const cor = document.getElementById('cad-cor').value;
+            const ano = document.getElementById('cad-ano').value;
+            
+            if(!placa || !modelo) { window.dispararAlerta("Placa e Modelo obrigatórios."); return; }
+            
+            const dono = document.getElementById('cad-dono').value || '';
+            
+            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
+            if (error) throw error;
+            
+            await window.carregarListasBD(); 
+            document.getElementById('db-veiculo-placa').value = placa; 
+            if(dono) document.getElementById('db-cliente-nome').value = dono; 
+            
+            window.dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
+        }
+        window.fecharModalCadastro();
+    } catch (erro) {
+        if(erro.code === '23505') window.dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
+        else window.dispararAlerta("Falha ao salvar no banco de dados.");
+    } finally {
+        btnSalvar.innerHTML = textoOriginal;
+        btnSalvar.disabled = false;
+    }
 };
 
 // ========================================================
@@ -567,203 +750,282 @@ window.calcularTotais = function() {
     }
 };
 
-// ========================================================
-// 6. CADASTRO DE CLIENTE E CEP
-// ========================================================
-window.abrirModalCadastro = function(tipo) {
-    window.modalTipoAberto = tipo;
-    const modal = document.getElementById('modal-cadastro-rapido'); 
-    const titulo = document.getElementById('modal-titulo'); 
-    const conteudo = document.getElementById('modal-conteudo');
-    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
+// ===================================================================================
+// 6. LÓGICA DO FINANCEIRO
+// ===================================================================================
+window.recarregarFinanceiroDaOS = async function() {
+    if(!window.osEmEdicaoNumero) return;
+    const { data: finRecords } = await window.banco.from('contas_receber')
+        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
     
-    if (tipo === 'cliente') {
-        titulo.innerHTML = '<i class="ph-bold ph-user-plus mr-2"></i>Cadastrar Novo Cliente';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Cliente';
-        conteudo.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Completo <span class="text-red-500 text-sm">*</span></label>
-                <input type="text" id="cad-nome" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">CPF</label>
-                <input type="text" id="cad-doc" onkeyup="window.mascaraGeral('cpf', this)" maxlength="14" placeholder="000.000.000-00" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium text-slate-800">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Celular / WhatsApp <span class="text-red-500 text-sm">*</span></label>
-                <input type="text" id="cad-tel" onkeyup="window.mascaraGeral('tel', this)" maxlength="15" placeholder="(00) 00000-0000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">E-mail</label>
-                <input type="email" id="cad-email" placeholder="cliente@email.com" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-            </div>
-            <div class="md:col-span-2 border-t border-slate-100 pt-3 mt-1">
-                <label class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1"><span>CEP</span><span id="cep-status" class="hidden text-[9px]"></span></label>
-                <input type="text" id="cad-cep" onkeyup="window.mascaraGeral('cep', this)" onblur="window.buscarCEP(this.value)" maxlength="9" placeholder="00000-000" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-700">
-            </div>
-            <div class="md:col-span-2 flex gap-2">
-                <div class="flex-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Endereço (Rua/Av)</label>
-                    <input type="text" id="cad-rua" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-                </div>
-                <div class="w-20">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Número</label>
-                    <input type="text" id="cad-num" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold">
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bairro</label>
-                <input type="text" id="cad-bairro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cidade / UF</label>
-                <input type="text" id="cad-cidade" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-100 outline-none">
-            </div>
-        </div>`;
+    window.currentOSFinanceiro = finRecords || [];
+    if (document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
+        window.renderizarAbaFinanceiro();
+    }
+};
+
+window.renderizarAbaFinanceiro = function() {
+    const boxBloqueado = document.getElementById('fin-bloqueado-box');
+    const boxLiberado = document.getElementById('fin-liberado-box');
+    const boxGerador = document.getElementById('fin-gerador-box');
+    const boxEditor = document.getElementById('fin-editor-box');
+    const btnRefazer = document.getElementById('btn-estornar-fin');
+    const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
+    const subtitulo = document.getElementById('fin-aba-subtitulo');
+    
+    document.getElementById('fin-aba-total-os').innerText = window.formataDinheiro(window.valoresFinais.total);
+
+    if (!window.osEmEdicaoId) {
+        boxBloqueado.classList.remove('hidden');
+        boxLiberado.classList.add('hidden');
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+        if(btnRefazer) btnRefazer.classList.add('hidden');
+        return;
+    }
+
+    boxBloqueado.classList.add('hidden');
+    boxLiberado.classList.remove('hidden'); 
+
+    if (!window.currentOSFinanceiro || window.currentOSFinanceiro.length === 0) {
+        boxGerador.classList.remove('hidden');
+        boxEditor.classList.add('hidden');
+        if(btnRefazer) btnRefazer.classList.add('hidden');
+        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+        
+        if (window.isVisualizacaoModo) {
+            boxGerador.classList.add('hidden');
+            subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
+            document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
+            window.atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
+        } else {
+            subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
+            document.getElementById('tab-fin-tipo').value = 'avista';
+            window.mudarTipoFaturamentoTab();
+        }
     } else {
-        titulo.innerHTML = '<i class="ph-bold ph-jeep mr-2"></i>Cadastrar Novo Veículo';
-        btnSalvar.innerHTML = '<i class="ph-bold ph-check"></i> Salvar Veículo';
+        boxGerador.classList.add('hidden');
+        boxEditor.classList.remove('hidden');
         
-        let optionsDono = '<option value="">Sem vínculo / Selecione o Proprietário...</option>';
-        const clienteOS = document.getElementById('db-cliente-nome').value;
-        window.globalClientes.forEach(c => {
-            const selected = (c.nome === clienteOS) ? 'selected' : '';
-            optionsDono += `<option value="${c.nome}" ${selected}>${c.nome}</option>`;
+        if (window.isVisualizacaoModo) {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
+            subtitulo.innerText = "Lançamentos financeiros atrelados à O.S.";
+        } else {
+            if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
+            subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
+        }
+        
+        const hasPago = window.currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
+        if (hasPago || window.isVisualizacaoModo) {
+            if(btnRefazer) btnRefazer.classList.add('hidden'); 
+        } else {
+            if(btnRefazer) btnRefazer.classList.remove('hidden'); 
+        }
+        
+        const listaDiv = document.getElementById('lista-financeiro-vinculado');
+        let html = '';
+        
+        const statusAtual = document.getElementById('db-status').value;
+        const isTravadoGlobal = (statusAtual === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+
+        window.currentOSFinanceiro.forEach((rec, idx) => {
+            const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
+            const trancaGeral = isTravadoGlobal ? 'disabled' : '';
+            const trancaParaPago = isPago ? 'disabled' : trancaGeral;
+            
+            let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
+            
+            const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
+            const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
+            const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
+
+            html += `
+            <div class="p-4 rounded-xl border ${corCard} shadow-sm flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${badgeTipo}</span>
+                    ${iconeStatus}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Vencimento / Pagto</label>
+                        <input type="date" id="edit-rec-data-${idx}" value="${rec.data_vencimento}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses}">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Forma de Pagto.</label>
+                        <select id="edit-rec-forma-${idx}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses} cursor-pointer">
+                            <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
+                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
+                            <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
+                            <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
+                            <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
+                            <option value="Transferência" ${rec.forma_pagamento === 'Transferência' ? 'selected' : ''}>Transferência Bancária</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
+                        <input type="text" id="edit-rec-val-${idx}" onkeyup="window.mascaraMoeda(this); window.checarSomaFinanceiroEdit()" value="${window.valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
+                    </div>
+                </div>
+                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="window.excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
+            </div>`;
         });
-
-        conteudo.innerHTML = `
-        <div class="space-y-4">
-            <div class="border-b border-slate-100 pb-4 mb-2">
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dono / Proprietário do Veículo</label>
-                <select id="cad-dono" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-bold text-slate-800 cursor-pointer transition">
-                    ${optionsDono}
-                </select>
-                <p class="text-[9px] text-slate-400 mt-1 italic">* Puxa automaticamente o cliente selecionado na O.S.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="col-span-2 md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Placa (Padrão ou Mercosul) <span class="text-red-500 text-sm">*</span></label>
-                    <input type="text" id="cad-placa" onkeyup="window.mascaraGeral('placa', this)" maxlength="8" placeholder="ABC-1234" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-black uppercase text-blue-700">
-                </div>
-                <div class="col-span-2 md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome / Modelo <span class="text-red-500 text-sm">*</span></label>
-                    <input type="text" id="cad-modelo" placeholder="Ex: Fiat Toro" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="col-span-2">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cor</label>
-                    <input type="text" id="cad-cor" placeholder="Ex: Branco" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ano</label>
-                    <input type="number" id="cad-ano" placeholder="2024" class="w-full border border-slate-300 p-2 rounded-xl text-sm bg-slate-50 focus:bg-white outline-none focus:border-blue-500 font-medium">
-                </div>
-            </div>
-        </div>`;
-    }
-    document.body.style.overflow = 'hidden'; 
-    modal.classList.remove('hidden');
-};
-
-window.fecharModalCadastro = function() { 
-    document.body.style.overflow = 'auto'; 
-    document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
-};
-
-window.buscarCEP = async function(cepInput) {
-    const cep = cepInput.replace(/\D/g, '');
-    if (cep.length !== 8) return;
-
-    const statusSpan = document.getElementById('cep-status');
-    if(statusSpan) {
-        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
-        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
-    }
-
-    try {
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const dados = await response.json();
         
-        if (!dados.erro) {
-            document.getElementById('cad-rua').value = dados.logradouro;
-            document.getElementById('cad-bairro').value = dados.bairro;
-            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
-            document.getElementById('cad-num').focus();
-            
-            if(statusSpan) {
-                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
-                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
-                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
-            }
-        } else {
-            window.dispararAlerta("CEP não encontrado.");
-            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
+        if (!isTravadoGlobal) {
+            html += `
+            <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
+                 <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
+                <button onclick="window.adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
+            </div>`;
         }
-    } catch (e) { 
-        window.dispararAlerta("Falha ao buscar CEP.");
-        if(statusSpan) statusSpan.classList.add('hidden');
+
+        listaDiv.innerHTML = html;
+        window.checarSomaFinanceiroEdit();
     }
 };
 
-window.processarSalvamentoModal = async function() {
-    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    const textoOriginal = window.modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
-    btnSalvar.disabled = true;
-
-    try {
-        if (window.modalTipoAberto === 'cliente') {
-            const nome = document.getElementById('cad-nome').value;
-            const doc = document.getElementById('cad-doc').value;
-            const tel = document.getElementById('cad-tel').value;
-            const email = document.getElementById('cad-email').value;
-            const cep = document.getElementById('cad-cep').value;
-            const rua = document.getElementById('cad-rua').value;
-            const num = document.getElementById('cad-num').value;
-            const bairro = document.getElementById('cad-bairro').value;
-            const cidade = document.getElementById('cad-cidade').value;
-
-            if(!nome || !tel) { window.dispararAlerta("Nome e Celular são obrigatórios."); return; }
-            
-            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
-            if (error) throw error;
-            
-            await window.carregarListasBD(); 
-            document.getElementById('db-cliente-nome').value = nome; 
-            window.dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
-        } else {
-            const placa = document.getElementById('cad-placa').value;
-            const modelo = document.getElementById('cad-modelo').value;
-            const cor = document.getElementById('cad-cor').value;
-            const ano = document.getElementById('cad-ano').value;
-            
-            if(!placa || !modelo) { window.dispararAlerta("Placa e Modelo obrigatórios."); return; }
-            
-            const dono = document.getElementById('cad-dono').value || '';
-            
-            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
-            if (error) throw error;
-            
-            await window.carregarListasBD(); 
-            document.getElementById('db-veiculo-placa').value = placa; 
-            if(dono) document.getElementById('db-cliente-nome').value = dono; 
-            
-            window.dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
-        }
-        window.fecharModalCadastro();
-    } catch (erro) {
-        if(erro.code === '23505') window.dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
-        else window.dispararAlerta("Falha ao salvar no banco de dados.");
-    } finally {
-        btnSalvar.innerHTML = textoOriginal;
-        btnSalvar.disabled = false;
+window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
+    const elSomaBox = document.getElementById('fin-aba-soma-box');
+    const elAlerta = document.getElementById('fin-aba-alerta');
+    const btnSalvar = document.getElementById(btnIdToBlock);
+    
+    if (somaFinanceiro > 0 && Math.abs(window.valoresFinais.total - somaFinanceiro) > 0.05) {
+        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
+        if(elAlerta) elAlerta.classList.remove('hidden');
+        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
+    } else {
+        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
+        if(elAlerta) elAlerta.classList.add('hidden');
+        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
     }
+};
+
+window.checarSomaGeradorTab = function() {
+    const activeEl = document.activeElement;
+    
+    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
+        window.gerarLinhasParcelasTab();
+        return;
+    }
+
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let soma = 0;
+    
+    if (tipo !== 'parcelado') {
+        soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
+    }
+    
+    if (tipo !== 'avista') {
+        const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
+        for(let i=1; i<=parcelas; i++) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if(inputParc) soma += window.reverterMoeda(inputParc.value) || 0;
+        }
+    }
+    
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
+    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
+};
+
+window.checarSomaFinanceiroEdit = function() {
+    let soma = 0;
+    window.currentOSFinanceiro.forEach((rec, idx) => {
+        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
+        if(inputVal) soma += window.reverterMoeda(inputVal.value);
+        else soma += rec.valor;
+    });
+    
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
+    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
+};
+
+window.mudarTipoFaturamentoTab = function() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    const boxEntrada = document.getElementById('tab-box-entrada');
+    const boxParcelamento = document.getElementById('tab-box-parcelamento');
+    const inputEntrada = document.getElementById('tab-fin-entrada');
+
+    let d = new Date(); d.setMonth(d.getMonth() + 1);
+    const dataMesQueVem = window.formatarDataISO(d);
+
+    if (tipo === 'avista') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
+        inputEntrada.value = window.formataDinheiro(window.valoresFinais.total); inputEntrada.readOnly = true;
+        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
+    } else if (tipo === 'entrada_parcela') {
+        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.readOnly = false; inputEntrada.value = ''; 
+        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    } else if (tipo === 'parcelado') {
+        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
+        inputEntrada.value = '0,00';
+        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
+    }
+    window.gerarLinhasParcelasTab();
+};
+
+window.gerarLinhasParcelasTab = function() {
+    const tipo = document.getElementById('tab-fin-tipo').value;
+    let entrada = (tipo === 'avista') ? window.valoresFinais.total : ((tipo === 'parcelado') ? 0 : window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
+    let restante = window.valoresFinais.total - entrada; if(restante < 0) restante = 0;
+
+    const divSimulacao = document.getElementById('tab-fin-simulacao');
+    if (tipo === 'avista' || restante === 0) {
+        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
+        document.getElementById('tab-fin-parcelas').disabled = true;
+        
+        document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(entrada);
+        window.atualizarPlacarAuditoria(entrada, 'btn-salvar-fin-tab');
+        return;
+    }
+
+    document.getElementById('tab-fin-parcelas').disabled = false;
+    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
+    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
+    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
+    
+    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
+    let centavosTotal = Math.round(restante * 100);
+    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
+    let restoCentavos = centavosTotal % parcelas;
+
+    const activeEl = document.activeElement;
+    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
+
+    let somaGerada = entrada;
+
+    for(let i=1; i<=parcelas; i++) {
+        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
+        somaGerada += valorParc;
+        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = window.formatarDataISO(d);
+
+        if (apenasAtualizar) {
+            const inputParc = document.getElementById(`tab-parc-val-${i}`);
+            if (inputParc) inputParc.value = window.valorParaInput(valorParc);
+        } else {
+            html += `
+            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
+                <input type="text" id="tab-parc-val-${i}" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" value="${window.valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
+                <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
+                <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
+                    <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Boleto">Boleto</option>
+                    <option value="Dinheiro">Dinheiro Físico</option>
+                    <option value="Transferência">Transferência Bancária</option>
+                </select>
+            </div>`;
+        }
+    }
+    
+    if (!apenasAtualizar) { divSimulacao.innerHTML = html; }
+    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(somaGerada);
+    window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 };
 
 // ===================================================================================
-// 7. BANCO DE DADOS (SUPABASE) E FLUXOS PRINCIPAIS
+// 7. BANCO DE DADOS (SUPABASE) E INTEGRAÇÃO FINAL
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -1253,4 +1515,4 @@ window.gerarPDFSupabase = async function(id) {
     });
 };
 
-console.log("🟢 Módulo Orçamentos Carregado e Blindado na Raiz do Navegador!");
+console.log("🟢 Módulo Orçamentos Carregado, 100% Ancorado no Window e Inquebrável!");
