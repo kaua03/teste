@@ -70,7 +70,7 @@
 
         <div class="flex gap-2 sm:gap-6 border-b border-slate-200 px-2 overflow-x-auto">
             <button id="aba-dados" onclick="window.mudarAbaOS('dados')" class="pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm">Detalhes da O.S.</button>
-            <button id="aba-fin" onclick="window.mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
+            <button id="aba-fin" onclick="window.mudarAbaOS('fin')" class="pb-3 px-2 font-bold text-slate-400 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2 hidden"><i class="ph-bold ph-wallet text-lg"></i> Gestão Financeira</button>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -78,7 +78,7 @@
             <!-- ESQUERDA (Ocupa 2 colunas) -->
             <div class="xl:col-span-2 flex flex-col gap-6 relative">
                 
-                <!-- CONTEÚDO ESQUERDA ABA 1: DADOS -->
+                <!-- ABA 1: DADOS DA O.S -->
                 <div id="aba-conteudo-dados" class="space-y-6 fade-in block">
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
                         <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">1</div> Cliente e Veículo</h3>
@@ -142,12 +142,13 @@
                                     </label>
                                 </div>
                             </div>
-                            <div id="preview-anexos" class="flex overflow-x-auto gap-3 mt-4 pb-2 hidden scrollbar-hide"></div>
+                            <!-- ÁREA ONDE AS FOTOS APARECEM -->
+                            <div id="preview-anexos" class="flex flex-wrap gap-3 mt-4 hidden"></div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- CONTEÚDO ESQUERDA ABA 2: FINANCEIRO -->
+                <!-- ABA 2: GESTÃO FINANCEIRA -->
                 <div id="aba-conteudo-fin" class="fade-in hidden w-full space-y-6">
                     <div id="fin-bloqueado-box" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center hidden">
                         <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100"><i class="ph-fill ph-lock-key text-4xl text-slate-300"></i></div>
@@ -213,7 +214,7 @@
                 </div>
             </div>
 
-            <!-- COLUNA DIREITA (Tornou-se Dinâmica baseada na Aba) -->
+            <!-- COLUNA DIREITA ESTÁTICA -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
                 <!-- COLUNA DIREITA: SÓ APARECE NA ABA DADOS -->
@@ -352,7 +353,17 @@
     </div>
 </div>
 
-<!-- NOVO MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE ANEXO (FOTO/VÍDEO) -->
+<!-- MODAL VISUALIZADOR DE MÍDIA -->
+<div id="modal-visualizador-midia" class="hidden fixed inset-0 bg-slate-900/95 z-[3000] flex flex-col items-center justify-center p-4 fade-in">
+    <button onclick="window.fecharVisualizadorMidia()" class="absolute top-6 right-6 bg-slate-800 hover:bg-red-600 text-white w-12 h-12 rounded-full flex items-center justify-center transition shadow-lg z-50">
+        <i class="ph-bold ph-x text-2xl"></i>
+    </button>
+    <div id="container-visualizador" class="max-w-5xl w-full flex items-center justify-center relative">
+        <!-- Injetado via JS -->
+    </div>
+</div>
+
+<!-- MODAL EXCLUIR ANEXO -->
 <div id="modal-excluir-anexo" class="hidden fixed inset-0 bg-slate-900/80 z-[1600] flex items-center justify-center p-4 fade-in">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
