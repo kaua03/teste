@@ -270,6 +270,10 @@ window.renderizarPreviewFotos = function() {
 // MOTOR DE ZOOM E ARRASTO (FOCAL-POINT NATIVO)
 // ==========================================
 
+// ==========================================
+// MOTOR DE ZOOM E ARRASTO (NÍVEL GOOGLE MAPS)
+// ==========================================
+
 window.zoomScale = 1;
 window.posX = 0;
 window.posY = 0;
@@ -279,11 +283,16 @@ window.abrirVisualizadorMidia = function(index) {
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
+    // Reseta a lupa virtual
     window.zoomScale = 1;
     window.posX = 0;
     window.posY = 0;
 
+    // touch-none é crucial para o celular não tentar rolar a página por trás
     container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
+
+    // 🔥 O Escudo Anti-Sabotagem do Navegador: Impede arrastar a "foto fantasma"
+    const cssBlindagem = "user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none;";
 
     let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
@@ -299,9 +308,9 @@ window.abrirVisualizadorMidia = function(index) {
     `;
 
     if(isVideo) {
-        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out"></video>`;
+        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out" style="${cssBlindagem}"></video>`;
     } else {
-        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-transform duration-100 ease-out cursor-grab">`;
+        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-transform duration-100 ease-out cursor-grab" style="${cssBlindagem}">`;
     }
     
     container.innerHTML = midiaHTML;
@@ -311,20 +320,20 @@ window.abrirVisualizadorMidia = function(index) {
 
     const el = document.getElementById('elemento-midia-zoom');
     
-    // 🔥 SUPERPODER 1: Desliga a tentativa do HTML de "salvar a imagem" ao arrastar
-    if (el) el.ondragstart = () => false;
-
-    let isDragging = false;
-    let startX, startY;
+    // O Cérebro do PointerEvents
+    let pointers = []; 
     let startDist = 0;
+    let startPanX = 0;
+    let startPanY = 0;
 
     window.atualizarTransform = function() {
         if(window.zoomScale <= 1) {
             window.zoomScale = 1;
-            window.posX = 0; 
-            window.posY = 0; 
+            window.posX = 0;
+            window.posY = 0; // Volta para o centro se tirar o zoom
         }
-        if(el) el.style.transform = `translate(${window.posX}px, ${window.posY}px) scale(${window.zoomScale})`;
+        // translate3d obriga a Placa de Vídeo (GPU) a processar o movimento = fluidez máxima
+        if(el) el.style.transform = `translate3d(${window.posX}px, ${window.posY}px, 0) scale(${window.zoomScale})`;
         const ind = document.getElementById('indicador-zoom');
         if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
     };
@@ -334,10 +343,11 @@ window.abrirVisualizadorMidia = function(index) {
         window.zoomScale += fator;
         
         if(window.zoomScale < 1) window.zoomScale = 1;
-        if(window.zoomScale > 8) window.zoomScale = 8; 
+        if(window.zoomScale > 8) window.zoomScale = 8; // Super Zoom 8x
         
         const ratio = window.zoomScale / oldScale;
 
+        // Empurra a imagem na direção contrária para ancorar o pixel sob o dedo/mouse
         if (window.zoomScale > 1) {
             const rect = container.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
@@ -365,83 +375,79 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    const onStart = (e) => {
-        if(e.target.closest('.fixed')) return; 
-
-        // 🔥 SUPERPODER 2: Intercepta o clique do mouse antes do navegador reagir
-        if (e.type === 'mousedown') e.preventDefault();
-
-        if(e.touches && e.touches.length === 2) {
-            startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-            return;
-        }
-        isDragging = true;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        startX = clientX - window.posX;
-        startY = clientY - window.posY;
+    // 1. Tocou na tela ou Clicou
+    container.onpointerdown = (e) => {
+        if(e.target.closest('.fixed')) return; // Se clicou num botão, ignora
         
-        if(el) {
-            el.style.transition = 'none'; 
-            if(window.zoomScale > 1) el.style.cursor = 'grabbing';
+        // Bloqueia clique nativo APENAS se for imagem (não bloqueia vídeo para os controles funcionarem)
+        if(e.target.tagName !== 'VIDEO') e.preventDefault();
+        
+        pointers.push(e); // Registra o dedo ou mouse
+        
+        if(pointers.length === 2) {
+            // Dois dedos = Inicia Pinça (Pinch)
+            startDist = Math.hypot(pointers[0].clientX - pointers[1].clientX, pointers[0].clientY - pointers[1].clientY);
+        } else if (pointers.length === 1) {
+            // Um dedo/Mouse = Inicia Arrasto (Pan)
+            startPanX = e.clientX - window.posX;
+            startPanY = e.clientY - window.posY;
+            if(el) {
+                el.style.transition = 'none'; // Tira a suavidade para grudar no dedo
+                if(window.zoomScale > 1) el.style.cursor = 'grabbing';
+            }
         }
     };
 
-    const onMove = (e) => {
-        if(e.touches && e.touches.length === 2) {
-            e.preventDefault();
-            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    // 2. Movimentou o dedo ou mouse
+    container.onpointermove = (e) => {
+        // Atualiza a posição do dedo específico no nosso rastreador
+        const index = pointers.findIndex(p => p.pointerId === e.pointerId);
+        if (index !== -1) pointers[index] = e;
+
+        if (pointers.length === 2) {
+            // MODO PINÇA: Calcula a distância para dar Zoom
+            const dist = Math.hypot(pointers[0].clientX - pointers[1].clientX, pointers[0].clientY - pointers[1].clientY);
             const delta = dist - startDist;
             startDist = dist;
             
-            const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            const focalY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            const focalX = (pointers[0].clientX + pointers[1].clientX) / 2;
+            const focalY = (pointers[0].clientY + pointers[1].clientY) / 2;
             
-            window.alterarZoom(delta * 0.015, focalX, focalY); 
-            return;
+            window.alterarZoom(delta * 0.015, focalX, focalY);
+        } else if (pointers.length === 1 && window.zoomScale > 1) {
+            // MODO ARRASTO: Só arrasta se estiver com zoom
+            window.posX = e.clientX - startPanX;
+            window.posY = e.clientY - startPanY;
+            window.atualizarTransform();
         }
-        
-        if (!isDragging || window.zoomScale === 1) return;
-        
-        e.preventDefault(); 
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        window.posX = clientX - startX;
-        window.posY = clientY - startY;
-        window.atualizarTransform();
     };
 
-    const onEnd = () => {
-        isDragging = false;
-        if(el) {
-            el.style.transition = 'transform 0.1s ease-out'; 
+    // 3. Tirou o dedo da tela ou soltou o clique
+    const removePointer = (e) => {
+        pointers = pointers.filter(p => p.pointerId !== e.pointerId);
+        if (pointers.length === 0 && el) {
+            el.style.transition = 'transform 0.1s ease-out'; // Devolve a suavidade
             if(window.zoomScale > 1) el.style.cursor = 'grab';
+        } else if (pointers.length === 1) {
+            // Se tinha 2 dedos e tirou 1, recalcula o ponto de ancoragem para o dedo que ficou
+            startPanX = pointers[0].clientX - window.posX;
+            startPanY = pointers[0].clientY - window.posY;
         }
     };
 
+    container.onpointerup = removePointer;
+    container.onpointercancel = removePointer;
+    container.onpointerleave = removePointer;
+
+    // 4. Bolinha do Mouse (Scroll)
     container.onwheel = (e) => {
         e.preventDefault();
         const zoomAmount = e.deltaY * -0.003; 
         window.alterarZoom(zoomAmount, e.clientX, e.clientY);
     };
-
-    container.addEventListener('mousedown', onStart);
-    container.addEventListener('touchstart', onStart, {passive: false});
-    window.addEventListener('mousemove', onMove, {passive: false});
-    window.addEventListener('touchmove', onMove, {passive: false});
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchend', onEnd);
-
-    window._limparEventosZoom = () => {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('touchmove', onMove);
-        window.removeEventListener('mouseup', onEnd);
-        window.removeEventListener('touchend', onEnd);
-    };
 };
 
 window.fecharVisualizadorMidia = function() {
-    if(window._limparEventosZoom) window._limparEventosZoom();
     document.getElementById('modal-visualizador-midia').classList.add('hidden');
     document.getElementById('container-visualizador').innerHTML = ''; 
     document.body.style.overflow = 'auto'; 
