@@ -274,6 +274,10 @@ window.renderizarPreviewFotos = function() {
 // MOTOR DE ZOOM E ARRASTO (NÍVEL GOOGLE MAPS)
 // ==========================================
 
+// ==========================================
+// MOTOR DE ZOOM E ARRASTO (BLINDAGEM NÍVEL GOOGLE MAPS)
+// ==========================================
+
 window.zoomScale = 1;
 window.posX = 0;
 window.posY = 0;
@@ -291,8 +295,8 @@ window.abrirVisualizadorMidia = function(index) {
     // touch-none é crucial para o celular não tentar rolar a página por trás
     container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
 
-    // 🔥 O Escudo Anti-Sabotagem do Navegador: Impede arrastar a "foto fantasma"
-    const cssBlindagem = "user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none;";
+    // 🔥 O Escudo Anti-Sabotagem: CSS e touch-action bloqueados
+    const cssBlindagem = "user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; touch-action: none;";
 
     let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
@@ -307,10 +311,11 @@ window.abrirVisualizadorMidia = function(index) {
         </div>
     `;
 
+    // 🔥 Draggable="false" é a bala de prata contra o ghost-drag no Computador
     if(isVideo) {
-        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out" style="${cssBlindagem}"></video>`;
+        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay draggable="false" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out" style="${cssBlindagem}"></video>`;
     } else {
-        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-transform duration-100 ease-out cursor-grab" style="${cssBlindagem}">`;
+        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" draggable="false" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-transform duration-100 ease-out cursor-grab" style="${cssBlindagem}">`;
     }
     
     container.innerHTML = midiaHTML;
@@ -320,19 +325,13 @@ window.abrirVisualizadorMidia = function(index) {
 
     const el = document.getElementById('elemento-midia-zoom');
     
-    // O Cérebro do PointerEvents
-    let pointers = []; 
-    let startDist = 0;
-    let startPanX = 0;
-    let startPanY = 0;
-
     window.atualizarTransform = function() {
         if(window.zoomScale <= 1) {
             window.zoomScale = 1;
             window.posX = 0;
-            window.posY = 0; // Volta para o centro se tirar o zoom
+            window.posY = 0;
         }
-        // translate3d obriga a Placa de Vídeo (GPU) a processar o movimento = fluidez máxima
+        // Aplica pela Placa de Vídeo (GPU)
         if(el) el.style.transform = `translate3d(${window.posX}px, ${window.posY}px, 0) scale(${window.zoomScale})`;
         const ind = document.getElementById('indicador-zoom');
         if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
@@ -343,11 +342,10 @@ window.abrirVisualizadorMidia = function(index) {
         window.zoomScale += fator;
         
         if(window.zoomScale < 1) window.zoomScale = 1;
-        if(window.zoomScale > 8) window.zoomScale = 8; // Super Zoom 8x
+        if(window.zoomScale > 8) window.zoomScale = 8; 
         
         const ratio = window.zoomScale / oldScale;
 
-        // Empurra a imagem na direção contrária para ancorar o pixel sob o dedo/mouse
         if (window.zoomScale > 1) {
             const rect = container.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
@@ -375,170 +373,130 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    // 1. Tocou na tela ou Clicou
-    container.onpointerdown = (e) => {
-        if(e.target.closest('.fixed')) return; // Se clicou num botão, ignora
-        
-        // Bloqueia clique nativo APENAS se for imagem (não bloqueia vídeo para os controles funcionarem)
-        if(e.target.tagName !== 'VIDEO') e.preventDefault();
-        
-        pointers.push(e); // Registra o dedo ou mouse
-        
-        if(pointers.length === 2) {
-            // Dois dedos = Inicia Pinça (Pinch)
-            startDist = Math.hypot(pointers[0].clientX - pointers[1].clientX, pointers[0].clientY - pointers[1].clientY);
-        } else if (pointers.length === 1) {
-            // Um dedo/Mouse = Inicia Arrasto (Pan)
-            startPanX = e.clientX - window.posX;
-            startPanY = e.clientY - window.posY;
-            if(el) {
-                el.style.transition = 'none'; // Tira a suavidade para grudar no dedo
-                if(window.zoomScale > 1) el.style.cursor = 'grabbing';
-            }
+    // ==========================================
+    // CÉREBRO 1: COMPUTADOR (RATO)
+    // ==========================================
+    let isDragging = false;
+    let startX = 0, startY = 0;
+
+    const onMouseDown = (e) => {
+        if(e.target.closest('.fixed') || e.target.tagName === 'VIDEO') return;
+        e.preventDefault(); // Impede seleção de texto e afins
+        isDragging = true;
+        startX = e.clientX - window.posX;
+        startY = e.clientY - window.posY;
+        if(el) {
+            el.style.transition = 'none';
+            if(window.zoomScale > 1) el.style.cursor = 'grabbing';
         }
     };
 
-    // 2. Movimentou o dedo ou mouse
-    container.onpointermove = (e) => {
-        // Atualiza a posição do dedo específico no nosso rastreador
-        const index = pointers.findIndex(p => p.pointerId === e.pointerId);
-        if (index !== -1) pointers[index] = e;
+    const onMouseMove = (e) => {
+        if(!isDragging || window.zoomScale === 1) return;
+        e.preventDefault();
+        window.posX = e.clientX - startX;
+        window.posY = e.clientY - startY;
+        window.atualizarTransform();
+    };
 
-        if (pointers.length === 2) {
-            // MODO PINÇA: Calcula a distância para dar Zoom
-            const dist = Math.hypot(pointers[0].clientX - pointers[1].clientX, pointers[0].clientY - pointers[1].clientY);
-            const delta = dist - startDist;
-            startDist = dist;
-            
-            const focalX = (pointers[0].clientX + pointers[1].clientX) / 2;
-            const focalY = (pointers[0].clientY + pointers[1].clientY) / 2;
-            
+    const onMouseUp = () => {
+        isDragging = false;
+        if(el) {
+            el.style.transition = 'transform 0.1s ease-out';
+            if(window.zoomScale > 1) el.style.cursor = 'grab';
+        }
+    };
+
+    const onWheel = (e) => {
+        e.preventDefault();
+        const zoomAmount = e.deltaY * -0.003;
+        window.alterarZoom(zoomAmount, e.clientX, e.clientY);
+    };
+
+    // ==========================================
+    // CÉREBRO 2: SMARTPHONES (TOUCH)
+    // ==========================================
+    let startDist = null;
+
+    const onTouchStart = (e) => {
+        if(e.target.closest('.fixed')) return;
+        
+        if(e.touches.length === 2) {
+            // Pinça (Dois dedos)
+            startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        } else if (e.touches.length === 1) {
+            // Pan (Um dedo)
+            isDragging = true;
+            startX = e.touches[0].clientX - window.posX;
+            startY = e.touches[0].clientY - window.posY;
+            if(el) el.style.transition = 'none';
+        }
+    };
+
+    const onTouchMove = (e) => {
+        if(e.target.closest('.fixed')) return;
+        
+        // 🔥 A MÁGICA: Impede completamente o ecrã do telemóvel de mexer enquanto mexe na foto
+        e.preventDefault(); 
+
+        if(e.touches.length === 2) {
+            const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            if (startDist === null) startDist = currentDist; 
+            const delta = currentDist - startDist;
+            startDist = currentDist;
+
+            const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const focalY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
             window.alterarZoom(delta * 0.015, focalX, focalY);
-        } else if (pointers.length === 1 && window.zoomScale > 1) {
-            // MODO ARRASTO: Só arrasta se estiver com zoom
-            window.posX = e.clientX - startPanX;
-            window.posY = e.clientY - startPanY;
+        } else if (e.touches.length === 1 && isDragging && window.zoomScale > 1) {
+            window.posX = e.touches[0].clientX - startX;
+            window.posY = e.touches[0].clientY - startY;
             window.atualizarTransform();
         }
     };
 
-    // 3. Tirou o dedo da tela ou soltou o clique
-    const removePointer = (e) => {
-        pointers = pointers.filter(p => p.pointerId !== e.pointerId);
-        if (pointers.length === 0 && el) {
-            el.style.transition = 'transform 0.1s ease-out'; // Devolve a suavidade
-            if(window.zoomScale > 1) el.style.cursor = 'grab';
-        } else if (pointers.length === 1) {
-            // Se tinha 2 dedos e tirou 1, recalcula o ponto de ancoragem para o dedo que ficou
-            startPanX = pointers[0].clientX - window.posX;
-            startPanY = pointers[0].clientY - window.posY;
+    const onTouchEnd = (e) => {
+        if(e.touches.length < 2) startDist = null;
+        if(e.touches.length === 0) {
+            isDragging = false;
+            if(el) el.style.transition = 'transform 0.1s ease-out';
+        }
+        // Inteligência: Se tinha 2 dedos e levantou 1, recalcula o eixo para a foto não "saltar"
+        if(e.touches.length === 1) {
+            startX = e.touches[0].clientX - window.posX;
+            startY = e.touches[0].clientY - window.posY;
         }
     };
 
-    container.onpointerup = removePointer;
-    container.onpointercancel = removePointer;
-    container.onpointerleave = removePointer;
+    // Amarra tudo com segurança
+    container.addEventListener('touchstart', onTouchStart, {passive: false});
+    container.addEventListener('touchmove', onTouchMove, {passive: false});
+    container.addEventListener('touchend', onTouchEnd);
+    container.addEventListener('touchcancel', onTouchEnd);
 
-    // 4. Bolinha do Mouse (Scroll)
-    container.onwheel = (e) => {
-        e.preventDefault();
-        const zoomAmount = e.deltaY * -0.003; 
-        window.alterarZoom(zoomAmount, e.clientX, e.clientY);
+    container.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    container.addEventListener('wheel', onWheel, {passive: false});
+
+    window._limparEventosZoom = () => {
+        container.removeEventListener('touchstart', onTouchStart);
+        container.removeEventListener('touchmove', onTouchMove);
+        container.removeEventListener('touchend', onTouchEnd);
+        container.removeEventListener('touchcancel', onTouchEnd);
+        container.removeEventListener('mousedown', onMouseDown);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        container.removeEventListener('wheel', onWheel);
     };
 };
 
 window.fecharVisualizadorMidia = function() {
+    if(window._limparEventosZoom) window._limparEventosZoom();
     document.getElementById('modal-visualizador-midia').classList.add('hidden');
     document.getElementById('container-visualizador').innerHTML = ''; 
     document.body.style.overflow = 'auto'; 
-};
-
-window.abrirModalExcluirAnexo = function(index) {
-    window.indexAnexoParaExcluir = index;
-    const modal = document.getElementById('modal-excluir-anexo');
-    
-    document.body.appendChild(modal); 
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; 
-};
-
-window.fecharModalExcluirAnexo = function() {
-    window.indexAnexoParaExcluir = null;
-    document.getElementById('modal-excluir-anexo').classList.add('hidden');
-    document.body.style.overflow = 'auto'; 
-};
-
-window.confirmarExclusaoAnexo = async function() {
-    if (window.indexAnexoParaExcluir !== null) {
-        const urlMidia = window.imagensUploadArray[window.indexAnexoParaExcluir];
-        
-        // Se a mídia estiver hospedada no Supabase, avisamos o Storage para destruí-la
-        if (urlMidia.includes('supabase.co')) {
-            const btnExcluir = document.querySelector('#modal-excluir-anexo button:last-child');
-            const textoOriginal = btnExcluir.innerHTML;
-            btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
-            btnExcluir.disabled = true;
-
-            try {
-                // Extraímos apenas o nome do arquivo da URL completa
-                const nomeArquivo = urlMidia.split('/anexos_os/')[1].split('?')[0];
-                
-                // Manda a ordem de exclusão para o bucket
-                const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
-                if (error) throw error;
-            } catch (e) {
-                window.dispararAlerta("Falha ao excluir arquivo da nuvem.", "erro");
-                btnExcluir.innerHTML = textoOriginal;
-                btnExcluir.disabled = false;
-                return; // Pára aqui e não apaga da tela se falhar na nuvem
-            }
-        }
-
-        // Se chegou aqui, removemos da tela com segurança
-        window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
-        window.renderizarPreviewFotos();
-        window.dispararAlerta("Evidência removida com sucesso.", "sucesso");
-        
-        // Levanta a bandeira vermelha avisando que a O.S foi alterada
-        if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
-        
-        // Reseta o botão para uso futuro
-        const btnExcluirFinal = document.querySelector('#modal-excluir-anexo button:last-child');
-        if(btnExcluirFinal) {
-            btnExcluirFinal.innerHTML = 'Excluir';
-            btnExcluirFinal.disabled = false;
-        }
-    }
-    window.fecharModalExcluirAnexo();
-};
-
-window.confirmarExclusao = async function() {
-    if (!window.idParaExcluir) return;
-    
-    // 1. Acha a OS no sistema para pegar todos os anexos atrelados a ela
-    const orc = window.globalOrcamentosList.find(o => o.id == window.idParaExcluir);
-    
-    try {
-        // 2. Destruição Logística (Apaga todas as fotos da O.S. lá do Supabase Storage)
-        if (orc && orc.anexos && orc.anexos.length > 0) {
-            const arquivosParaApagar = orc.anexos
-                .filter(url => url.includes('supabase.co'))
-                .map(url => url.split('/anexos_os/')[1].split('?')[0]);
-            
-            if (arquivosParaApagar.length > 0) {
-                await window.banco.storage.from('anexos_os').remove(arquivosParaApagar);
-            }
-        }
-
-        // 3. Extermina a O.S do banco de dados principal
-        await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
-        
-        window.dispararAlerta("O.S e arquivos excluídos permanentemente.", "sucesso");
-        window.buscarOrcamentosSupabase();
-    } catch (e) {
-        window.dispararAlerta("Erro ao excluir O.S.", "erro");
-    }
-    window.fecharModalExclusao();
 };
 
 window.abrirModalDestravar = function(id) {
