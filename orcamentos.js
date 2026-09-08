@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S.
+// AutoManager - Módulo de Orçamentos e O.S. (BLINDAGEM TOTAL)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -90,6 +90,7 @@ window.obterCorStatus = function(status) {
 window.filtrarTabelaOS = function() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
+    
     linhas.forEach(linha => {
         const textoLinha = linha.innerText.toLowerCase();
         if (textoLinha.includes(termo)) {
@@ -1087,7 +1088,7 @@ window.gerarPDFSupabase = async function(dadosCodificados) {
 };
 
 // ===================================================================================
-// 4. BANCO DE DADOS (SUPABASE) E FLUXOS
+// 4. BANCO DE DADOS E EVENTOS GERAIS
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -1391,10 +1392,73 @@ window.processarDestravarOS = async function() {
     
     try {
         window.fecharModalDestravar();
-        window.isOSDestravada = true;
-        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
+        const encoded = encodeURIComponent(JSON.stringify(window.osParaDestravarDados));
+        await window.abrirEdicaoOS(encoded, 'dados', false);
+        window.isOSDestravada = true; 
+        window.verificarStatusFinanceiro(); 
+        window.atualizarInterfaceItensETotais();
+        window.renderizarPreviewFotos();
+        window.renderizarAbaFinanceiro();
         window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
     } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
-console.log("🟢 Módulo Orçamentos Carregado e Ancorado com Sucesso Absoluto!");
+window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
+    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
+    window.osEmEdicaoId = orc.id;
+    window.osEmEdicaoNumero = orc.numero_os; 
+    window.osParaDestravarDados = orc; 
+    window.isVisualizacaoModo = isVisualizacao;
+    window.isOSDestravada = false; 
+    
+    document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
+    
+    const selectCliente = document.getElementById('db-cliente-nome');
+    if (!Array.from(selectCliente.options).some(opt => opt.value === orc.cliente_nome)) { selectCliente.innerHTML += `<option value="${orc.cliente_nome}">${orc.cliente_nome}</option>`; }
+    selectCliente.value = orc.cliente_nome;
+
+    const selectVeiculo = document.getElementById('db-veiculo-placa');
+    if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
+    selectVeiculo.value = orc.veiculo_placa;
+
+    const selStatus = document.getElementById('db-status');
+    selStatus.disabled = false; 
+    if(orc.status === 'Fechado') {
+        const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
+        if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
+    }
+    selStatus.value = orc.status;
+    
+    document.getElementById('db-obs').value = orc.observacao || '';
+    window.itensTemporarios = orc.itens?.lista_itens || [];
+    window.imagensUploadArray = orc.anexos || [];
+    
+    if(window.imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); window.renderizarPreviewFotos(); }
+
+    const descValor = orc.itens?.resumo?.desconto || 0;
+    if (descValor > 0) {
+        document.getElementById('desc-tipo').value = 'val';
+        const descInput = document.getElementById('desc-val');
+        descInput.value = (descValor * 100).toString(); window.mascaraMoeda(descInput);
+    } else { document.getElementById('desc-val').value = ''; }
+
+    window.calcularTotais();
+    
+    await window.recarregarFinanceiroDaOS();
+    window.verificarStatusFinanceiro(); 
+    
+    document.getElementById('view-lista-orcamentos').classList.add('hidden');
+    document.getElementById('view-novo-orcamento').classList.remove('hidden');
+    
+    window.mudarAbaOS(abaAlvo); 
+};
+
+window.abrirVisualizacaoOS = function(dadosCodificados) {
+    window.abrirEdicaoOS(dadosCodificados, 'dados', true);
+};
+
+window.abrirFaturamentoDireto = function(dadosCodificados) {
+    window.abrirEdicaoOS(dadosCodificados, 'fin', false);
+};
+
+console.log("🟢 Módulo Orçamentos Carregado e 100% Ancorado (Versão Ouro)");
