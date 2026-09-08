@@ -266,18 +266,6 @@ window.renderizarPreviewFotos = function() {
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
 
-// ==========================================
-// MOTOR DE ZOOM E ARRASTO (FOCAL-POINT NATIVO)
-// ==========================================
-
-// ==========================================
-// MOTOR DE ZOOM E ARRASTO (NÍVEL GOOGLE MAPS)
-// ==========================================
-
-// ==========================================
-// MOTOR DE ZOOM E ARRASTO (BLINDAGEM NÍVEL GOOGLE MAPS)
-// ==========================================
-
 window.zoomScale = 1;
 window.posX = 0;
 window.posY = 0;
