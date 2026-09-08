@@ -77,7 +77,7 @@ window.dispararAlerta = function(msg, tipo = 'erro') {
     if (alertaAntigo) alertaAntigo.remove();
     const toast = document.createElement('div');
     toast.id = 'alerta-toast-flutuante';
-    toast.className = `fixed top-20 right-4 md:right-8 z-[9999] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter`;
+    toast.className = `fixed top-20 right-4 md:right-8 z-[2000] ${corBg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 fade-in font-inter z-[9999]`;
     toast.innerHTML = `<i class="ph-bold ${icone} text-2xl"></i> <span class="font-bold text-sm">${msg}</span>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast) toast.remove(); }, 4000);
@@ -115,6 +115,7 @@ window.renderizarTabelaReal = function(dados) {
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = window.obterCorStatus(orc.status);
+        const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
@@ -192,7 +193,7 @@ window.atualizarInterfaceItensETotais = function() {
 };
 
 // ========================================================
-// 3. FOTOS, VÍDEOS, COMPRESSÃO E MODAIS
+// 3. FOTOS, VÍDEOS E COMPRESSÃO
 // ========================================================
 window.comprimirImagem = function(file) {
     return new Promise((resolve) => {
@@ -201,7 +202,7 @@ window.comprimirImagem = function(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // Resolução comprimida para evitar erro de payload no Supabase
+                const MAX_WIDTH = 800; // Reduzido para garantir que o Supabase nunca exploda o limite
                 const MAX_HEIGHT = 800;
                 let width = img.width;
                 let height = img.height;
@@ -215,8 +216,7 @@ window.comprimirImagem = function(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Comprime para 50% de qualidade JPEG
-                resolve(canvas.toDataURL('image/jpeg', 0.5)); 
+                resolve(canvas.toDataURL('image/jpeg', 0.5)); // Compressão agressiva e segura
             };
             img.src = event.target.result;
         };
@@ -232,8 +232,8 @@ window.processarImagens = async function(event) {
     
     for (let file of files) {
         if (file.type.startsWith('video/')) {
-            if (file.size > 2 * 1024 * 1024) { // Limite de 2MB para não quebrar o banco
-                window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 2MB). Tente gravar menos tempo ou reduzir a qualidade da câmera.`, "erro");
+            if (file.size > 2 * 1024 * 1024) { // Impede vídeos maiores que 2MB
+                window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 2MB).`, "erro");
                 continue;
             }
             const base64 = await new Promise(r => { const reader = new FileReader(); reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
@@ -278,6 +278,9 @@ window.renderizarPreviewFotos = function() {
     });
 };
 
+// ========================================================
+// 4. MODAIS E BLOQUEIO DE TELA
+// ========================================================
 window.abrirVisualizadorMidia = function(index) {
     const base64Str = window.imagensUploadArray[index];
     const container = document.getElementById('container-visualizador');
@@ -350,6 +353,223 @@ window.fecharModalExclusao = function() {
     document.body.style.overflow = 'auto'; 
 };
 
+// ========================================================
+// 5. TELAS, ESTADOS, NAVEGAÇÃO E REGRAS DE O.S.
+// ========================================================
+
+window.mudarAbaOS = function(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+    
+    const colDados = document.getElementById('coluna-direita-dados');
+    const colFin = document.getElementById('coluna-direita-fin');
+    
+    const isFinHidden = btnFin.classList.contains('hidden');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
+        
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+        if(colDados) colDados.classList.remove('hidden');
+        if(colFin) colFin.classList.add('hidden');
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        if(colFin) colFin.classList.remove('hidden');
+        if(colDados) colDados.classList.add('hidden');
+        
+        window.renderizarAbaFinanceiro();
+    }
+};
+
+window.verificarStatusFinanceiro = function() {
+    const status = document.getElementById('db-status').value;
+    const badgeFechada = document.getElementById('badge-os-fechada');
+    const abaFinBtn = document.getElementById('aba-fin');
+    
+    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
+
+    if (isTravadoLocalmente) {
+        if(badgeFechada) {
+            badgeFechada.classList.remove('hidden');
+            if (window.isVisualizacaoModo) {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
+                badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            } else {
+                badgeFechada.innerHTML = '<i class="ph-fill ph-lock-key text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Fechada / Leitura</span>';
+                badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
+            }
+        }
+        window.congelarCamposOS(true);
+    } else {
+        window.congelarCamposOS(false);
+        if(badgeFechada) badgeFechada.classList.add('hidden');
+    }
+    
+    if (status === 'Finalizado' || status === 'Fechado' || window.currentOSFinanceiro.length > 0) {
+        if(abaFinBtn) abaFinBtn.classList.remove('hidden');
+    } else {
+        if(abaFinBtn) abaFinBtn.classList.add('hidden');
+        if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
+    }
+};
+
+window.congelarCamposOS = function(travar) {
+    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
+    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
+
+    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
+    botoesAcao.forEach(btn => btn.disabled = travar);
+    
+    const btnSalvarObj = document.getElementById('btn-salvar-db');
+    if(btnSalvarObj) {
+        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
+        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
+    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
+    
+    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
+    camposFinEdit.forEach(el => el.disabled = travar);
+};
+
+window.alternarSubTelaOrcamento = function(modo) {
+    const viewLista = document.getElementById('view-lista-orcamentos');
+    const viewNovo = document.getElementById('view-novo-orcamento');
+
+    if (modo === 'novo') {
+        window.osEmEdicaoId = null; 
+        window.osEmEdicaoNumero = null;
+        window.currentOSFinanceiro = []; 
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        
+        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
+        document.getElementById('db-cliente-nome').value = '';
+        document.getElementById('db-veiculo-placa').value = '';
+        document.getElementById('db-status').value = 'Em Aberto';
+        document.getElementById('desc-val').value = '';
+        document.getElementById('db-obs').value = '';
+        
+        window.itensTemporarios = [];
+        window.imagensUploadArray = [];
+        const preview = document.getElementById('preview-anexos');
+        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+        
+        const abaFinBtn = document.getElementById('aba-fin');
+        if (abaFinBtn) abaFinBtn.classList.add('hidden');
+        
+        window.mudarAbaOS('dados'); 
+        window.calcularTotais();
+        window.verificarStatusFinanceiro(); 
+        
+        viewLista.classList.add('hidden');
+        viewNovo.classList.remove('hidden');
+    } else {
+        viewNovo.classList.add('hidden');
+        viewLista.classList.remove('hidden');
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        window.buscarOrcamentosSupabase();
+    }
+};
+
+window.adicionarOuEditarItem = function() {
+    const tipo = document.getElementById('item-tipo').value;
+    const nome = document.getElementById('item-nome').value;
+    const desc = document.getElementById('item-desc').value;
+    const qtd = parseFloat(document.getElementById('item-qtd').value);
+    const valString = document.getElementById('item-val').value;
+    const idEdit = document.getElementById('item-id-edit').value;
+
+    if(!nome) { window.dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
+    if(!qtd || qtd <= 0) { window.dispararAlerta("A quantidade deve ser maior que zero."); return; }
+    const valFloat = window.reverterMoeda(valString);
+    if(valFloat <= 0) { window.dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
+
+    const sub = qtd * valFloat;
+
+    if (idEdit) {
+        const index = window.itensTemporarios.findIndex(i => i.id_temp == idEdit);
+        if (index > -1) window.itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
+        document.getElementById('item-id-edit').value = '';
+        document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
+        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
+    } else {
+        window.itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
+    }
+
+    document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
+    window.calcularTotais();
+};
+
+window.removerItemDB = function(id) { 
+    window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
+    window.calcularTotais(); 
+};
+
+window.editarItem = function(id) {
+    const item = window.itensTemporarios.find(i => i.id_temp === id);
+    if (!item) return;
+
+    document.getElementById('item-tipo').value = item.tipo || 'Peça';
+    document.getElementById('item-nome').value = item.descricao;
+    document.getElementById('item-desc').value = item.detalhe || '';
+    document.getElementById('item-qtd').value = item.quantidade;
+    const inputVal = document.getElementById('item-val');
+    inputVal.value = (item.valor_unitario * 100).toString(); 
+    window.mascaraMoeda(inputVal);
+    document.getElementById('item-id-edit').value = item.id_temp;
+    
+    const btn = document.getElementById('btn-add-item');
+    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
+    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+};
+
+window.calcularTotais = function() {
+    let sumPecas = 0; let sumServicos = 0;
+    window.itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
+    let totalBruto = sumPecas + sumServicos;
+    let descValor = 0;
+    const descTipo = document.getElementById('desc-tipo').value; 
+    const descAlvo = document.getElementById('desc-alvo').value; 
+    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
+
+    if (descFator > 0) {
+        let baseDeCalculo = 0;
+        if (descAlvo === 'total') baseDeCalculo = totalBruto;
+        else if (descAlvo === 'pecas') baseDeCalculo = sumPecas;
+        else if (descAlvo === 'servicos') baseDeCalculo = sumServicos;
+        descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
+    }
+
+    window.valoresFinais.pecas = sumPecas; 
+    window.valoresFinais.servicos = sumServicos; 
+    window.valoresFinais.desconto = descValor; 
+    window.valoresFinais.total = totalBruto - descValor;
+    
+    window.atualizarInterfaceItensETotais();
+    
+    if(document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
+        if(window.currentOSFinanceiro.length > 0) {
+            window.checarSomaFinanceiroEdit();
+        } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
+            window.checarSomaGeradorTab();
+        }
+    }
+};
+
+// ========================================================
+// 6. CADASTRO DE CLIENTE E CEP
+// ========================================================
 window.abrirModalCadastro = function(tipo) {
     window.modalTipoAberto = tipo;
     const modal = document.getElementById('modal-cadastro-rapido'); 
@@ -542,498 +762,9 @@ window.processarSalvamentoModal = async function() {
     }
 };
 
-// ========================================================
-// 4. ABAS E COMPONENTES
-// ========================================================
-window.mudarAbaOS = function(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-    
-    const colDados = document.getElementById('coluna-direita-dados');
-    const colFin = document.getElementById('coluna-direita-fin');
-    
-    const isFinHidden = btnFin.classList.contains('hidden');
-
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
-        
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-        
-        if(colDados) colDados.classList.remove('hidden');
-        if(colFin) colFin.classList.add('hidden');
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2' + (isFinHidden ? ' hidden' : '');
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        
-        if(colFin) colFin.classList.remove('hidden');
-        if(colDados) colDados.classList.add('hidden');
-        
-        window.renderizarAbaFinanceiro();
-    }
-};
-
-window.verificarStatusFinanceiro = function() {
-    const status = document.getElementById('db-status').value;
-    const badgeFechada = document.getElementById('badge-os-fechada');
-    const abaFinBtn = document.getElementById('aba-fin');
-    
-    const isTravadoLocalmente = (status === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-
-    if (isTravadoLocalmente) {
-        if(badgeFechada) {
-            badgeFechada.classList.remove('hidden');
-            if (window.isVisualizacaoModo) {
-                badgeFechada.innerHTML = '<i class="ph-fill ph-eye text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Modo Visualização</span>';
-                badgeFechada.className = "bg-blue-100 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
-            } else {
-                badgeFechada.innerHTML = '<i class="ph-fill ph-lock-key text-lg"></i><span class="text-xs font-black uppercase tracking-wider hidden md:block">Fechada / Leitura</span>';
-                badgeFechada.className = "bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm";
-            }
-        }
-        window.congelarCamposOS(true);
-    } else {
-        window.congelarCamposOS(false);
-        if(badgeFechada) badgeFechada.classList.add('hidden');
-    }
-    
-    if (status === 'Finalizado' || status === 'Fechado' || window.currentOSFinanceiro.length > 0) {
-        if(abaFinBtn) abaFinBtn.classList.remove('hidden');
-    } else {
-        if(abaFinBtn) abaFinBtn.classList.add('hidden');
-        if(!window.isVisualizacaoModo) window.mudarAbaOS('dados'); 
-    }
-};
-
-window.congelarCamposOS = function(travar) {
-    const campos = ['db-cliente-nome', 'db-veiculo-placa', 'item-tipo', 'item-nome', 'item-qtd', 'item-val', 'item-desc', 'db-obs', 'desc-tipo', 'desc-val', 'desc-alvo', 'db-status'];
-    campos.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = travar; });
-
-    const botoesAcao = document.querySelectorAll('#box-add-item button, #box-desconto input, #box-upload-fotos input, #btn-salvar-db');
-    botoesAcao.forEach(btn => btn.disabled = travar);
-    
-    const btnSalvarObj = document.getElementById('btn-salvar-db');
-    if(btnSalvarObj) {
-        if(travar) btnSalvarObj.classList.add('opacity-50', 'cursor-not-allowed');
-        else btnSalvarObj.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-    
-    const botoesCadRapido = document.querySelectorAll('.btn-cad-rapido');
-    botoesCadRapido.forEach(btn => btn.style.display = travar ? 'none' : 'block');
-    
-    const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
-    camposFinEdit.forEach(el => el.disabled = travar);
-};
-
-window.alternarSubTelaOrcamento = function(modo) {
-    const viewLista = document.getElementById('view-lista-orcamentos');
-    const viewNovo = document.getElementById('view-novo-orcamento');
-
-    if (modo === 'novo') {
-        window.osEmEdicaoId = null; 
-        window.osEmEdicaoNumero = null;
-        window.currentOSFinanceiro = []; 
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        
-        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
-        document.getElementById('db-cliente-nome').value = '';
-        document.getElementById('db-veiculo-placa').value = '';
-        document.getElementById('db-status').value = 'Em Aberto';
-        document.getElementById('desc-val').value = '';
-        document.getElementById('db-obs').value = '';
-        
-        window.itensTemporarios = [];
-        window.imagensUploadArray = [];
-        const preview = document.getElementById('preview-anexos');
-        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
-        
-        const abaFinBtn = document.getElementById('aba-fin');
-        if (abaFinBtn) abaFinBtn.classList.add('hidden');
-        
-        window.mudarAbaOS('dados'); 
-        window.calcularTotais();
-        window.verificarStatusFinanceiro(); 
-        
-        viewLista.classList.add('hidden');
-        viewNovo.classList.remove('hidden');
-    } else {
-        viewNovo.classList.add('hidden');
-        viewLista.classList.remove('hidden');
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        window.buscarOrcamentosSupabase();
-    }
-};
-
-window.adicionarOuEditarItem = function() {
-    const tipo = document.getElementById('item-tipo').value;
-    const nome = document.getElementById('item-nome').value;
-    const desc = document.getElementById('item-desc').value;
-    const qtd = parseFloat(document.getElementById('item-qtd').value);
-    const valString = document.getElementById('item-val').value;
-    const idEdit = document.getElementById('item-id-edit').value;
-
-    if(!nome) { window.dispararAlerta("O nome do Item (Peça/Serviço) é obrigatório."); return; }
-    if(!qtd || qtd <= 0) { window.dispararAlerta("A quantidade deve ser maior que zero."); return; }
-    const valFloat = window.reverterMoeda(valString);
-    if(valFloat <= 0) { window.dispararAlerta("O valor unitário não pode ser vazio ou zero."); return; }
-
-    const sub = qtd * valFloat;
-
-    if (idEdit) {
-        const index = window.itensTemporarios.findIndex(i => i.id_temp == idEdit);
-        if (index > -1) window.itensTemporarios[index] = { id_temp: idEdit, tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub };
-        document.getElementById('item-id-edit').value = '';
-        document.getElementById('btn-add-item').innerHTML = '<i class="ph-bold ph-plus mr-1"></i> Add Item';
-        document.getElementById('btn-add-item').classList.replace('bg-emerald-600', 'bg-slate-900');
-    } else {
-        window.itensTemporarios.push({ id_temp: Date.now(), tipo, descricao: nome, detalhe: desc, quantidade: qtd, valor_unitario: valFloat, subtotal: sub });
-    }
-
-    document.getElementById('item-nome').value = ''; document.getElementById('item-desc').value = ''; document.getElementById('item-val').value = ''; document.getElementById('item-qtd').value = '1'; document.getElementById('item-nome').focus();
-    window.calcularTotais();
-};
-
-window.removerItemDB = function(id) { 
-    window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
-    window.calcularTotais(); 
-};
-
-window.editarItem = function(id) {
-    const item = window.itensTemporarios.find(i => i.id_temp === id);
-    if (!item) return;
-
-    document.getElementById('item-tipo').value = item.tipo || 'Peça';
-    document.getElementById('item-nome').value = item.descricao;
-    document.getElementById('item-desc').value = item.detalhe || '';
-    document.getElementById('item-qtd').value = item.quantidade;
-    const inputVal = document.getElementById('item-val');
-    inputVal.value = (item.valor_unitario * 100).toString(); 
-    window.mascaraMoeda(inputVal);
-    document.getElementById('item-id-edit').value = item.id_temp;
-    
-    const btn = document.getElementById('btn-add-item');
-    btn.innerHTML = '<i class="ph-bold ph-check mr-1"></i> Salvar Edição';
-    btn.classList.replace('bg-slate-900', 'bg-emerald-600');
-};
-
-window.calcularTotais = function() {
-    let sumPecas = 0; let sumServicos = 0;
-    window.itensTemporarios.forEach(item => { if (item.tipo === 'Peça') sumPecas += item.subtotal; else sumServicos += item.subtotal; });
-    let totalBruto = sumPecas + sumServicos;
-    let descValor = 0;
-    const descTipo = document.getElementById('desc-tipo').value; 
-    const descAlvo = document.getElementById('desc-alvo').value; 
-    let descFator = parseFloat(document.getElementById('desc-val').value.replace(',', '.')) || 0;
-
-    if (descFator > 0) {
-        let baseDeCalculo = 0;
-        if (descAlvo === 'total') baseDeCalculo = totalBruto;
-        else if (descAlvo === 'pecas') baseDeCalculo = sumPecas;
-        else if (descAlvo === 'servicos') baseDeCalculo = sumServicos;
-        descValor = descTipo === 'perc' ? baseDeCalculo * (descFator / 100) : (descFator > baseDeCalculo ? baseDeCalculo : descFator); 
-    }
-
-    window.valoresFinais.pecas = sumPecas; 
-    window.valoresFinais.servicos = sumServicos; 
-    window.valoresFinais.desconto = descValor; 
-    window.valoresFinais.total = totalBruto - descValor;
-    
-    window.atualizarInterfaceItensETotais();
-    
-    if(document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')){
-        if(window.currentOSFinanceiro.length > 0) {
-            window.checarSomaFinanceiroEdit();
-        } else if (document.getElementById('fin-gerador-box') && !document.getElementById('fin-gerador-box').classList.contains('hidden')) {
-            window.checarSomaGeradorTab();
-        }
-    }
-};
-
 // ===================================================================================
-// 5. BANCO DE DADOS (SUPABASE) E LÓGICA FINANCEIRA
+// 7. BANCO DE DADOS (SUPABASE) E FLUXOS PRINCIPAIS
 // ===================================================================================
-window.recarregarFinanceiroDaOS = async function() {
-    if(!window.osEmEdicaoNumero) return;
-    const { data: finRecords } = await window.banco.from('contas_receber')
-        .select('*').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`).order('data_vencimento', { ascending: true });
-    
-    window.currentOSFinanceiro = finRecords || [];
-    if (document.getElementById('aba-conteudo-fin') && !document.getElementById('aba-conteudo-fin').classList.contains('hidden')) {
-        window.renderizarAbaFinanceiro();
-    }
-};
-
-window.renderizarAbaFinanceiro = function() {
-    const boxBloqueado = document.getElementById('fin-bloqueado-box');
-    const boxLiberado = document.getElementById('fin-liberado-box');
-    const boxGerador = document.getElementById('fin-gerador-box');
-    const boxEditor = document.getElementById('fin-editor-box');
-    const btnRefazer = document.getElementById('btn-estornar-fin');
-    const btnSalvarEdicao = document.getElementById('btn-salvar-fin-edicao');
-    const subtitulo = document.getElementById('fin-aba-subtitulo');
-    
-    document.getElementById('fin-aba-total-os').innerText = window.formataDinheiro(window.valoresFinais.total);
-
-    if (!window.osEmEdicaoId) {
-        boxBloqueado.classList.remove('hidden');
-        boxLiberado.classList.add('hidden');
-        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
-        if(btnRefazer) btnRefazer.classList.add('hidden');
-        return;
-    }
-
-    boxBloqueado.classList.add('hidden');
-    boxLiberado.classList.remove('hidden'); 
-
-    if (!window.currentOSFinanceiro || window.currentOSFinanceiro.length === 0) {
-        boxGerador.classList.remove('hidden');
-        boxEditor.classList.add('hidden');
-        if(btnRefazer) btnRefazer.classList.add('hidden');
-        if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
-        
-        if (window.isVisualizacaoModo) {
-            boxGerador.classList.add('hidden');
-            subtitulo.innerText = "Esta O.S. não possui lançamentos financeiros.";
-            document.getElementById('fin-aba-soma').innerText = 'R$ 0,00';
-            window.atualizarPlacarAuditoria(0, 'btn-salvar-fin-tab');
-        } else {
-            subtitulo.innerText = "Defina como o cliente vai pagar para gerar os boletos/parcelas.";
-            document.getElementById('tab-fin-tipo').value = 'avista';
-            window.mudarTipoFaturamentoTab();
-        }
-    } else {
-        boxGerador.classList.add('hidden');
-        boxEditor.classList.remove('hidden');
-        
-        if (window.isVisualizacaoModo) {
-            if(btnSalvarEdicao) btnSalvarEdicao.classList.add('hidden');
-            subtitulo.innerText = "Lançamentos financeiros atrelados à O.S.";
-        } else {
-            if(btnSalvarEdicao) btnSalvarEdicao.classList.remove('hidden');
-            subtitulo.innerText = "Você pode alterar os valores, datas e meios de pagamento das parcelas abaixo.";
-        }
-        
-        const hasPago = window.currentOSFinanceiro.some(r => r.status === 'Pago' || r.categoria === 'Adiantamento');
-        if (hasPago || window.isVisualizacaoModo) {
-            if(btnRefazer) btnRefazer.classList.add('hidden'); 
-        } else {
-            if(btnRefazer) btnRefazer.classList.remove('hidden'); 
-        }
-        
-        const listaDiv = document.getElementById('lista-financeiro-vinculado');
-        let html = '';
-        
-        const statusAtual = document.getElementById('db-status').value;
-        const isTravadoGlobal = (statusAtual === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-
-        window.currentOSFinanceiro.forEach((rec, idx) => {
-            const isPago = rec.status === 'Pago' || rec.categoria === 'Adiantamento';
-            const trancaGeral = isTravadoGlobal ? 'disabled' : '';
-            const trancaParaPago = isPago ? 'disabled' : trancaGeral;
-            
-            let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
-            
-            const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
-            const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
-            const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
-
-            html += `
-            <div class="p-4 rounded-xl border ${corCard} shadow-sm flex flex-col gap-4">
-                <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${badgeTipo}</span>
-                    ${iconeStatus}
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Vencimento / Pagto</label>
-                        <input type="date" id="edit-rec-data-${idx}" value="${rec.data_vencimento}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses}">
-                    </div>
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Forma de Pagto.</label>
-                        <select id="edit-rec-forma-${idx}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-xs font-bold outline-none border ${trancaClasses} cursor-pointer">
-                            <option value="Pix" ${rec.forma_pagamento === 'Pix' ? 'selected' : ''}>Pix</option>
-                            <option value="Dinheiro" ${rec.forma_pagamento === 'Dinheiro' ? 'selected' : ''}>Dinheiro Físico</option>
-                            <option value="Cartão de Débito" ${rec.forma_pagamento === 'Cartão de Débito' ? 'selected' : ''}>Cartão de Débito</option>
-                            <option value="Cartão de Crédito" ${rec.forma_pagamento === 'Cartão de Crédito' ? 'selected' : ''}>Cartão de Crédito</option>
-                            <option value="Boleto" ${rec.forma_pagamento === 'Boleto' ? 'selected' : ''}>Boleto</option>
-                            <option value="Transferência" ${rec.forma_pagamento === 'Transferência' ? 'selected' : ''}>Transferência Bancária</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
-                        <input type="text" id="edit-rec-val-${idx}" onkeyup="window.mascaraMoeda(this); window.checarSomaFinanceiroEdit()" value="${window.valorParaInput(rec.valor)}" ${trancaParaPago} class="w-full p-2.5 rounded-xl text-sm font-black outline-none border ${trancaClasses}">
-                    </div>
-                </div>
-                ${!isPago && !isTravadoGlobal ? `<div class="flex justify-end pt-2"><button onclick="window.excluirParcelaManual(${rec.id})" class="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"><i class="ph-bold ph-trash"></i> Excluir Lançamento</button></div>` : ''}
-            </div>`;
-        });
-        
-        if (!isTravadoGlobal) {
-            html += `
-            <div class="mt-4 flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 border-dashed">
-                 <p class="text-[10px] md:text-xs text-slate-500 font-medium">Você precisa adicionar uma parcela extra?</p>
-                <button onclick="window.adicionarNovaParcelaManual()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-900 transition-transform transform active:scale-95 text-xs md:text-sm flex items-center gap-2"><i class="ph-bold ph-plus"></i> Novo Lançamento</button>
-            </div>`;
-        }
-
-        listaDiv.innerHTML = html;
-        window.checarSomaFinanceiroEdit();
-    }
-};
-
-window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-salvar-fin-edicao') {
-    const elSomaBox = document.getElementById('fin-aba-soma-box');
-    const elAlerta = document.getElementById('fin-aba-alerta');
-    const btnSalvar = document.getElementById(btnIdToBlock);
-    
-    if (somaFinanceiro > 0 && Math.abs(window.valoresFinais.total - somaFinanceiro) > 0.05) {
-        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-red-300 bg-red-50 text-red-600 text-center';
-        if(elAlerta) elAlerta.classList.remove('hidden');
-        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = true; btnSalvar.classList.add('opacity-50', 'cursor-not-allowed'); }
-    } else {
-        if(elSomaBox) elSomaBox.className = 'p-4 rounded-xl border transition-colors shadow-inner border-emerald-300 bg-emerald-50 text-emerald-700 text-center';
-        if(elAlerta) elAlerta.classList.add('hidden');
-        if(btnSalvar && !window.isVisualizacaoModo) { btnSalvar.disabled = false; btnSalvar.classList.remove('opacity-50', 'cursor-not-allowed'); }
-    }
-};
-
-window.checarSomaGeradorTab = function() {
-    const activeEl = document.activeElement;
-    
-    if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
-        window.gerarLinhasParcelasTab();
-        return;
-    }
-
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    let soma = 0;
-    
-    if (tipo !== 'parcelado') {
-        soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
-    }
-    
-    if (tipo !== 'avista') {
-        const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
-        for(let i=1; i<=parcelas; i++) {
-            const inputParc = document.getElementById(`tab-parc-val-${i}`);
-            if(inputParc) soma += window.reverterMoeda(inputParc.value) || 0;
-        }
-    }
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
-    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
-};
-
-window.checarSomaFinanceiroEdit = function() {
-    let soma = 0;
-    window.currentOSFinanceiro.forEach((rec, idx) => {
-        const inputVal = document.getElementById(`edit-rec-val-${idx}`);
-        if(inputVal) soma += window.reverterMoeda(inputVal.value);
-        else soma += rec.valor;
-    });
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
-    window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
-};
-
-window.mudarTipoFaturamentoTab = function() {
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    const boxEntrada = document.getElementById('tab-box-entrada');
-    const boxParcelamento = document.getElementById('tab-box-parcelamento');
-    const inputEntrada = document.getElementById('tab-fin-entrada');
-
-    let d = new Date(); d.setMonth(d.getMonth() + 1);
-    const dataMesQueVem = window.formatarDataISO(d);
-
-    if (tipo === 'avista') {
-        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.add('hidden');
-        inputEntrada.value = window.formataDinheiro(window.valoresFinais.total); inputEntrada.readOnly = true;
-        inputEntrada.classList.add('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.remove('bg-white');
-    } else if (tipo === 'entrada_parcela') {
-        boxEntrada.classList.remove('hidden'); boxParcelamento.classList.remove('hidden');
-        inputEntrada.readOnly = false; inputEntrada.value = ''; 
-        inputEntrada.classList.remove('bg-slate-100', 'cursor-not-allowed'); inputEntrada.classList.add('bg-white');
-        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
-    } else if (tipo === 'parcelado') {
-        boxEntrada.classList.add('hidden'); boxParcelamento.classList.remove('hidden');
-        inputEntrada.value = '0,00';
-        document.getElementById('tab-fin-vencimento-base').value = dataMesQueVem;
-    }
-    window.gerarLinhasParcelasTab();
-};
-
-window.gerarLinhasParcelasTab = function() {
-    const tipo = document.getElementById('tab-fin-tipo').value;
-    let entrada = (tipo === 'avista') ? window.valoresFinais.total : ((tipo === 'parcelado') ? 0 : window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0);
-    let restante = window.valoresFinais.total - entrada; if(restante < 0) restante = 0;
-
-    const divSimulacao = document.getElementById('tab-fin-simulacao');
-    if (tipo === 'avista' || restante === 0) {
-        divSimulacao.innerHTML = `<div class="p-3 bg-emerald-50 text-emerald-700 font-bold text-sm rounded-xl text-center"><i class="ph-bold ph-check-circle mr-1"></i> A Entrada cobre 100% da O.S. Nenhuma parcela extra será gerada.</div>`;
-        document.getElementById('tab-fin-parcelas').disabled = true;
-        
-        document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(entrada);
-        window.atualizarPlacarAuditoria(entrada, 'btn-salvar-fin-tab');
-        return;
-    }
-
-    document.getElementById('tab-fin-parcelas').disabled = false;
-    const numDigitado = parseInt(document.getElementById('tab-fin-parcelas').value);
-    const parcelas = Math.max(1, isNaN(numDigitado) ? 1 : numDigitado);
-    const dataBaseStr = document.getElementById('tab-fin-vencimento-base').value;
-    
-    let html = ''; let dataBase = dataBaseStr ? new Date(dataBaseStr + 'T12:00:00Z') : new Date();
-    let centavosTotal = Math.round(restante * 100);
-    let centavosPorParcela = Math.floor(centavosTotal / parcelas);
-    let restoCentavos = centavosTotal % parcelas;
-
-    const activeEl = document.activeElement;
-    const apenasAtualizar = (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas') && divSimulacao.children.length === parcelas);
-
-    let somaGerada = entrada;
-
-    for(let i=1; i<=parcelas; i++) {
-        let valorParc = (centavosPorParcela + (i <= restoCentavos ? 1 : 0)) / 100;
-        somaGerada += valorParc;
-        let d = new Date(dataBase); d.setMonth(d.getMonth() + (i - 1)); let dateVal = window.formatarDataISO(d);
-
-        if (apenasAtualizar) {
-            const inputParc = document.getElementById(`tab-parc-val-${i}`);
-            if (inputParc) inputParc.value = window.valorParaInput(valorParc);
-        } else {
-            html += `
-            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                <span class="font-black text-[10px] md:text-xs text-blue-600 w-16 uppercase">Parc ${i}/${parcelas}</span>
-                <input type="text" id="tab-parc-val-${i}" onkeyup="window.mascaraMoeda(this); window.checarSomaGeradorTab()" value="${window.valorParaInput(valorParc)}" class="w-24 border border-slate-300 p-2 rounded-lg text-xs font-black text-slate-800 outline-none focus:border-emerald-500">
-                <input type="date" id="tab-parc-data-${i}" value="${dateVal}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500">
-                <select id="tab-parc-forma-${i}" class="flex-1 border border-slate-300 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer">
-                    <option value="Cartão de Crédito" selected>Cartão de Crédito</option>
-                    <option value="Cartão de Débito">Cartão de Débito</option>
-                    <option value="Pix">Pix</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Dinheiro">Dinheiro Físico</option>
-                    <option value="Transferência">Transferência Bancária</option>
-                </select>
-            </div>`;
-        }
-    }
-    
-    if (!apenasAtualizar) {
-        divSimulacao.innerHTML = html;
-    }
-    
-    document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(somaGerada);
-    window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
-};
-
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
     await window.buscarOrcamentosSupabase();
@@ -1350,7 +1081,7 @@ window.adicionarNovaParcelaManual = async function() {
     });
     
     let valorSugerido = window.valoresFinais.total - somaAtual;
-    if(valorSugerido < 0) window.valorSugerido = 0;
+    if(valorSugerido < 0) valorSugerido = 0;
 
     const novaParcela = {
         descricao: `Parcela O.S #${window.osEmEdicaoNumero} - ${cliente}`,
@@ -1389,18 +1120,6 @@ window.limparFinanceiroAtual = async function() {
         window.renderizarAbaFinanceiro();
         window.dispararAlerta("Financeiro estornado. Status voltou para 'Finalizado'.", "sucesso");
     } catch(e) { window.dispararAlerta("Erro ao limpar financeiro"); }
-};
-
-window.confirmarExclusao = async function() {
-    if(!window.idParaExcluir) return;
-    try {
-        const { error } = await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
-        if (error) throw error;
-        await window.banco.from('contas_receber').delete().like('descricao', `%O.S #${document.getElementById('exc-os-num').innerText.replace('#','')}%`);
-        window.dispararAlerta("Ordem de serviço apagada.", "sucesso");
-        window.fecharModalExclusao();
-        window.buscarOrcamentosSupabase();
-    } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
 };
 
 window.gerarPDFSupabase = async function(id) {
@@ -1534,4 +1253,4 @@ window.gerarPDFSupabase = async function(id) {
     });
 };
 
-console.log("🟢 Módulo Orçamentos Carregado, 100% Ancorado no Window e Inquebrável!");
+console.log("🟢 Módulo Orçamentos Carregado e Blindado na Raiz do Navegador!");
