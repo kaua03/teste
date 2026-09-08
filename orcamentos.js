@@ -193,7 +193,7 @@ window.comprimirImagem = function(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // Resolução comprimida para evitar erro de payload no Supabase
+                const MAX_WIDTH = 800;
                 const MAX_HEIGHT = 800;
                 let width = img.width;
                 let height = img.height;
@@ -207,7 +207,7 @@ window.comprimirImagem = function(file) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.5)); // Compressão agressiva e segura
+                resolve(canvas.toDataURL('image/jpeg', 0.5));
             };
             img.src = event.target.result;
         };
@@ -223,7 +223,7 @@ window.processarImagens = async function(event) {
     
     for (let file of files) {
         if (file.type.startsWith('video/')) {
-            if (file.size > 2 * 1024 * 1024) { // Impede vídeos maiores que 2MB
+            if (file.size > 2 * 1024 * 1024) { 
                 window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 2MB).`, "erro");
                 continue;
             }
@@ -272,15 +272,21 @@ window.renderizarPreviewFotos = function() {
 // ========================================================
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
+
+// 🔥 GOLPE DE MESTRE: Anexando os modais ao document.body na hora de abrir
 window.abrirVisualizadorMidia = function(index) {
     const base64Str = window.imagensUploadArray[index];
+    const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
+    
     if(base64Str.startsWith('data:video')) {
         container.innerHTML = `<video src="${base64Str}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl outline-none"></video>`;
     } else {
         container.innerHTML = `<img src="${base64Str}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">`;
     }
-    document.getElementById('modal-visualizador-midia').classList.remove('hidden');
+    
+    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
 
@@ -292,7 +298,10 @@ window.fecharVisualizadorMidia = function() {
 
 window.abrirModalExcluirAnexo = function(index) {
     window.indexAnexoParaExcluir = index;
-    document.getElementById('modal-excluir-anexo').classList.remove('hidden');
+    const modal = document.getElementById('modal-excluir-anexo');
+    
+    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
 
@@ -318,7 +327,9 @@ window.abrirModalDestravar = function(id) {
     const inputSenha = document.getElementById('input-senha-reabrir');
     if(inputSenha) inputSenha.value = '';
     
-    document.getElementById('modal-senha-destravar').classList.remove('hidden');
+    const modal = document.getElementById('modal-senha-destravar');
+    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
     
     setTimeout(() => {
@@ -334,7 +345,10 @@ window.fecharModalDestravar = function() {
 window.abrirModalExclusao = function(id, numero_os) {
     window.idParaExcluir = id;
     document.getElementById('exc-os-num').innerText = `#${numero_os}`;
-    document.getElementById('modal-confirmacao-exclusao').classList.remove('hidden');
+    
+    const modal = document.getElementById('modal-confirmacao-exclusao');
+    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
 
@@ -437,6 +451,7 @@ window.abrirModalCadastro = function(tipo) {
             </div>
         </div>`;
     }
+    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
     document.body.style.overflow = 'hidden'; 
     modal.classList.remove('hidden');
 };
