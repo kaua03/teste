@@ -1516,3 +1516,4 @@ window.gerarPDFSupabase = async function(id) {
 };
 
 console.log("🟢 Módulo Orçamentos Carregado, 100% Ancorado no Window e Inquebrável!");
+</script>
