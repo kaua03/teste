@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S.
+// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -101,8 +101,39 @@ window.filtrarTabelaOS = function() {
 };
 
 // ========================================================
-// 2. RENDERIZAÇÃO DE TELA E INTERFACE
+// 2. SISTEMA DE ABAS E RENDERIZAÇÃO DE TELA
 // ========================================================
+window.mudarAbaOS = function(aba) {
+    const btnDados = document.getElementById('aba-dados');
+    const btnFin = document.getElementById('aba-fin');
+    const contDados = document.getElementById('aba-conteudo-dados');
+    const contFin = document.getElementById('aba-conteudo-fin');
+    
+    const colDados = document.getElementById('coluna-direita-dados');
+    const colFin = document.getElementById('coluna-direita-fin');
+
+    if (aba === 'dados') {
+        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        
+        contDados.classList.remove('hidden');
+        contFin.classList.add('hidden');
+        if(colDados) colDados.classList.remove('hidden');
+        if(colFin) colFin.classList.add('hidden');
+        
+    } else {
+        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        
+        contFin.classList.remove('hidden');
+        contDados.classList.add('hidden');
+        if(colFin) colFin.classList.remove('hidden');
+        if(colDados) colDados.classList.add('hidden');
+        
+        window.renderizarAbaFinanceiro();
+    }
+};
+
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     if (!dados || dados.length === 0) { 
@@ -214,45 +245,6 @@ window.renderizarPreviewFotos = function() {
         imgBox.innerHTML = `${midiaHTML}${trashIcon}`;
         previewContainer.appendChild(imgBox);
     });
-};
-
-window.mudarAbaOS = function(aba) {
-    const btnDados = document.getElementById('aba-dados');
-    const btnFin = document.getElementById('aba-fin');
-    const contDados = document.getElementById('aba-conteudo-dados');
-    const contFin = document.getElementById('aba-conteudo-fin');
-    
-    const boxAuditoria = document.getElementById('box-auditoria-financeira');
-    const boxDesconto = document.getElementById('box-desconto');
-    const boxStatusSelect = document.getElementById('box-status');
-    const boxBtnSalvar = document.getElementById('btn-salvar-db');
-
-    if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        
-        contDados.classList.remove('hidden');
-        contFin.classList.add('hidden');
-        
-        if(boxAuditoria) boxAuditoria.classList.add('hidden');
-        if(boxDesconto) boxDesconto.classList.remove('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.remove('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'flex';
-        
-    } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
-        
-        contFin.classList.remove('hidden');
-        contDados.classList.add('hidden');
-        
-        if(boxAuditoria) boxAuditoria.classList.remove('hidden');
-        if(boxDesconto) boxDesconto.classList.add('hidden');
-        if(boxStatusSelect) boxStatusSelect.classList.add('hidden');
-        if(boxBtnSalvar) boxBtnSalvar.style.display = 'none';
-        
-        window.renderizarAbaFinanceiro();
-    }
 };
 
 window.recarregarFinanceiroDaOS = async function() {
@@ -716,7 +708,7 @@ window.abrirModalDestravar = function(id, orcJSONCodificado) {
     
     document.getElementById('modal-senha-destravar').classList.remove('hidden');
     
-    // Foco automático e aguardando o usuário digitar (SUPERPODER DO CURSOR)
+    // Foco automático e aguardando o usuário digitar
     setTimeout(() => {
         inputSenha.focus();
     }, 150);
@@ -1369,6 +1361,22 @@ window.confirmarExclusao = async function() {
         window.fecharModalExclusao();
         window.buscarOrcamentosSupabase();
     } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
+};
+
+window.processarDestravarOS = async function() {
+    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
+    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
+    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    const usuarioLogado = JSON.parse(usuarioLogadoStr);
+
+    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    
+    try {
+        window.fecharModalDestravar();
+        window.isOSDestravada = true;
+        window.abrirEdicaoOS(encodeURIComponent(JSON.stringify(window.osParaDestravarDados)), 'dados', false);
+        window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
+    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
 console.log("🟢 Módulo Orçamentos Carregado com Sucesso Absoluto!");
