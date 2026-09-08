@@ -125,11 +125,11 @@
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
                             
-                            <!-- PAINEL DE FOTOS E CÂMERA -->
+                            <!-- PAINEL DE FOTOS E CÂMERA (CORREÇÃO MOBILE/DESKTOP) -->
                             <div id="box-upload-fotos">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                                <div class="grid grid-cols-2 md:grid-cols-1 gap-3">
+                                    <label class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                         <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold">Usar Câmera</p>
                                         <input type="file" id="input-anexos-camera" class="hidden" accept="image/*,video/*" capture="environment" onchange="window.processarImagens(event)" />
@@ -219,81 +219,96 @@
             <!-- COLUNA DIREITA ESTÁTICA -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
-                <!-- PAINEL DE AUDITORIA (VISÍVEL SÓ NO FINANCEIRO) -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6" id="box-auditoria-financeira">
-                    <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
-                            <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
-                        </div>
-                        
-                        <div class="flex justify-center"><i class="ph-bold ph-arrows-down-up text-xl text-slate-300"></i></div>
-                        
-                        <div class="p-4 rounded-xl border transition-colors shadow-inner text-center" id="fin-aba-soma-box">
-                            <p class="text-[10px] font-bold uppercase tracking-wider mb-1" id="fin-aba-soma-label">Soma Lançamentos</p>
-                            <h4 class="text-2xl font-black" id="fin-aba-soma">R$ 0,00</h4>
-                        </div>
-                        
-                        <div id="fin-aba-alerta" class="hidden bg-red-50 p-3 rounded-lg border border-red-100 text-red-600 text-[10px] font-bold text-center leading-relaxed">
-                            <i class="ph-bold ph-warning text-lg mb-1 block"></i> Os valores não batem. Ajuste as parcelas para a conta fechar!
+                <!-- BLOCO DETALHES (SÓ APARECE NA ABA DE DADOS) -->
+                <div id="coluna-direita-dados" class="space-y-6 fade-in">
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
+                        <div class="space-y-3">
+                            <div class="flex gap-2">
+                                <select id="desc-tipo" onchange="window.calcularTotais()" class="w-1/3 border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="perc">%</option><option value="val">R$</option></select>
+                                <input type="text" id="desc-val" onkeyup="this.value = this.value.replace(/[^0-9,]/g, ''); window.calcularTotais()" placeholder="0,00" class="flex-1 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold">
+                            </div>
+                            <select id="desc-alvo" onchange="window.calcularTotais()" class="w-full border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="total">No Total da O.S</option><option value="pecas">Somente nas Peças</option><option value="servicos">Somente nos Serviços</option></select>
                         </div>
                     </div>
 
-                    <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
-                        <button id="btn-salvar-fin-edicao" onclick="window.salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
-                            <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
-                        </button>
-                        <button id="btn-estornar-fin" onclick="window.limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
-                            <i class="ph-bold ph-trash text-lg"></i> Apagar Lançamentos
-                        </button>
+                    <div id="box-caixa-preta" class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
+                        <div class="mb-5" id="box-status">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
+                            <select id="db-status" onchange="window.verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
+                                <option value="Em Aberto" selected>Em Aberto</option>
+                                <option value="Aguardando Aprovação">Aguardando Aprovação</option>
+                                <option value="Aguardando Peça">Aguardando Peça</option>
+                                <option value="Aguardando Pagamento">Aguardando Pagamento</option>
+                                <option value="Aprovado">Aprovado</option>
+                                <option value="Em Execução">Em Execução</option>
+                                <option value="Finalizado">Finalizado</option>
+                                <option value="Fechado" class="hidden" disabled>Fechado (Faturado)</option>
+                                <option value="Não Usar">Não Usar</option>
+                                <option value="Orçamento">Orçamento</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3 mb-6 shadow-inner">
+                            <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Peças:</span> <span id="resumo-pecas">R$ 0,00</span></div>
+                            <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Serviços:</span> <span id="resumo-servicos">R$ 0,00</span></div>
+                            <div class="flex justify-between text-sm text-red-400 font-bold"><span>Desconto:</span> <span id="resumo-desc">- R$ 0,00</span></div>
+                            <div class="border-t border-slate-700 pt-3 mt-2 flex justify-between items-end">
+                                <span class="font-bold text-slate-300 text-xs">VALOR FINAL:</span>
+                                <span class="font-black text-2xl md:text-3xl text-blue-400 tracking-tight" id="db-total">R$ 0,00</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="window.salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
                     </div>
                 </div>
 
-                <!-- DESCONTO DA O.S -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100" id="box-desconto">
-                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-tag text-blue-500 mr-2"></i> Desconto</h3>
-                    <div class="space-y-3">
-                        <div class="flex gap-2">
-                            <select id="desc-tipo" onchange="window.calcularTotais()" class="w-1/3 border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="perc">%</option><option value="val">R$</option></select>
-                            <input type="text" id="desc-val" onkeyup="this.value = this.value.replace(/[^0-9,]/g, ''); window.calcularTotais()" placeholder="0,00" class="flex-1 border border-slate-200 rounded-lg p-2.5 outline-none focus:border-blue-500 text-sm font-bold">
-                        </div>
-                        <select id="desc-alvo" onchange="window.calcularTotais()" class="w-full border border-slate-200 rounded-lg p-2.5 outline-none text-sm font-bold text-slate-600 bg-slate-50"><option value="total">No Total da O.S</option><option value="pecas">Somente nas Peças</option><option value="servicos">Somente nos Serviços</option></select>
-                    </div>
-                </div>
-
-                <!-- CAIXA PRETA PRINCIPAL -->
-                <div id="box-caixa-preta" class="bg-slate-900 text-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-800 flex flex-col">
-                    <div class="mb-5" id="box-status">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Status da O.S</label>
-                        <select id="db-status" onchange="window.verificarStatusFinanceiro()" class="w-full border border-slate-700 rounded-xl p-3.5 bg-slate-800 text-white outline-none text-sm font-bold focus:border-blue-500 shadow-inner transition-colors">
-                            <option value="Em Aberto" selected>Em Aberto</option>
-                            <option value="Aguardando Aprovação">Aguardando Aprovação</option>
-                            <option value="Aguardando Peça">Aguardando Peça</option>
-                            <option value="Aguardando Pagamento">Aguardando Pagamento</option>
-                            <option value="Aprovado">Aprovado</option>
-                            <option value="Em Execução">Em Execução</option>
-                            <option value="Finalizado">Finalizado</option>
-                            <option value="Fechado" class="hidden" disabled>Fechado (Faturado)</option>
-                            <option value="Não Usar">Não Usar</option>
-                            <option value="Orçamento">Orçamento</option>
-                        </select>
-                    </div>
-
-                    <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3 mb-6 shadow-inner">
-                        <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Peças:</span> <span id="resumo-pecas">R$ 0,00</span></div>
-                        <div class="flex justify-between text-sm text-slate-400 font-medium"><span>Serviços:</span> <span id="resumo-servicos">R$ 0,00</span></div>
-                        <div class="flex justify-between text-sm text-red-400 font-bold"><span>Desconto:</span> <span id="resumo-desc">- R$ 0,00</span></div>
-                        <div class="border-t border-slate-700 pt-3 mt-2 flex justify-between items-end">
-                            <span class="font-bold text-slate-300 text-xs">VALOR FINAL:</span>
-                            <span class="font-black text-2xl md:text-3xl text-blue-400 tracking-tight" id="db-total">R$ 0,00</span>
+                <!-- BLOCO FINANCEIRO (SÓ APARECE NA ABA FINANCEIRA) -->
+                <div id="coluna-direita-fin" class="hidden space-y-6 fade-in">
+                    <!-- Resumo Limpo da O.S -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-4 border-b border-slate-50 pb-2 flex items-center"><i class="ph-bold ph-receipt text-blue-500 mr-2 text-lg"></i> Resumo da O.S</h3>
+                        <div class="space-y-3 mb-2">
+                            <div class="flex justify-between text-xs text-slate-500 font-medium"><span>Peças:</span> <span id="fin-resumo-pecas">R$ 0,00</span></div>
+                            <div class="flex justify-between text-xs text-slate-500 font-medium"><span>Serviços:</span> <span id="fin-resumo-servicos">R$ 0,00</span></div>
+                            <div class="flex justify-between text-xs text-red-400 font-bold"><span>Desconto:</span> <span id="fin-resumo-desc">- R$ 0,00</span></div>
                         </div>
                     </div>
                     
-                    <button onclick="window.salvarOrcamentoReal()" id="btn-salvar-db" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-transform transform active:scale-95 flex justify-center items-center gap-2 text-sm md:text-base"><i class="ph-bold ph-floppy-disk text-xl"></i> SALVAR O.S.</button>
+                    <!-- Painel de Auditoria -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200" id="box-auditoria-financeira">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
+                            <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center"><i class="ph-bold ph-scales text-emerald-500 mr-2 text-lg"></i> Auditoria</h3>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center shadow-inner">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total da O.S</p>
+                                <h4 class="text-2xl font-black text-slate-800" id="fin-aba-total-os">R$ 0,00</h4>
+                            </div>
+                            
+                            <div class="flex justify-center"><i class="ph-bold ph-arrows-down-up text-xl text-slate-300"></i></div>
+                            
+                            <div class="p-4 rounded-xl border transition-colors shadow-inner text-center" id="fin-aba-soma-box">
+                                <p class="text-[10px] font-bold uppercase tracking-wider mb-1" id="fin-aba-soma-label">Soma Lançamentos</p>
+                                <h4 class="text-2xl font-black" id="fin-aba-soma">R$ 0,00</h4>
+                            </div>
+                            
+                            <div id="fin-aba-alerta" class="hidden bg-red-50 p-3 rounded-lg border border-red-100 text-red-600 text-[10px] font-bold text-center leading-relaxed">
+                                <i class="ph-bold ph-warning text-lg mb-1 block"></i> Os valores não batem. Ajuste as parcelas para a conta fechar!
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-6 border-t border-slate-100 space-y-3">
+                            <button id="btn-salvar-fin-edicao" onclick="window.salvarFinanceiroEditado()" class="hidden w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                <i class="ph-bold ph-floppy-disk text-lg"></i> SALVAR FINANCEIRO
+                            </button>
+                            <button id="btn-estornar-fin" onclick="window.limparFinanceiroAtual()" class="hidden w-full bg-white text-red-500 font-bold py-3 rounded-xl border border-red-200 hover:bg-red-50 transition transform active:scale-95 flex items-center justify-center gap-2 text-xs">
+                                <i class="ph-bold ph-trash text-lg"></i> Apagar Lançamentos
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
