@@ -219,19 +219,38 @@ window.processarImagens = async function(event) {
     const files = event.target.files;
     if(files.length === 0) return;
     
-    window.dispararAlerta("Processando mídias. Aguarde...", "sucesso");
+    window.dispararAlerta("Enviando mídia para a nuvem. Aguarde...", "sucesso");
     
     for (let file of files) {
-        if (file.type.startsWith('video/')) {
-            if (file.size > 2 * 1024 * 1024) { 
-                window.dispararAlerta(`O vídeo ${file.name} é muito grande (Máx 2MB).`, "erro");
-                continue;
-            }
-            const base64 = await new Promise(r => { const reader = new FileReader(); reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
-            window.imagensUploadArray.push(base64);
-        } else if (file.type.startsWith('image/')) {
-            const compressedBase64 = await window.comprimirImagem(file);
-            window.imagensUploadArray.push(compressedBase64);
+        // Trava de segurança para arquivos monstruosos (Ex: 50MB)
+        if (file.size > 50 * 1024 * 1024) { 
+            window.dispararAlerta(`O arquivo ${file.name} passou de 50MB.`, "erro");
+            continue;
+        }
+
+        // Cria um RG único para o arquivo não substituir outro
+        const extensao = file.name.split('.').pop();
+        const nomeUnico = `os_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${extensao}`;
+
+        try {
+            // 1. Envia para o Bucket
+            const { data, error } = await window.banco.storage
+                .from('anexos_os')
+                .upload(nomeUnico, file);
+
+            if (error) throw error;
+
+            // 2. Pega o link público gerado
+            const { data: publicUrlData } = window.banco.storage
+                .from('anexos_os')
+                .getPublicUrl(nomeUnico);
+
+            // 3. Salva só o link levinho na nossa matriz
+            window.imagensUploadArray.push(publicUrlData.publicUrl);
+
+        } catch (e) {
+            console.error("Erro no Upload:", e);
+            window.dispararAlerta(`Falha ao enviar ${file.name}`, "erro");
         }
     }
     
@@ -248,7 +267,7 @@ window.renderizarPreviewFotos = function() {
 
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
-    window.imagensUploadArray.forEach((base64Str, index) => {
+    window.imagensUploadArray.forEach((midiaStr, index) => {
         const imgBox = document.createElement('div');
         imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900 cursor-pointer";
         
@@ -257,10 +276,14 @@ window.renderizarPreviewFotos = function() {
         let viewIcon = `<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><i class="ph-bold ph-magnifying-glass-plus text-white text-2xl"></i></div>`;
         
         let midiaHTML = '';
-        if(base64Str.startsWith('data:video')) {
-            midiaHTML = `<video src="${base64Str}" class="w-full h-full object-cover" muted></video><div class="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5 flex items-center gap-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i><span class="text-white text-[9px] font-bold">Vídeo</span></div>`;
+        
+        // Verifica se é vídeo pelo Base64 antigo ou pela URL nova
+        const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
+
+        if(isVideo) {
+            midiaHTML = `<video src="${midiaStr}" class="w-full h-full object-cover" muted></video><div class="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5 flex items-center gap-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i><span class="text-white text-[9px] font-bold">Vídeo</span></div>`;
         } else {
-            midiaHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
+            midiaHTML = `<img src="${midiaStr}" class="w-full h-full object-cover">`;
         }
 
         imgBox.innerHTML = `${midiaHTML}${viewIcon}${trashIcon}`;
@@ -268,7 +291,6 @@ window.renderizarPreviewFotos = function() {
         previewContainer.appendChild(imgBox);
     });
 };
-
 // ========================================================
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
