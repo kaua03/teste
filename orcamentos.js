@@ -266,101 +266,152 @@ window.renderizarPreviewFotos = function() {
 // 4. MODAIS E BLOQUEIO DE TELA
 // ========================================================
 
-window.zoomLevel = 1;
+window.zoomScale = 1;
+window.posX = 0;
+window.posY = 0;
 
+// 🔥 GOLPE DE MESTRE: Anexando os modais ao document.body na hora de abrir
 window.abrirVisualizadorMidia = function(index) {
     const midiaStr = window.imagensUploadArray[index];
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    window.zoomLevel = 1; // Reseta o zoom sempre que abre
+    // Reseta as variáveis da lupa virtual
+    window.zoomScale = 1;
+    window.posX = 0;
+    window.posY = 0;
 
-    // Prepara o container para permitir rolagem e arrasto (Pan)
-    container.className = "w-full h-full flex items-center justify-center relative overflow-auto p-2 scrollbar-hide cursor-grab active:cursor-grabbing";
-    
+    // touch-none é crucial para impedir o navegador do celular de tentar rolar a página enquanto damos zoom
+    container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
+
     let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
-    // Painel de Controle de Zoom Flutuante
     const controlesZoom = `
         <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full z-[100005] shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-700">
-            <button onclick="event.stopPropagation(); window.alterarZoom(-0.25)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
+            <button onclick="event.stopPropagation(); window.alterarZoom(-0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
             <span id="indicador-zoom" class="text-white font-black text-sm min-w-[50px] text-center tracking-widest">100%</span>
-            <button onclick="event.stopPropagation(); window.alterarZoom(0.25)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-plus text-2xl"></i></button>
+            <button onclick="event.stopPropagation(); window.alterarZoom(0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-plus text-2xl"></i></button>
             <div class="w-px h-6 bg-slate-600 mx-1"></div>
             <button onclick="event.stopPropagation(); window.resetarZoom()" class="text-slate-400 hover:text-white transition transform active:scale-90" title="Restaurar Tela"><i class="ph-bold ph-arrows-in-simple text-2xl"></i></button>
         </div>
     `;
 
+    // Usamos transition-transform para as animações ficarem a cargo da Placa de Vídeo (GPU)
     if(isVideo) {
-        // Vídeos mantêm o tamanho mas ganham os botões
-        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-all duration-200"></video>`;
+        midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out"></video>`;
     } else {
-        // Imagens preparadas para crescer
-        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-all duration-200">`;
+        midiaHTML = `${controlesZoom}<img id="elemento-midia-zoom" src="${midiaStr}" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl object-contain m-auto transition-transform duration-100 ease-out cursor-grab">`;
     }
     
     container.innerHTML = midiaHTML;
     document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
-    
-    // Motor de Arrasto (Para navegar pela imagem gigante no Computador)
-    let isDragging = false;
-    let startX, startY, scrollLeft, scrollTop;
-    
-    container.onmousedown = (e) => {
-        if(e.target.closest('button') || e.target.tagName === 'VIDEO') return; 
-        isDragging = true;
-        startX = e.pageX - container.offsetLeft;
-        startY = e.pageY - container.offsetTop;
-        scrollLeft = container.scrollLeft;
-        scrollTop = container.scrollTop;
-    };
-    container.onmouseleave = () => { isDragging = false; };
-    container.onmouseup = () => { isDragging = false; };
-    container.onmousemove = (e) => {
-        if (!isDragging || window.zoomLevel === 1) return;
-        e.preventDefault();
-        const x = e.pageX - container.offsetLeft;
-        const y = e.pageY - container.offsetTop;
-        container.scrollLeft = scrollLeft - (x - startX);
-        container.scrollTop = scrollTop - (y - startY);
-    };
-};
 
-window.alterarZoom = function(fator) {
-    window.zoomLevel += fator;
-    if(window.zoomLevel < 0.5) window.zoomLevel = 0.5; // Limite mínimo 50%
-    if(window.zoomLevel > 4) window.zoomLevel = 4;     // Limite máximo 400%
-    window.aplicarZoom();
-};
-
-window.resetarZoom = function() {
-    window.zoomLevel = 1;
-    window.aplicarZoom();
-};
-
-window.aplicarZoom = function() {
     const el = document.getElementById('elemento-midia-zoom');
-    const ind = document.getElementById('indicador-zoom');
-    if(el) {
-        if (window.zoomLevel === 1) {
-            // Modo Padrão: Trava para caber perfeitamente na tela (Visão Global)
-            el.style.width = '';
-            el.style.height = '';
-            el.classList.add('max-w-full', 'max-h-[90dvh]');
-        } else {
-            // Modo Zoom: Estoura os limites do CSS
-            el.classList.remove('max-w-full', 'max-h-[90dvh]');
-            el.style.width = `${window.zoomLevel * 100}vw`;
-            el.style.height = 'auto'; // Mantém proporção
+    
+    // ==========================================
+    // MOTOR DE ZOOM, PINÇA E ARRASTO (NATIVO)
+    // ==========================================
+    let isDragging = false;
+    let startX, startY;
+    let startDist = 0;
+
+    window.atualizarTransform = function() {
+        if(window.zoomScale <= 1) {
+            window.zoomScale = 1;
+            window.posX = 0; 
+            window.posY = 0;
         }
-    }
-    if(ind) ind.innerText = `${Math.round(window.zoomLevel * 100)}%`;
+        // Aplica o Zoom e a Posição usando hardware acceleration
+        if(el) el.style.transform = `translate(${window.posX}px, ${window.posY}px) scale(${window.zoomScale})`;
+        const ind = document.getElementById('indicador-zoom');
+        if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
+    };
+
+    window.alterarZoom = function(fator) {
+        window.zoomScale += fator;
+        if(window.zoomScale > 5) window.zoomScale = 5; // Limite máximo de 500%
+        window.atualizarTransform();
+    };
+
+    window.resetarZoom = function() {
+        window.zoomScale = 1;
+        window.posX = 0;
+        window.posY = 0;
+        window.atualizarTransform();
+    };
+
+    // 1. Início do toque ou clique
+    const onStart = (e) => {
+        if(e.target.closest('.fixed')) return; // Ignora se clicou nos botões de controle
+        if(e.touches && e.touches.length === 2) {
+            // Se forem 2 dedos, calcula a distância entre eles para o Pinch-to-Zoom
+            startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            return;
+        }
+        isDragging = true;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startX = clientX - window.posX;
+        startY = clientY - window.posY;
+        el.style.transition = 'none'; // Desliga a animação para arrastar grudado no dedo
+        if(window.zoomScale > 1) el.style.cursor = 'grabbing';
+    };
+
+    // 2. Movimento (Arrastar ou Afastar/Aproximar os dedos)
+    const onMove = (e) => {
+        if(e.touches && e.touches.length === 2) {
+            // Lógica da Pinça (Pinch)
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            const delta = dist - startDist;
+            startDist = dist;
+            window.alterarZoom(delta * 0.01); // O 0.01 ajusta a velocidade do zoom pelo dedo
+            return;
+        }
+        if (!isDragging || window.zoomScale === 1) return;
+        e.preventDefault(); // Impede o navegador de bugar rolando a tela atrás
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        window.posX = clientX - startX;
+        window.posY = clientY - startY;
+        window.atualizarTransform();
+    };
+
+    // 3. Fim do toque ou clique
+    const onEnd = () => {
+        isDragging = false;
+        el.style.transition = 'transform 0.1s ease-out'; // Devolve a suavidade
+        if(window.zoomScale > 1) el.style.cursor = 'grab';
+    };
+
+    // 4. Bolinha do Mouse (Scroll / Wheel)
+    container.onwheel = (e) => {
+        e.preventDefault();
+        const zoomAmount = e.deltaY * -0.005;
+        window.alterarZoom(zoomAmount);
+    };
+
+    // Escutadores de Evento
+    container.addEventListener('mousedown', onStart);
+    container.addEventListener('touchstart', onStart, {passive: false});
+    window.addEventListener('mousemove', onMove, {passive: false});
+    window.addEventListener('touchmove', onMove, {passive: false});
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchend', onEnd);
+
+    // Proteção: Limpa os rastreadores do mouse/dedo quando fechar o modal
+    window._limparEventosZoom = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('mouseup', onEnd);
+        window.removeEventListener('touchend', onEnd);
+    };
 };
 
 window.fecharVisualizadorMidia = function() {
+    if(window._limparEventosZoom) window._limparEventosZoom();
     document.getElementById('modal-visualizador-midia').classList.add('hidden');
     document.getElementById('container-visualizador').innerHTML = ''; 
     document.body.style.overflow = 'auto'; 
