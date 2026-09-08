@@ -22,7 +22,6 @@
             <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64">
                     <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg"></i>
-                    <!-- Input de pesquisa ativado -->
                     <input type="text" id="input-pesquisa-os" onkeyup="window.filtrarTabelaOS()" placeholder="Buscar O.S, cliente, status..." class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 transition-colors bg-slate-50 focus:bg-white shadow-sm">
                 </div>
                 <button onclick="window.alternarSubTelaOrcamento('novo')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-transform transform active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
@@ -220,7 +219,7 @@
             <!-- COLUNA DIREITA ESTÁTICA -->
             <div class="space-y-6 sticky top-24 h-fit mb-10 xl:mb-0">
                 
-                <!-- PAINEL DE AUDITORIA (AGORA TEM O RESUMO DA O.S E SÓ APARECE NO FINANCEIRO) -->
+                <!-- PAINEL DE AUDITORIA (VISÍVEL SÓ NO FINANCEIRO) -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200 hidden mb-6 flex flex-col" id="box-auditoria-financeira">
                     
                     <!-- Resumo Específico para Financeiro -->
@@ -349,6 +348,23 @@
         <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
             <button onclick="window.fecharModalCadastro()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition text-sm">Cancelar</button>
             <button onclick="window.processarSalvamentoModal()" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition text-sm flex items-center gap-2"><i class="ph-bold ph-check"></i> Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- NOVO MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE ANEXO (FOTO/VÍDEO) -->
+<div id="modal-excluir-anexo" class="hidden fixed inset-0 bg-slate-900/80 z-[1600] flex items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <i class="ph-bold ph-trash text-3xl text-red-500"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">Excluir Arquivo?</h3>
+            <p class="text-sm text-slate-500 font-medium">Tem certeza que deseja remover esta evidência da O.S?</p>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button onclick="window.fecharModalExcluirAnexo()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+            <button onclick="window.confirmarExclusaoAnexo()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2">Excluir</button>
         </div>
     </div>
 </div>
