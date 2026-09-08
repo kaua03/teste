@@ -279,18 +279,15 @@ window.abrirVisualizadorMidia = function(index) {
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    // Reseta as variáveis da lupa
     window.zoomScale = 1;
     window.posX = 0;
     window.posY = 0;
 
-    // touch-none é crucial para o celular não interferir no nosso motor
     container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
 
     let midiaHTML = '';
     const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
 
-    // Botões agora chamam acionarZoomBotao para centralizar matematicamente
     const controlesZoom = `
         <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full z-[100005] shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-700">
             <button onclick="event.stopPropagation(); window.acionarZoomBotao(-0.5)" class="text-white hover:text-blue-400 transition transform active:scale-90"><i class="ph-bold ph-minus text-2xl"></i></button>
@@ -314,6 +311,9 @@ window.abrirVisualizadorMidia = function(index) {
 
     const el = document.getElementById('elemento-midia-zoom');
     
+    // 🔥 SUPERPODER 1: Desliga a tentativa do HTML de "salvar a imagem" ao arrastar
+    if (el) el.ondragstart = () => false;
+
     let isDragging = false;
     let startX, startY;
     let startDist = 0;
@@ -322,31 +322,27 @@ window.abrirVisualizadorMidia = function(index) {
         if(window.zoomScale <= 1) {
             window.zoomScale = 1;
             window.posX = 0; 
-            window.posY = 0; // Se tirar o zoom, a foto gruda de volta no centro
+            window.posY = 0; 
         }
         if(el) el.style.transform = `translate(${window.posX}px, ${window.posY}px) scale(${window.zoomScale})`;
         const ind = document.getElementById('indicador-zoom');
         if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
     };
 
-    // 🔥 O SEGREDO MATEMÁTICO DO CURSOR (Focal Zoom)
     window.alterarZoom = function(fator, focalX, focalY) {
         const oldScale = window.zoomScale;
         window.zoomScale += fator;
         
-        // Limites do Zoom
         if(window.zoomScale < 1) window.zoomScale = 1;
-        if(window.zoomScale > 8) window.zoomScale = 8; // Máximo 800%
+        if(window.zoomScale > 8) window.zoomScale = 8; 
         
         const ratio = window.zoomScale / oldScale;
 
         if (window.zoomScale > 1) {
-            // Acha o centro absoluto da tela
             const rect = container.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
 
-            // Empurra a imagem na direção contrária para ancorar o pixel sob o mouse
             window.posX -= (focalX - centerX - window.posX) * (ratio - 1);
             window.posY -= (focalY - centerY - window.posY) * (ratio - 1);
         } else {
@@ -357,7 +353,6 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    // Botões fixos focam no centro da tela
     window.acionarZoomBotao = function(fator) {
         const rect = container.getBoundingClientRect();
         window.alterarZoom(fator, rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -372,8 +367,11 @@ window.abrirVisualizadorMidia = function(index) {
 
     const onStart = (e) => {
         if(e.target.closest('.fixed')) return; 
+
+        // 🔥 SUPERPODER 2: Intercepta o clique do mouse antes do navegador reagir
+        if (e.type === 'mousedown') e.preventDefault();
+
         if(e.touches && e.touches.length === 2) {
-            // Pega a distância inicial dos dois dedos
             startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
             return;
         }
@@ -382,8 +380,11 @@ window.abrirVisualizadorMidia = function(index) {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         startX = clientX - window.posX;
         startY = clientY - window.posY;
-        el.style.transition = 'none'; // Desliga a animação para não ter atraso no dedo
-        if(window.zoomScale > 1) el.style.cursor = 'grabbing';
+        
+        if(el) {
+            el.style.transition = 'none'; 
+            if(window.zoomScale > 1) el.style.cursor = 'grabbing';
+        }
     };
 
     const onMove = (e) => {
@@ -393,14 +394,15 @@ window.abrirVisualizadorMidia = function(index) {
             const delta = dist - startDist;
             startDist = dist;
             
-            // Acha o meio exato entre os dois dedos para usar como alvo
             const focalX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
             const focalY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             
-            window.alterarZoom(delta * 0.015, focalX, focalY); // 0.015 ajusta a sensibilidade da pinça
+            window.alterarZoom(delta * 0.015, focalX, focalY); 
             return;
         }
+        
         if (!isDragging || window.zoomScale === 1) return;
+        
         e.preventDefault(); 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -411,18 +413,18 @@ window.abrirVisualizadorMidia = function(index) {
 
     const onEnd = () => {
         isDragging = false;
-        el.style.transition = 'transform 0.1s ease-out'; // Volta a suavidade
-        if(window.zoomScale > 1) el.style.cursor = 'grab';
+        if(el) {
+            el.style.transition = 'transform 0.1s ease-out'; 
+            if(window.zoomScale > 1) el.style.cursor = 'grab';
+        }
     };
 
-    // Pega a posição do ponteiro do mouse na hora que gira a bolinha
     container.onwheel = (e) => {
         e.preventDefault();
         const zoomAmount = e.deltaY * -0.003; 
         window.alterarZoom(zoomAmount, e.clientX, e.clientY);
     };
 
-    // Amarra todos os escutadores na tela
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
     window.addEventListener('mousemove', onMove, {passive: false});
@@ -430,7 +432,6 @@ window.abrirVisualizadorMidia = function(index) {
     window.addEventListener('mouseup', onEnd);
     window.addEventListener('touchend', onEnd);
 
-    // Evita vazamento de memória ao fechar a janela
     window._limparEventosZoom = () => {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
