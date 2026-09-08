@@ -269,17 +269,42 @@ window.renderizarPreviewFotos = function() {
 
 // 🔥 GOLPE DE MESTRE: Anexando os modais ao document.body na hora de abrir
 window.abrirVisualizadorMidia = function(index) {
-    const base64Str = window.imagensUploadArray[index];
+    const midiaStr = window.imagensUploadArray[index];
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    if(base64Str.startsWith('data:video')) {
-        container.innerHTML = `<video src="${base64Str}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl outline-none"></video>`;
+    // 1. Mudamos de overflow-hidden para overflow-auto para permitir arrastar a foto no modo Zoom
+    container.className = "w-full h-full flex items-center justify-center relative overflow-auto p-2 scrollbar-hide";
+
+    let midiaHTML = '';
+    
+    // Verifica se é vídeo ou imagem
+    const isVideo = midiaStr.startsWith('data:video') || midiaStr.match(/\.(mp4|webm|mov|avi|mkv)$/i);
+
+    if(isVideo) {
+        // Vídeo: object-contain garante que nunca seja cortado
+        midiaHTML = `<video src="${midiaStr}" controls autoplay class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain"></video>`;
     } else {
-        container.innerHTML = `<img src="${base64Str}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">`;
+        // Imagem: Lógica de clique para alternar entre Visão Global (cabe no ecrã) e Zoom (tamanho real)
+        midiaHTML = `<img src="${midiaStr}" 
+            class="max-w-full max-h-[90dvh] rounded-lg shadow-2xl object-contain transition-all duration-300 cursor-zoom-in" 
+            onclick="
+                if(this.classList.contains('max-w-full')) {
+                    // Ativa o Zoom: Remove os limites e mostra o detalhe real
+                    this.classList.remove('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
+                    this.classList.add('cursor-zoom-out', 'm-auto');
+                } else {
+                    // Desativa o Zoom: Encolhe novamente para caber no ecrã sem cortes
+                    this.classList.add('max-w-full', 'max-h-[90dvh]', 'object-contain', 'cursor-zoom-in');
+                    this.classList.remove('cursor-zoom-out', 'm-auto');
+                }
+            " 
+            title="Clique para dar Zoom">`;
     }
     
-    document.body.appendChild(modal); // Teleporta o modal para a raiz do documento
+    container.innerHTML = midiaHTML;
+    
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
