@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. (BLINDAGEM TOTAL)
+// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -10,10 +10,10 @@ window.osEmEdicaoId = null;
 window.osEmEdicaoNumero = null; 
 window.idParaExcluir = null;
 window.osParaDestravarId = null;
-window.osParaDestravarDados = null; 
 window.globalClientes = [];
 window.globalVeiculos = [];
 window.currentOSFinanceiro = []; 
+window.globalOrcamentosList = []; // Banco de memória seguro
 window.isVisualizacaoModo = false;
 window.isOSDestravada = false;
 window.indexAnexoParaExcluir = null;
@@ -90,14 +90,9 @@ window.obterCorStatus = function(status) {
 window.filtrarTabelaOS = function() {
     const termo = document.getElementById('input-pesquisa-os').value.toLowerCase();
     const linhas = document.querySelectorAll('#tabela-orcamentos-real tr');
-    
     linhas.forEach(linha => {
         const textoLinha = linha.innerText.toLowerCase();
-        if (textoLinha.includes(termo)) {
-            linha.style.display = '';
-        } else {
-            linha.style.display = 'none';
-        }
+        linha.style.display = textoLinha.includes(termo) ? '' : 'none';
     });
 };
 
@@ -114,21 +109,20 @@ window.renderizarTabelaReal = function(dados) {
     tbody.innerHTML = dados.map(orc => {
         const dataStr = new Date(orc.data_criacao).toLocaleDateString('pt-BR');
         const corBg = window.obterCorStatus(orc.status);
-        const orcJSON = encodeURIComponent(JSON.stringify(orc));
         const isFechado = orc.status === 'Fechado';
         
         let btnAcao1 = `<div class="w-9 h-9"></div>`; 
-        let btnAcao2 = `<button onclick="window.abrirEdicaoOS('${orcJSON}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
+        let btnAcao2 = `<button onclick="window.abrirEdicaoOS('${orc.id}', 'dados', false)" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition shadow-sm" title="Editar"><i class="ph-bold ph-pencil-simple text-lg text-blue-500"></i></button>`;
         
         if (isFechado) {
             btnAcao1 = `<div class="w-9 h-9"></div>`; 
-            btnAcao2 = `<button onclick="window.abrirModalDestravar('${orc.id}', '${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
+            btnAcao2 = `<button onclick="window.abrirModalDestravar('${orc.id}')" class="w-9 h-9 flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-300 hover:border-slate-800 rounded-lg transition shadow-sm" title="Reabrir O.S (Exige Senha)"><i class="ph-bold ph-lock-key text-lg"></i></button>`;
         } else if (orc.status === 'Finalizado') {
-            btnAcao1 = `<button onclick="window.abrirFaturamentoDireto('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
+            btnAcao1 = `<button onclick="window.abrirFaturamentoDireto('${orc.id}')" class="w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 rounded-lg transition shadow-sm" title="Faturar"><i class="ph-bold ph-money text-lg"></i></button>`;
         }
         
         return `
-        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.abrirVisualizacaoOS('${orcJSON}')">
+        <tr class="hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.abrirVisualizacaoOS('${orc.id}')">
             <td class="p-4 md:p-5"><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">${dataStr}</p><p class="font-black text-slate-800 text-sm">O.S #${orc.numero_os}</p></td>
             <td class="p-4 md:p-5"><p class="font-bold text-slate-700 text-sm">${orc.cliente_nome}</p><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">${orc.veiculo_placa}</p></td>
             <td class="p-4 md:p-5 font-black text-slate-800 text-right text-sm">${window.formataDinheiro(orc.valor_total)}</td>
@@ -138,7 +132,7 @@ window.renderizarTabelaReal = function(dados) {
                     ${btnAcao1}
                     ${btnAcao2}
                     <button onclick="window.abrirModalExclusao('${orc.id}', '${orc.numero_os}')" class="w-9 h-9 flex items-center justify-center bg-white text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg transition shadow-sm" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
-                    <button onclick="window.gerarPDFSupabase('${orcJSON}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
+                    <button onclick="window.gerarPDFSupabase('${orc.id}')" class="w-9 h-9 flex items-center justify-center bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 rounded-lg transition shadow-sm" title="Abrir PDF"><i class="ph-bold ph-file-pdf text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -151,17 +145,14 @@ window.atualizarInterfaceItensETotais = function() {
         divLista.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200"><i class="ph-fill ph-package text-3xl text-slate-300 mb-2"></i><p class="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">Nenhum item adicionado à O.S.</p></div>`;
     } else {
         const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
-        
         divLista.innerHTML = window.itensTemporarios.map(item => {
             let badgeClass = item.tipo === 'Peça' ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-blue-100 text-blue-700 border-blue-200';
             let HTMLdetalhe = item.detalhe ? `<p class="text-xs text-slate-500 mt-1 italic pl-1"><i class="ph-fill ph-info text-blue-400 mr-1"></i>${item.detalhe}</p>` : '';
-            
             let acoes = isTravadoGeral ? '' : `
             <div class="flex gap-1">
                 <button onclick="window.editarItem(${item.id_temp})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition" title="Editar"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
                 <button onclick="window.removerItemDB(${item.id_temp})" class="text-red-400 hover:bg-red-50 p-2 rounded-lg transition" title="Excluir"><i class="ph-bold ph-trash text-lg"></i></button>
             </div>`;
-
             return `
             <div class="bg-white p-3 md:p-4 rounded-xl border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shadow-sm hover:border-blue-200 transition-colors">
                 <div class="flex-1">
@@ -194,62 +185,143 @@ window.atualizarInterfaceItensETotais = function() {
 window.renderizarPreviewFotos = function() {
     const previewContainer = document.getElementById('preview-anexos');
     previewContainer.innerHTML = '';
-    
     if(window.imagensUploadArray.length === 0) { previewContainer.classList.add('hidden'); return; }
-    
+    previewContainer.classList.remove('hidden');
+
     const isTravadoGeral = (document.getElementById('db-status').value === 'Fechado' && !window.isOSDestravada) || window.isVisualizacaoModo;
 
     window.imagensUploadArray.forEach((base64Str, index) => {
         const imgBox = document.createElement('div');
-        imgBox.className = "w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900";
+        imgBox.className = "w-24 h-24 rounded-xl overflow-hidden shadow-sm border border-slate-200 relative group flex-shrink-0 bg-slate-900 cursor-pointer";
         
-        let trashIcon = isTravadoGeral ? '' : `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onclick="window.abrirModalExcluirAnexo(${index})"><i class="ph-bold ph-trash text-white text-xl"></i></div>`;
+        let trashIcon = isTravadoGeral ? '' : `<button type="button" onclick="event.stopPropagation(); window.abrirModalExcluirAnexo(${index})" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-lg flex items-center justify-center shadow-md transition-all z-10"><i class="ph-bold ph-trash"></i></button>`;
+        let viewIcon = `<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><i class="ph-bold ph-magnifying-glass-plus text-white text-2xl"></i></div>`;
         
         let midiaHTML = '';
         if(base64Str.startsWith('data:video')) {
-            midiaHTML = `<video src="${base64Str}" class="w-full h-full object-cover" muted></video><div class="absolute top-1 right-1 bg-black/50 rounded p-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i></div>`;
+            midiaHTML = `<video src="${base64Str}" class="w-full h-full object-cover" muted></video><div class="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5 flex items-center gap-1"><i class="ph-fill ph-video-camera text-white text-[10px]"></i><span class="text-white text-[9px] font-bold">Vídeo</span></div>`;
         } else {
             midiaHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
         }
 
-        imgBox.innerHTML = `${midiaHTML}${trashIcon}`;
+        imgBox.innerHTML = `${midiaHTML}${viewIcon}${trashIcon}`;
+        imgBox.onclick = function() { window.abrirVisualizadorMidia(index); };
         previewContainer.appendChild(imgBox);
     });
 };
 
+window.abrirVisualizadorMidia = function(index) {
+    const base64Str = window.imagensUploadArray[index];
+    const container = document.getElementById('container-visualizador');
+    if(base64Str.startsWith('data:video')) {
+        container.innerHTML = `<video src="${base64Str}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl"></video>`;
+    } else {
+        container.innerHTML = `<img src="${base64Str}" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">`;
+    }
+    document.getElementById('modal-visualizador-midia').classList.remove('hidden');
+};
+
+window.fecharVisualizadorMidia = function() {
+    document.getElementById('modal-visualizador-midia').classList.add('hidden');
+    document.getElementById('container-visualizador').innerHTML = ''; // Mata o vídeo
+};
+
+window.processarImagens = function(event) {
+    const files = event.target.files;
+    if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            window.imagensUploadArray.push(e.target.result); 
+            window.renderizarPreviewFotos(); 
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+// ========================================================
+// 3. NAVEGAÇÃO DE ABAS
+// ========================================================
 window.mudarAbaOS = function(aba) {
     const btnDados = document.getElementById('aba-dados');
     const btnFin = document.getElementById('aba-fin');
     const contDados = document.getElementById('aba-conteudo-dados');
     const contFin = document.getElementById('aba-conteudo-fin');
-    
     const colDados = document.getElementById('coluna-direita-dados');
     const colFin = document.getElementById('coluna-direita-fin');
+    
+    // Salva estado da aba fin para não burlar a trava de segurança
+    const isFinHidden = btnFin.classList.contains('hidden');
 
     if (aba === 'dados') {
-        btnDados.className = 'pb-3 px-2 font-black text-blue-600 border-b-2 border-blue-600 transition-colors whitespace-nowrap text-sm';
-        btnFin.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
+        btnDados.classList.add('font-black', 'text-blue-600', 'border-b-2', 'border-blue-600');
+        btnDados.classList.remove('font-bold', 'text-slate-400', 'border-transparent');
+        btnFin.classList.remove('font-black', 'text-emerald-600', 'border-b-2', 'border-emerald-600');
+        btnFin.classList.add('font-bold', 'text-slate-400', 'border-transparent');
         
         contDados.classList.remove('hidden');
         contFin.classList.add('hidden');
-        
         if(colDados) colDados.classList.remove('hidden');
         if(colFin) colFin.classList.add('hidden');
-        
     } else {
-        btnFin.className = 'pb-3 px-2 font-black text-emerald-600 border-b-2 border-emerald-600 transition-colors whitespace-nowrap text-sm flex items-center gap-2';
-        btnDados.className = 'pb-3 px-2 font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap text-sm';
+        btnFin.classList.add('font-black', 'text-emerald-600', 'border-b-2', 'border-emerald-600');
+        btnFin.classList.remove('font-bold', 'text-slate-400', 'border-transparent');
+        btnDados.classList.remove('font-black', 'text-blue-600', 'border-b-2', 'border-blue-600');
+        btnDados.classList.add('font-bold', 'text-slate-400', 'border-transparent');
         
         contFin.classList.remove('hidden');
         contDados.classList.add('hidden');
-        
         if(colFin) colFin.classList.remove('hidden');
         if(colDados) colDados.classList.add('hidden');
         
         window.renderizarAbaFinanceiro();
     }
+    
+    // Repõe a trava se for o caso
+    if (isFinHidden) { btnFin.classList.add('hidden'); }
 };
 
+window.alternarSubTelaOrcamento = function(modo) {
+    const viewLista = document.getElementById('view-lista-orcamentos');
+    const viewNovo = document.getElementById('view-novo-orcamento');
+
+    if (modo === 'novo') {
+        window.osEmEdicaoId = null; 
+        window.osEmEdicaoNumero = null;
+        window.currentOSFinanceiro = []; 
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        
+        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
+        document.getElementById('db-cliente-nome').value = '';
+        document.getElementById('db-veiculo-placa').value = '';
+        document.getElementById('db-status').value = 'Em Aberto';
+        document.getElementById('desc-val').value = '';
+        document.getElementById('db-obs').value = '';
+        
+        window.itensTemporarios = [];
+        window.imagensUploadArray = [];
+        const preview = document.getElementById('preview-anexos');
+        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+        
+        window.mudarAbaOS('dados'); 
+        window.calcularTotais();
+        window.verificarStatusFinanceiro(); // Vai esconder o financeiro
+        
+        viewLista.classList.add('hidden');
+        viewNovo.classList.remove('hidden');
+    } else {
+        viewNovo.classList.add('hidden');
+        viewLista.classList.remove('hidden');
+        window.isOSDestravada = false;
+        window.isVisualizacaoModo = false;
+        window.buscarOrcamentosSupabase();
+    }
+};
+
+// ========================================================
+// 4. MÉTODOS DE CÁLCULO E FINANCEIRO
+// ========================================================
 window.recarregarFinanceiroDaOS = async function() {
     if(!window.osEmEdicaoNumero) return;
     const { data: finRecords } = await window.banco.from('contas_receber')
@@ -330,7 +402,6 @@ window.renderizarAbaFinanceiro = function() {
             const trancaParaPago = isPago ? 'disabled' : trancaGeral;
             
             let iconeStatus = isPago ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-check mr-1"></i> Liquidado</span>` : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase flex items-center shadow-sm"><i class="ph-bold ph-clock mr-1"></i> Pendente</span>`;
-            
             const badgeTipo = rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato') ? 'Entrada / À Vista' : `Parcela ${rec.descricao.split(' ')[1] || (idx+1)}`;
             const corCard = isPago ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white';
             const trancaClasses = (isPago || isTravadoGlobal) ? 'bg-transparent border-transparent text-emerald-900' : 'border-slate-300 bg-white focus:border-blue-500 text-slate-800';
@@ -397,19 +468,13 @@ window.atualizarPlacarAuditoria = function(somaFinanceiro, btnIdToBlock = 'btn-s
 
 window.checarSomaGeradorTab = function() {
     const activeEl = document.activeElement;
-    
     if (activeEl && (activeEl.id === 'tab-fin-entrada' || activeEl.id === 'tab-fin-parcelas')) {
         window.gerarLinhasParcelasTab();
         return;
     }
-
     const tipo = document.getElementById('tab-fin-tipo').value;
     let soma = 0;
-    
-    if (tipo !== 'parcelado') {
-        soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0;
-    }
-    
+    if (tipo !== 'parcelado') { soma += window.reverterMoeda(document.getElementById('tab-fin-entrada').value) || 0; }
     if (tipo !== 'avista') {
         const parcelas = Math.max(1, parseInt(document.getElementById('tab-fin-parcelas').value) || 1);
         for(let i=1; i<=parcelas; i++) {
@@ -417,7 +482,6 @@ window.checarSomaGeradorTab = function() {
             if(inputParc) soma += window.reverterMoeda(inputParc.value) || 0;
         }
     }
-    
     document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
     window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-tab');
 };
@@ -429,7 +493,6 @@ window.checarSomaFinanceiroEdit = function() {
         if(inputVal) soma += window.reverterMoeda(inputVal.value);
         else soma += rec.valor;
     });
-    
     document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(soma);
     window.atualizarPlacarAuditoria(soma, 'btn-salvar-fin-edicao');
 };
@@ -516,16 +579,13 @@ window.gerarLinhasParcelasTab = function() {
         }
     }
     
-    if (!apenasAtualizar) {
-        divSimulacao.innerHTML = html;
-    }
-    
+    if (!apenasAtualizar) { divSimulacao.innerHTML = html; }
     document.getElementById('fin-aba-soma').innerText = window.formataDinheiro(somaGerada);
     window.atualizarPlacarAuditoria(somaGerada, 'btn-salvar-fin-tab');
 };
 
 // ========================================================
-// 3. TELA E EVENTOS DE O.S (ESTADOS E FLUXO)
+// 5. ESTADOS E TRAVAS DE INTERFACE
 // ========================================================
 window.verificarStatusFinanceiro = function() {
     const status = document.getElementById('db-status').value;
@@ -577,46 +637,6 @@ window.congelarCamposOS = function(travar) {
     
     const camposFinEdit = document.querySelectorAll('#fin-editor-box input, #fin-editor-box select');
     camposFinEdit.forEach(el => el.disabled = travar);
-};
-
-window.alternarSubTelaOrcamento = function(modo) {
-    const viewLista = document.getElementById('view-lista-orcamentos');
-    const viewNovo = document.getElementById('view-novo-orcamento');
-
-    if (modo === 'novo') {
-        window.osEmEdicaoId = null; 
-        window.osEmEdicaoNumero = null;
-        window.currentOSFinanceiro = []; 
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        
-        document.getElementById('titulo-tela-os').innerText = 'Emissão de O.S.';
-        document.getElementById('db-cliente-nome').value = '';
-        document.getElementById('db-veiculo-placa').value = '';
-        document.getElementById('db-status').value = 'Em Aberto';
-        document.getElementById('desc-val').value = '';
-        document.getElementById('db-obs').value = '';
-        
-        window.itensTemporarios = [];
-        window.imagensUploadArray = [];
-        const preview = document.getElementById('preview-anexos');
-        if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
-        
-        document.getElementById('aba-fin').classList.add('hidden');
-        
-        window.calcularTotais();
-        window.verificarStatusFinanceiro(); 
-        window.mudarAbaOS('dados'); 
-        
-        viewLista.classList.add('hidden');
-        viewNovo.classList.remove('hidden');
-    } else {
-        viewNovo.classList.add('hidden');
-        viewLista.classList.remove('hidden');
-        window.isOSDestravada = false;
-        window.isVisualizacaoModo = false;
-        window.buscarOrcamentosSupabase();
-    }
 };
 
 window.adicionarOuEditarItem = function() {
@@ -704,9 +724,9 @@ window.calcularTotais = function() {
     }
 };
 
-window.abrirModalDestravar = function(id, orcJSONCodificado) {
+window.abrirModalDestravar = function(id) {
     window.osParaDestravarId = id; 
-    window.osParaDestravarDados = JSON.parse(decodeURIComponent(orcJSONCodificado));
+    window.osParaDestravarDados = window.globalOrcamentosList.find(o => o.id == id);
     
     const inputSenha = document.getElementById('input-senha-reabrir');
     if(inputSenha) inputSenha.value = '';
@@ -854,241 +874,8 @@ window.fecharModalCadastro = function() {
     document.getElementById('modal-cadastro-rapido').classList.add('hidden'); 
 };
 
-window.processarImagens = function(event) {
-    const files = event.target.files;
-    if(files.length > 0) document.getElementById('preview-anexos').classList.remove('hidden');
-    Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => { 
-            window.imagensUploadArray.push(e.target.result); 
-            window.renderizarPreviewFotos(); 
-        };
-        reader.readAsDataURL(file);
-    });
-};
-
-window.buscarCEP = async function(cepInput) {
-    const cep = cepInput.replace(/\D/g, '');
-    if (cep.length !== 8) return;
-
-    const statusSpan = document.getElementById('cep-status');
-    if(statusSpan) {
-        statusSpan.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Buscando...';
-        statusSpan.className = 'text-[9px] text-blue-500 uppercase';
-    }
-
-    try {
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const dados = await response.json();
-        
-        if (!dados.erro) {
-            document.getElementById('cad-rua').value = dados.logradouro;
-            document.getElementById('cad-bairro').value = dados.bairro;
-            document.getElementById('cad-cidade').value = `${dados.localidade} / ${dados.uf}`;
-            document.getElementById('cad-num').focus();
-            
-            if(statusSpan) {
-                statusSpan.innerHTML = '<i class="ph-bold ph-check"></i> Encontrado';
-                statusSpan.className = 'text-[9px] text-emerald-500 uppercase';
-                setTimeout(() => statusSpan.classList.add('hidden'), 2500);
-            }
-        } else {
-            window.dispararAlerta("CEP não encontrado.");
-            if(statusSpan) { statusSpan.innerHTML = '<i class="ph-bold ph-x"></i> Inválido'; statusSpan.className = 'text-[9px] text-red-500 uppercase'; }
-        }
-    } catch (e) { 
-        window.dispararAlerta("Falha ao buscar CEP.");
-        if(statusSpan) statusSpan.classList.add('hidden');
-    }
-};
-
-window.processarSalvamentoModal = async function() {
-    const btnSalvar = document.querySelector('#modal-cadastro-rapido button:last-child');
-    const textoOriginal = window.modalTipoAberto === 'cliente' ? '<i class="ph-bold ph-check"></i> Salvar Cliente' : '<i class="ph-bold ph-check"></i> Salvar Veículo';
-    btnSalvar.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Salvando...';
-    btnSalvar.disabled = true;
-
-    try {
-        if (window.modalTipoAberto === 'cliente') {
-            const nome = document.getElementById('cad-nome').value;
-            const doc = document.getElementById('cad-doc').value;
-            const tel = document.getElementById('cad-tel').value;
-            const email = document.getElementById('cad-email').value;
-            const cep = document.getElementById('cad-cep').value;
-            const rua = document.getElementById('cad-rua').value;
-            const num = document.getElementById('cad-num').value;
-            const bairro = document.getElementById('cad-bairro').value;
-            const cidade = document.getElementById('cad-cidade').value;
-
-            if(!nome || !tel) { window.dispararAlerta("Nome e Celular são obrigatórios."); return; }
-            
-            const { error } = await window.banco.from('clientes').insert([{ nome, documento: doc, telefone: tel, email, cep, endereco: rua, numero: num, bairro, cidade }]);
-            if (error) throw error;
-            
-            await window.carregarListasBD(); 
-            document.getElementById('db-cliente-nome').value = nome; 
-            window.dispararAlerta("Cliente salvo no banco com sucesso!", "sucesso");
-        } else {
-            const placa = document.getElementById('cad-placa').value;
-            const modelo = document.getElementById('cad-modelo').value;
-            const cor = document.getElementById('cad-cor').value;
-            const ano = document.getElementById('cad-ano').value;
-            
-            if(!placa || !modelo) { window.dispararAlerta("Placa e Modelo obrigatórios."); return; }
-            
-            const dono = document.getElementById('cad-dono').value || '';
-            
-            const { error } = await window.banco.from('veiculos').insert([{ placa, modelo, cor, ano, dono_nome: dono }]);
-            if (error) throw error;
-            
-            await window.carregarListasBD(); 
-            document.getElementById('db-veiculo-placa').value = placa; 
-            if(dono) document.getElementById('db-cliente-nome').value = dono; 
-            
-            window.dispararAlerta("Veículo salvo no banco com sucesso!", "sucesso");
-        }
-        window.fecharModalCadastro();
-    } catch (erro) {
-        if(erro.code === '23505') window.dispararAlerta("Este registro (Placa ou Documento) já existe no banco.");
-        else window.dispararAlerta("Falha ao salvar no banco de dados.");
-    } finally {
-        btnSalvar.innerHTML = textoOriginal;
-        btnSalvar.disabled = false;
-    }
-};
-
-window.gerarPDFSupabase = async function(dadosCodificados) {
-    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    
-    document.getElementById('pdf-id').innerText = orc.numero_os;
-    const dataAbertura = new Date(orc.data_criacao);
-    const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
-    if(pdfDataAberturaEl) pdfDataAberturaEl.innerText = dataAbertura.toLocaleDateString('pt-BR');
-
-    const dataAtual = new Date();
-    const pdfDataEmissaoEl = document.getElementById('pdf-data-emissao');
-    if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
-
-    const pdfStatusEl = document.getElementById('pdf-status');
-    if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
-
-    let cliDados = orc.itens?.cliente_dados || window.globalClientes.find(c => c.nome === orc.cliente_nome) || {};
-    let veiDados = orc.itens?.veiculo_dados || window.globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
-
-    const pdfCliNomeEl = document.getElementById('pdf-cli-nome');
-    if(pdfCliNomeEl) pdfCliNomeEl.innerText = orc.cliente_nome || '---';
-
-    const pdfCliDocEl = document.getElementById('pdf-cli-doc');
-    if(pdfCliDocEl) pdfCliDocEl.innerText = cliDados.documento || '---';
-
-    const pdfCliTelEl = document.getElementById('pdf-cli-tel');
-    if(pdfCliTelEl) pdfCliTelEl.innerText = cliDados.telefone || '---';
-
-    const pdfCliEndEl = document.getElementById('pdf-cli-end');
-    if(pdfCliEndEl) {
-        let enderecoArr = [];
-        if(cliDados.endereco) enderecoArr.push(cliDados.endereco);
-        if(cliDados.numero) enderecoArr.push(`, ${cliDados.numero}`);
-        if(cliDados.bairro) enderecoArr.push(` - ${cliDados.bairro}`);
-        if(cliDados.cidade) enderecoArr.push(` (${cliDados.cidade})`);
-        if(cliDados.cep) enderecoArr.push(` - CEP: ${cliDados.cep}`);
-        pdfCliEndEl.innerText = enderecoArr.length > 0 ? enderecoArr.join('') : 'Endereço não informado';
-    }
-
-    const pdfVeiModEl = document.getElementById('pdf-vei-mod');
-    if(pdfVeiModEl) pdfVeiModEl.innerText = veiDados.modelo || '---';
-
-    const pdfVeiPlacaEl = document.getElementById('pdf-vei-placa');
-    if(pdfVeiPlacaEl) pdfVeiPlacaEl.innerText = orc.veiculo_placa || '---';
-
-    const pdfVeiDetEl = document.getElementById('pdf-vei-det');
-    if(pdfVeiDetEl) pdfVeiDetEl.innerText = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
-
-    const itensReais = orc.itens?.lista_itens || [];
-    let calcPecas = 0; let calcServicos = 0;
-    const pecas = itensReais.filter(i => i.tipo === 'Peça');
-    const servicos = itensReais.filter(i => i.tipo === 'Serviço');
-    itensReais.forEach(i => { if(i.tipo==='Peça') calcPecas+=i.subtotal; else calcServicos+=i.subtotal; });
-    const calcDesc = orc.itens?.resumo?.desconto || 0;
-    const calcTotal = (calcPecas + calcServicos) - calcDesc;
-    
-    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">`;
-    htmlTabela += `<thead style="background-color: #000000; color: white;"><tr><th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th><th style="padding: 6px 10px; width: 5%;">Qtd</th><th style="padding: 6px 10px; width: 45%;">Descrição Serviço / Peça</th><th style="padding: 6px 10px; text-align: right; width: 20%;">V. Unitário</th><th style="padding: 6px 10px; text-align: right; width: 20%; border-top-right-radius: 4px;">Subtotal</th></tr></thead><tbody>`;
-    
-    if(pecas.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #D1D5DB;">1. Peças e Componentes</td></tr>`;
-        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
-    }
-    if(servicos.length > 0) {
-        htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-top: 1px solid #000000; border-bottom: 1px solid #D1D5DB;">2. Mão de Obra e Serviços</td></tr>`;
-        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
-    }
-    htmlTabela += `</tbody></table>`;
-    document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
-
-    document.getElementById('pdf-tot-pecas').innerText = window.formataDinheiro(calcPecas);
-    document.getElementById('pdf-tot-servicos').innerText = window.formataDinheiro(calcServicos);
-    document.getElementById('pdf-tot-desc').innerText = `- ${window.formataDinheiro(calcDesc)}`;
-    document.getElementById('pdf-tot-final').innerText = window.formataDinheiro(calcTotal);
-
-    const boxObs = document.getElementById('pdf-container-obs');
-    const pdfObsTextoEl = document.getElementById('pdf-obs-texto');
-    if(orc.observacao && orc.observacao.trim() !== '') { 
-        if(pdfObsTextoEl) pdfObsTextoEl.innerText = orc.observacao; 
-        if(boxObs) boxObs.style.display = 'block'; 
-    } else { 
-        if(boxObs) boxObs.style.display = 'none'; 
-    }
-
-    const containerFin = document.getElementById('pdf-container-financeiro');
-    containerFin.innerHTML = '';
-    
-    try {
-        const { data: recordsFin } = await window.banco.from('contas_receber')
-            .select('*').like('descricao', `%O.S #${orc.numero_os}%`).order('data_vencimento', { ascending: true });
-            
-        if (recordsFin && recordsFin.length > 0) {
-            let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
-            htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
-            
-            let counterParcela = 1;
-            const parcelasPuras = recordsFin.filter(r => r.categoria !== 'Adiantamento' && !r.descricao.includes('Acerto Imediato'));
-            const totalParcelas = parcelasPuras.length;
-
-            recordsFin.forEach(rec => {
-                const dataBR = new Date(rec.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
-                if (rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
-                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${window.formataDinheiro(rec.valor)} (Via ${rec.forma_pagamento} em ${dataBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
-                } else {
-                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${counterParcela}/${totalParcelas}:</b> ${window.formataDinheiro(rec.valor)} - Vencimento: ${dataBR} (Via ${rec.forma_pagamento})</td></tr>`;
-                    counterParcela++;
-                }
-            });
-
-            htmlFin += `</table>`;
-            containerFin.innerHTML = htmlFin;
-            containerFin.style.display = 'block';
-        } else {
-            containerFin.style.display = 'none';
-        }
-    } catch (e) {
-        console.error("Erro ao buscar financeiro para PDF", e);
-    }
-
-    const el = document.getElementById('pdf-template-real');
-    el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '9999';
-
-    html2pdf().set({ 
-        margin: 0.3, filename: `OS_${orc.numero_os}.pdf`, image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
-    }).from(el).outputPdf('bloburl').then((pdfUrl) => {
-        window.open(pdfUrl, '_blank');
-        el.style.left = '-9999px'; el.style.top = '-9999px';
-    });
-};
-
 // ===================================================================================
-// 4. BANCO DE DADOS E EVENTOS GERAIS
+// 6. INTEGRAÇÃO SUPABASE E FLUXOS
 // ===================================================================================
 window.initOrcamentos = async function() {
     await window.carregarListasBD();
@@ -1129,11 +916,88 @@ window.buscarOrcamentosSupabase = async function() {
     try {
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
-        window.renderizarTabelaReal(orcamentos);
+        window.globalOrcamentosList = orcamentos || []; // Guarda o JSON seguro na RAM
+        window.renderizarTabelaReal(window.globalOrcamentosList);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
         document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
     }
+};
+
+window.abrirEdicaoOS = async function(id, abaAlvo = 'dados', isVisualizacao = false) {
+    const orc = window.globalOrcamentosList.find(o => o.id == id);
+    if (!orc) return;
+
+    window.osEmEdicaoId = orc.id;
+    window.osEmEdicaoNumero = orc.numero_os; 
+    window.osParaDestravarDados = orc; 
+    window.isVisualizacaoModo = isVisualizacao;
+    if (isVisualizacao) window.isOSDestravada = false;
+    
+    document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
+    
+    const selectCliente = document.getElementById('db-cliente-nome');
+    if (!Array.from(selectCliente.options).some(opt => opt.value === orc.cliente_nome)) { selectCliente.innerHTML += `<option value="${orc.cliente_nome}">${orc.cliente_nome}</option>`; }
+    selectCliente.value = orc.cliente_nome;
+
+    const selectVeiculo = document.getElementById('db-veiculo-placa');
+    if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
+    selectVeiculo.value = orc.veiculo_placa;
+
+    const selStatus = document.getElementById('db-status');
+    selStatus.disabled = false; 
+    if(orc.status === 'Fechado') {
+        const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
+        if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
+    }
+    selStatus.value = orc.status;
+    
+    document.getElementById('db-obs').value = orc.observacao || '';
+    window.itensTemporarios = orc.itens?.lista_itens || [];
+    window.imagensUploadArray = orc.anexos || [];
+    
+    if(window.imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); window.renderizarPreviewFotos(); }
+
+    const descValor = orc.itens?.resumo?.desconto || 0;
+    if (descValor > 0) {
+        document.getElementById('desc-tipo').value = 'val';
+        const descInput = document.getElementById('desc-val');
+        descInput.value = (descValor * 100).toString(); window.mascaraMoeda(descInput);
+    } else { document.getElementById('desc-val').value = ''; }
+
+    window.calcularTotais();
+    
+    await window.recarregarFinanceiroDaOS();
+    window.verificarStatusFinanceiro(); 
+    
+    document.getElementById('view-lista-orcamentos').classList.add('hidden');
+    document.getElementById('view-novo-orcamento').classList.remove('hidden');
+    
+    window.mudarAbaOS(abaAlvo); 
+};
+
+window.abrirVisualizacaoOS = function(id) {
+    window.abrirEdicaoOS(id, 'dados', true);
+};
+
+window.abrirFaturamentoDireto = function(id) {
+    window.abrirEdicaoOS(id, 'fin', false);
+};
+
+window.processarDestravarOS = async function() {
+    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
+    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
+    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
+    const usuarioLogado = JSON.parse(usuarioLogadoStr);
+
+    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    
+    try {
+        window.fecharModalDestravar();
+        window.isOSDestravada = true;
+        await window.abrirEdicaoOS(window.osParaDestravarId, 'dados', false);
+        window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
+    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
 window.salvarOrcamentoReal = async function() {
@@ -1382,83 +1246,135 @@ window.confirmarExclusao = async function() {
     } catch (erro) { window.dispararAlerta("Falha ao excluir."); }
 };
 
-window.processarDestravarOS = async function() {
-    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
-    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    const usuarioLogado = JSON.parse(usuarioLogadoStr);
+window.gerarPDFSupabase = async function(id) {
+    const orc = window.globalOrcamentosList.find(o => o.id == id);
+    if (!orc) return;
+    
+    document.getElementById('pdf-id').innerText = orc.numero_os;
+    const dataAbertura = new Date(orc.data_criacao);
+    const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
+    if(pdfDataAberturaEl) pdfDataAberturaEl.innerText = dataAbertura.toLocaleDateString('pt-BR');
 
-    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
+    const dataAtual = new Date();
+    const pdfDataEmissaoEl = document.getElementById('pdf-data-emissao');
+    if(pdfDataEmissaoEl) pdfDataEmissaoEl.innerText = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.toLocaleTimeString('pt-BR')}`;
+
+    const pdfStatusEl = document.getElementById('pdf-status');
+    if(pdfStatusEl) pdfStatusEl.innerText = orc.status === 'Fechado' ? 'Faturado' : orc.status;
+
+    let cliDados = orc.itens?.cliente_dados || window.globalClientes.find(c => c.nome === orc.cliente_nome) || {};
+    let veiDados = orc.itens?.veiculo_dados || window.globalVeiculos.find(v => v.placa === orc.veiculo_placa) || {};
+
+    const pdfCliNomeEl = document.getElementById('pdf-cli-nome');
+    if(pdfCliNomeEl) pdfCliNomeEl.innerText = orc.cliente_nome || '---';
+
+    const pdfCliDocEl = document.getElementById('pdf-cli-doc');
+    if(pdfCliDocEl) pdfCliDocEl.innerText = cliDados.documento || '---';
+
+    const pdfCliTelEl = document.getElementById('pdf-cli-tel');
+    if(pdfCliTelEl) pdfCliTelEl.innerText = cliDados.telefone || '---';
+
+    const pdfCliEndEl = document.getElementById('pdf-cli-end');
+    if(pdfCliEndEl) {
+        let enderecoArr = [];
+        if(cliDados.endereco) enderecoArr.push(cliDados.endereco);
+        if(cliDados.numero) enderecoArr.push(`, ${cliDados.numero}`);
+        if(cliDados.bairro) enderecoArr.push(` - ${cliDados.bairro}`);
+        if(cliDados.cidade) enderecoArr.push(` (${cliDados.cidade})`);
+        if(cliDados.cep) enderecoArr.push(` - CEP: ${cliDados.cep}`);
+        pdfCliEndEl.innerText = enderecoArr.length > 0 ? enderecoArr.join('') : 'Endereço não informado';
+    }
+
+    const pdfVeiModEl = document.getElementById('pdf-vei-mod');
+    if(pdfVeiModEl) pdfVeiModEl.innerText = veiDados.modelo || '---';
+
+    const pdfVeiPlacaEl = document.getElementById('pdf-vei-placa');
+    if(pdfVeiPlacaEl) pdfVeiPlacaEl.innerText = orc.veiculo_placa || '---';
+
+    const pdfVeiDetEl = document.getElementById('pdf-vei-det');
+    if(pdfVeiDetEl) pdfVeiDetEl.innerText = `${veiDados.cor || '--'} / ${veiDados.ano || '--'}`;
+
+    const itensReais = orc.itens?.lista_itens || [];
+    let calcPecas = 0; let calcServicos = 0;
+    const pecas = itensReais.filter(i => i.tipo === 'Peça');
+    const servicos = itensReais.filter(i => i.tipo === 'Serviço');
+    itensReais.forEach(i => { if(i.tipo==='Peça') calcPecas+=i.subtotal; else calcServicos+=i.subtotal; });
+    const calcDesc = orc.itens?.resumo?.desconto || 0;
+    const calcTotal = (calcPecas + calcServicos) - calcDesc;
+    
+    let htmlTabela = `<table style="width: 100%; text-align: left; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">`;
+    htmlTabela += `<thead style="background-color: #000000; color: white;"><tr><th style="padding: 6px 10px; width: 10%; border-top-left-radius: 4px;">Tipo</th><th style="padding: 6px 10px; width: 5%;">Qtd</th><th style="padding: 6px 10px; width: 45%;">Descrição Serviço / Peça</th><th style="padding: 6px 10px; text-align: right; width: 20%;">V. Unitário</th><th style="padding: 6px 10px; text-align: right; width: 20%; border-top-right-radius: 4px;">Subtotal</th></tr></thead><tbody>`;
+    
+    if(pecas.length > 0) {
+        htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #D1D5DB;">1. Peças e Componentes</td></tr>`;
+        htmlTabela += pecas.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
+    }
+    if(servicos.length > 0) {
+        htmlTabela += `<tr><td colspan="5" style="background-color: #F3F4F6; font-weight: bold; padding: 6px 10px; color: #000000; text-transform: uppercase; font-size: 10px; border-top: 1px solid #000000; border-bottom: 1px solid #D1D5DB;">2. Mão de Obra e Serviços</td></tr>`;
+        htmlTabela += servicos.map(i => `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; color: #4B5563;">${i.tipo}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; font-weight: bold; color: #000000;">${i.quantidade}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB;"><div style="font-weight: bold; color: #000000;">${i.descricao}</div>${i.detalhe ? `<div style="font-size: 9px; color: #4B5563; font-style: italic; margin-top: 1px;">Obs: ${i.detalhe}</div>` : ''}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; color: #000000;">${window.formataDinheiro(i.valor_unitario)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-weight: bold; color: #000000;">${window.formataDinheiro(i.subtotal)}</td></tr>`).join('');
+    }
+    htmlTabela += `</tbody></table>`;
+    document.getElementById('pdf-container-itens').innerHTML = htmlTabela;
+
+    document.getElementById('pdf-tot-pecas').innerText = window.formataDinheiro(calcPecas);
+    document.getElementById('pdf-tot-servicos').innerText = window.formataDinheiro(calcServicos);
+    document.getElementById('pdf-tot-desc').innerText = `- ${window.formataDinheiro(calcDesc)}`;
+    document.getElementById('pdf-tot-final').innerText = window.formataDinheiro(calcTotal);
+
+    const boxObs = document.getElementById('pdf-container-obs');
+    const pdfObsTextoEl = document.getElementById('pdf-obs-texto');
+    if(orc.observacao && orc.observacao.trim() !== '') { 
+        if(pdfObsTextoEl) pdfObsTextoEl.innerText = orc.observacao; 
+        if(boxObs) boxObs.style.display = 'block'; 
+    } else { 
+        if(boxObs) boxObs.style.display = 'none'; 
+    }
+
+    const containerFin = document.getElementById('pdf-container-financeiro');
+    containerFin.innerHTML = '';
     
     try {
-        window.fecharModalDestravar();
-        const encoded = encodeURIComponent(JSON.stringify(window.osParaDestravarDados));
-        await window.abrirEdicaoOS(encoded, 'dados', false);
-        window.isOSDestravada = true; 
-        window.verificarStatusFinanceiro(); 
-        window.atualizarInterfaceItensETotais();
-        window.renderizarPreviewFotos();
-        window.renderizarAbaFinanceiro();
-        window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
-};
+        const { data: recordsFin } = await window.banco.from('contas_receber')
+            .select('*').like('descricao', `%O.S #${orc.numero_os}%`).order('data_vencimento', { ascending: true });
+            
+        if (recordsFin && recordsFin.length > 0) {
+            let htmlFin = `<h3 style="font-size: 10px; color: #000000; text-transform: uppercase; margin: 0 0 6px 0; border-bottom: 1px solid #D1D5DB; padding-bottom: 4px; font-weight: bold;">Condições de Pagamento Combinadas</h3>`;
+            htmlFin += `<table style="width: 100%; border-collapse: collapse; font-size: 10px;">`;
+            
+            let counterParcela = 1;
+            const parcelasPuras = recordsFin.filter(r => r.categoria !== 'Adiantamento' && !r.descricao.includes('Acerto Imediato'));
+            const totalParcelas = parcelasPuras.length;
 
-window.abrirEdicaoOS = async function(dadosCodificados, abaAlvo = 'dados', isVisualizacao = false) {
-    const orc = JSON.parse(decodeURIComponent(dadosCodificados));
-    window.osEmEdicaoId = orc.id;
-    window.osEmEdicaoNumero = orc.numero_os; 
-    window.osParaDestravarDados = orc; 
-    window.isVisualizacaoModo = isVisualizacao;
-    window.isOSDestravada = false; 
-    
-    document.getElementById('titulo-tela-os').innerText = `O.S. #${orc.numero_os}`;
-    
-    const selectCliente = document.getElementById('db-cliente-nome');
-    if (!Array.from(selectCliente.options).some(opt => opt.value === orc.cliente_nome)) { selectCliente.innerHTML += `<option value="${orc.cliente_nome}">${orc.cliente_nome}</option>`; }
-    selectCliente.value = orc.cliente_nome;
+            recordsFin.forEach(rec => {
+                const dataBR = new Date(rec.data_vencimento + 'T12:00:00Z').toLocaleDateString('pt-BR');
+                if (rec.categoria === 'Adiantamento' || rec.descricao.includes('Acerto Imediato')) {
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Acerto Imediato:</b> ${window.formataDinheiro(rec.valor)} (Via ${rec.forma_pagamento} em ${dataBR}) - <span style="font-weight: bold; color: #000000;">PAGO</span></td></tr>`;
+                } else {
+                    htmlFin += `<tr><td style="padding: 4px; border-bottom: 1px dashed #e2e8f0;"><b>Parcela ${counterParcela}/${totalParcelas}:</b> ${window.formataDinheiro(rec.valor)} - Vencimento: ${dataBR} (Via ${rec.forma_pagamento})</td></tr>`;
+                    counterParcela++;
+                }
+            });
 
-    const selectVeiculo = document.getElementById('db-veiculo-placa');
-    if (!Array.from(selectVeiculo.options).some(opt => opt.value === orc.veiculo_placa)) { selectVeiculo.innerHTML += `<option value="${orc.veiculo_placa}">${orc.veiculo_placa}</option>`; }
-    selectVeiculo.value = orc.veiculo_placa;
-
-    const selStatus = document.getElementById('db-status');
-    selStatus.disabled = false; 
-    if(orc.status === 'Fechado') {
-        const optionFechado = Array.from(selStatus.options).find(opt => opt.value === 'Fechado');
-        if(optionFechado) { optionFechado.classList.remove('hidden'); optionFechado.disabled = false; }
+            htmlFin += `</table>`;
+            containerFin.innerHTML = htmlFin;
+            containerFin.style.display = 'block';
+        } else {
+            containerFin.style.display = 'none';
+        }
+    } catch (e) {
+        console.error("Erro ao buscar financeiro para PDF", e);
     }
-    selStatus.value = orc.status;
-    
-    document.getElementById('db-obs').value = orc.observacao || '';
-    window.itensTemporarios = orc.itens?.lista_itens || [];
-    window.imagensUploadArray = orc.anexos || [];
-    
-    if(window.imagensUploadArray.length > 0) { document.getElementById('preview-anexos').classList.remove('hidden'); window.renderizarPreviewFotos(); }
 
-    const descValor = orc.itens?.resumo?.desconto || 0;
-    if (descValor > 0) {
-        document.getElementById('desc-tipo').value = 'val';
-        const descInput = document.getElementById('desc-val');
-        descInput.value = (descValor * 100).toString(); window.mascaraMoeda(descInput);
-    } else { document.getElementById('desc-val').value = ''; }
+    const el = document.getElementById('pdf-template-real');
+    el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '9999';
 
-    window.calcularTotais();
-    
-    await window.recarregarFinanceiroDaOS();
-    window.verificarStatusFinanceiro(); 
-    
-    document.getElementById('view-lista-orcamentos').classList.add('hidden');
-    document.getElementById('view-novo-orcamento').classList.remove('hidden');
-    
-    window.mudarAbaOS(abaAlvo); 
+    html2pdf().set({ 
+        margin: 0.3, filename: `OS_${orc.numero_os}.pdf`, image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+    }).from(el).outputPdf('bloburl').then((pdfUrl) => {
+        window.open(pdfUrl, '_blank');
+        el.style.left = '-9999px'; el.style.top = '-9999px';
+    });
 };
 
-window.abrirVisualizacaoOS = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'dados', true);
-};
-
-window.abrirFaturamentoDireto = function(dadosCodificados) {
-    window.abrirEdicaoOS(dadosCodificados, 'fin', false);
-};
-
-console.log("🟢 Módulo Orçamentos Carregado e 100% Ancorado (Versão Ouro)");
+console.log("🟢 Módulo Orçamentos Carregado e Blindado na Raiz do Navegador!");
