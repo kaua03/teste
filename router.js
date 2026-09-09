@@ -1,14 +1,13 @@
 // ========================================================
-// AutoManager - Roteador Master (A Ilusão Perfeita)
+// AutoManager - Roteador Master (Alta Performance - Zero Fricção)
 // ========================================================
 
-// SUPERPODER: CACHE EM MEMÓRIA (Telas carregadas não são baixadas de novo)
 const htmlCache = {}; 
 
 async function navegarPara(tela) {
     const visor = document.getElementById('visor-da-tv');
     
-    // 1. APAGA A LUZ: Deixa o visor invisível imediatamente (e desliza pra baixo)
+    // 1. APAGA A LUZ: Deixa o visor invisível imediatamente
     if (visor) {
         visor.classList.remove('opacity-100', 'translate-y-0');
         visor.classList.add('opacity-0', 'translate-y-4');
@@ -31,7 +30,7 @@ async function navegarPara(tela) {
         const navMob = document.getElementById('nav-mobile');
         const mainWrap = document.getElementById('main-wrapper');
 
-        // Layout Auth
+        // Layout Auth vs Dashboard
         if (tela === 'login') {
             if (sidebar) sidebar.style.display = 'none';
             if (header) header.style.display = 'none';
@@ -54,7 +53,7 @@ async function navegarPara(tela) {
             }
         }
 
-        // Estilo dos Botões
+        // Estilo dos Botões (Marcador de página ativa)
         document.querySelectorAll('.nav-btn').forEach(btn => {
             if (btn.dataset.target === tela) {
                 btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
@@ -75,10 +74,10 @@ async function navegarPara(tela) {
             }
         });
 
-        // Aguarda a animação de "apagar a luz" terminar para o usuário não ver o HTML trocando
-        await new Promise(r => setTimeout(r, 200));
+        // Aguarda a transição CSS de fade-out (Reduzimos para 150ms)
+        await new Promise(r => setTimeout(r, 150));
 
-        // 2. BUSCA O HTML NO ESCURO (No cache ou na rede)
+        // 2. BUSCA O HTML NO ESCURO (No cache da memória ram ou na rede)
         if (!htmlCache[tela]) {
             const response = await fetch(tela + '.html');
             if (!response.ok) throw new Error(`Tela ${tela} não encontrada`);
@@ -88,16 +87,17 @@ async function navegarPara(tela) {
         // Injeta a tela vazia
         visor.innerHTML = htmlCache[tela];
 
-        // 3. O SEGREDO DE ELITE: SEGURA A EXECUÇÃO ATÉ O BANCO DE DADOS TERMINAR
-        // O "await" aqui proibe a tela de acender a luz enquanto o banco não entregar as informações.
-        if (tela === 'dashboard' && typeof initDashboard === 'function') await initDashboard();
-        if (tela === 'orcamentos' && typeof initOrcamentos === 'function') await initOrcamentos();
-        if (tela === 'clientes' && typeof initClientes === 'function') await initClientes();
-        if (tela === 'veiculos' && typeof initVeiculos === 'function') await initVeiculos();
-        if (tela === 'contas_pagar' && typeof initContasPagar === 'function') await initContasPagar();
-        if (tela === 'contas_receber' && typeof initContasReceber === 'function') await initContasReceber();
+        // 3. O SEGREDO DE ELITE: EXECUÇÃO ASSÍNCRONA EM SEGUNDO PLANO
+        // Removemos o 'await'. O router não espera o banco de dados responder.
+        // Ele manda buscar os dados e continua a corrida instantaneamente.
+        if (tela === 'dashboard' && typeof initDashboard === 'function') initDashboard();
+        if (tela === 'orcamentos' && typeof initOrcamentos === 'function') initOrcamentos();
+        if (tela === 'clientes' && typeof initClientes === 'function') initClientes();
+        if (tela === 'veiculos' && typeof initVeiculos === 'function') initVeiculos();
+        if (tela === 'contas_pagar' && typeof initContasPagar === 'function') initContasPagar();
+        if (tela === 'contas_receber' && typeof initContasReceber === 'function') initContasReceber();
 
-        // 4. ACENDE A LUZ: Tudo pronto, mostra a tela suavemente já com os dados preenchidos!
+        // 4. ACENDE A LUZ: A tela aparece na velocidade da luz para o utilizador.
         requestAnimationFrame(() => {
             const visorSeguro = document.getElementById('visor-da-tv');
             if(visorSeguro) {
