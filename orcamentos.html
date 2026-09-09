@@ -332,6 +332,22 @@
     </div>
 </div>
 
+<div id="modal-confirmacao-exclusao-parcela" class="hidden fixed top-0 left-0 w-screen h-[100dvh] bg-slate-900/80 backdrop-blur-sm z-[100000] flex items-center justify-center p-4 fade-in overscroll-none">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <i class="ph-bold ph-trash text-3xl text-red-500"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">Excluir Lançamento?</h3>
+            <p class="text-sm text-slate-500 font-medium">Tem a certeza que deseja remover esta parcela definitivamente do financeiro?</p>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button onclick="window.fecharModalExcluirParcela()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">Cancelar</button>
+            <button onclick="window.confirmarExclusaoParcelaBanco()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-md flex items-center justify-center gap-2"><i class="ph-bold ph-trash"></i> Excluir</button>
+        </div>
+    </div>
+</div>
+
 <div id="modal-senha-destravar" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-4 fade-in bg-slate-900/90 backdrop-blur-sm">
     <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="p-6 text-center">
