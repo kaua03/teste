@@ -7,6 +7,7 @@ window.valoresFinais = { pecas: 0, servicos: 0, desconto: 0, total: 0 };
 window.modalTipoAberto = '';
 window.imagensUploadArray = []; 
 window.osEmEdicaoId = null; 
+window.idParcelaParaExcluir = null;
 window.osEmEdicaoNumero = null; 
 window.idParaExcluir = null;
 window.osParaDestravarId = null;
@@ -1510,10 +1511,37 @@ window.processarLancarFinanceiroTab = async function() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
 };
 
-window.excluirParcelaManual = async function(id) {
-    if(!confirm("Atenção: Deseja excluir este lançamento definitivamente?")) return;
+// ==========================================
+// CONTROLE DO MODAL DE EXCLUSÃO DE PARCELA
+// ==========================================
+window.excluirParcelaManual = function(id) {
+    window.idParcelaParaExcluir = id;
+    const modal = document.getElementById('modal-confirmacao-exclusao-parcela');
+    document.body.appendChild(modal); // Teleporte anti-bug
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; 
+};
+
+window.fecharModalExcluirParcela = function() {
+    window.idParcelaParaExcluir = null;
+    document.getElementById('modal-confirmacao-exclusao-parcela').classList.add('hidden');
+    document.body.style.overflow = 'auto'; 
+};
+
+// ==========================================
+// OPERAÇÕES DE BANCO (FINANCEIRO MANUAL)
+// ==========================================
+window.confirmarExclusaoParcelaBanco = async function() {
+    if (!window.idParcelaParaExcluir) return;
+    
+    // Altera o botão para estado de carregamento
+    const btnExcluir = document.querySelector('#modal-confirmacao-exclusao-parcela button:last-child');
+    const textoOriginal = btnExcluir.innerHTML;
+    btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
+    btnExcluir.disabled = true;
+
     try {
-        const { error } = await window.banco.from('contas_receber').delete().eq('id', id);
+        const { error } = await window.banco.from('contas_receber').delete().eq('id', window.idParcelaParaExcluir);
         if (error) throw error;
         
         const { data: restantes } = await window.banco.from('contas_receber').select('id').like('descricao', `%O.S #${window.osEmEdicaoNumero}%`);
@@ -1529,15 +1557,25 @@ window.excluirParcelaManual = async function(id) {
              if(window.osParaDestravarDados) window.osParaDestravarDados.status = 'Finalizado';
         }
         
-        window.dispararAlerta("Parcela excluída com sucesso.", "sucesso");
+        // Suja a bandeira da O.S para impedir saída sem salvar
+        if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
+
+        window.dispararAlerta("Lançamento excluído com sucesso.", "sucesso");
         await window.recarregarFinanceiroDaOS();
-    } catch(e) { window.dispararAlerta("Erro ao excluir."); }
+    } catch(e) { 
+        window.dispararAlerta("Erro ao excluir lançamento."); 
+    } finally {
+        btnExcluir.innerHTML = textoOriginal;
+        btnExcluir.disabled = false;
+        window.fecharModalExcluirParcela();
+    }
 };
 
 window.adicionarNovaParcelaManual = async function() {
     const cliente = document.getElementById('db-cliente-nome').value;
     if(!cliente) { window.dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
     
+    // 1. Calcula o saldo restante para sugerir o valor
     let somaAtual = 0;
     window.currentOSFinanceiro.forEach((r, idx) => {
         const inputVal = document.getElementById(`edit-rec-val-${idx}`);
@@ -1548,20 +1586,53 @@ window.adicionarNovaParcelaManual = async function() {
     let valorSugerido = window.valoresFinais.total - somaAtual;
     if(valorSugerido < 0) valorSugerido = 0;
 
+    // 2. HERANÇA INTELIGENTE: Inspeciona a última parcela existente
+    let dataSugerida = new Date();
+    let formaPagtoSugerida = 'Cartão de Crédito';
+    let sufixoNome = '';
+
+    if (window.currentOSFinanceiro && window.currentOSFinanceiro.length > 0) {
+        // Pega a última parcela do array
+        const ultimaParcela = window.currentOSFinanceiro[window.currentOSFinanceiro.length - 1];
+        
+        // Puxa a forma de pagamento do último item
+        formaPagtoSugerida = ultimaParcela.forma_pagamento || 'Cartão de Crédito';
+        
+        // Pega a data de vencimento do último item, garante o fuso horário (T12:00) e soma 1 mês
+        if (ultimaParcela.data_vencimento) {
+            let dataUltima = new Date(ultimaParcela.data_vencimento + 'T12:00:00Z');
+            dataUltima.setMonth(dataUltima.getMonth() + 1);
+            dataSugerida = dataUltima;
+        }
+
+        sufixoNome = ` Extra`; // Só pra diferenciar se já existirem outras
+    }
+
     const novaParcela = {
-        descricao: `Parcela O.S #${window.osEmEdicaoNumero} - ${cliente}`,
+        descricao: `Parcela${sufixoNome} O.S #${window.osEmEdicaoNumero} - ${cliente}`,
         categoria: 'Serviços O.S',
         valor: parseFloat(valorSugerido.toFixed(2)),
-        data_vencimento: window.formatarDataISO(new Date()),
+        data_vencimento: window.formatarDataISO(dataSugerida), // Usa a data herdada
         status: 'Pendente',
-        forma_pagamento: 'Cartão de Crédito'
+        forma_pagamento: formaPagtoSugerida // Usa o método de pagamento herdado
     };
 
     try {
         const { error } = await window.banco.from('contas_receber').insert([novaParcela]);
         if (error) throw error;
+        
+        // Suja a bandeira da O.S para impedir saída sem salvar
+        if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
+
         window.dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
         await window.recarregarFinanceiroDaOS();
+        
+        // Rola a tela suavemente para o final para mostrar a nova parcela
+        setTimeout(() => {
+            const painel = document.getElementById('lista-financeiro-vinculado');
+            if(painel) painel.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 300);
+
     } catch(e) { window.dispararAlerta("Erro ao criar lançamento extra."); }
 };
 
