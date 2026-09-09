@@ -104,6 +104,10 @@ window.filtrarTabelaOS = function() {
 // ========================================================
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
+    
+    // 🔥 O ESCUDO: Se a tabela não estiver mais na tela (usuário mudou de aba), cancela a operação!
+    if (!tbody) return; 
+
     if (!dados || dados.length === 0) { 
         tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center"><i class="ph-fill ph-receipt text-4xl text-slate-300 mb-3"></i><p class="text-sm font-bold text-slate-500">Nenhuma O.S registrada.</p></td></tr>`; 
         return; 
@@ -1225,27 +1229,49 @@ window.gerarLinhasParcelasTab = function() {
 // ===================================================================================
 // 7. BANCO DE DADOS (SUPABASE) E INTEGRAÇÃO FINAL
 // ===================================================================================
-window.initOrcamentos = async function() {
-    await window.carregarListasBD();
-    await window.buscarOrcamentosSupabase();
-    document.getElementById('view-novo-orcamento').classList.add('hidden');
-    document.getElementById('view-lista-orcamentos').classList.remove('hidden');
+window.initOrcamentos = function() {
+    // 🔥 Removemos os "awaits". As chamadas rodam livres em background sem travar a tela.
+    window.carregarListasBD();
+    window.buscarOrcamentosSupabase();
+    
+    const viewNovo = document.getElementById('view-novo-orcamento');
+    const viewLista = document.getElementById('view-lista-orcamentos');
+    if(viewNovo) viewNovo.classList.add('hidden');
+    if(viewLista) viewLista.classList.remove('hidden');
 };
 
 window.carregarListasBD = async function() {
-    const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
-    const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
-    window.globalClientes = cli || [];
-    window.globalVeiculos = vei || [];
-
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
     
-    if (selCli) selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
-    if (selVei) selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
+    // Função auxiliar para injetar as opções nos Selects protegendo contra nulos
+    const popularDropdowns = (clientes, veiculos) => {
+        if (!selCli || !selVei) return;
+        const cliAtual = selCli.value; 
+        const veiAtual = selVei.value;
 
-    window.globalClientes.forEach(c => { if (selCli) selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
-    window.globalVeiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; if (selVei) selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
+        selCli.innerHTML = '<option value="">Selecione um Cliente...</option>';
+        selVei.innerHTML = '<option value="">Selecione um Veículo...</option>';
+
+        clientes.forEach(c => { selCli.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
+        veiculos.forEach(v => { const tc = v.cor ? ` - ${v.cor}` : ''; selVei.innerHTML += `<option value="${v.placa}">${v.placa} - ${v.modelo}${tc}</option>`; });
+
+        if(cliAtual) selCli.value = cliAtual;
+        if(veiAtual) selVei.value = veiAtual;
+    };
+
+    // 1. CARREGAMENTO IMEDIATO: Usa o que já tem no cache
+    popularDropdowns(window.globalClientes, window.globalVeiculos);
+
+    // 2. BUSCA NO BACKGROUND: Busca clientes e veículos novos
+    const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
+    const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
+    
+    // 3. ATUALIZAÇÃO SILENCIOSA
+    window.globalClientes = cli || window.globalClientes || [];
+    window.globalVeiculos = vei || window.globalVeiculos || [];
+    
+    popularDropdowns(window.globalClientes, window.globalVeiculos);
 };
 
 window.vincularClienteViceVersa = function(gatilho) {
@@ -1261,14 +1287,27 @@ window.vincularClienteViceVersa = function(gatilho) {
 };
 
 window.buscarOrcamentosSupabase = async function() {
+    // 1. CARREGAMENTO IMEDIATO: Se tiver cache, mostra na hora!
+    if (window.globalOrcamentosList && window.globalOrcamentosList.length > 0) {
+        window.renderizarTabelaReal(window.globalOrcamentosList);
+    } else {
+        // Se for a primeira vez, mostra um loading limpo na tabela
+        const tbody = document.getElementById('tabela-orcamentos-real');
+        if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center"><i class="ph-bold ph-spinner animate-spin text-3xl text-blue-500 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sincronizando O.S...</p></td></tr>`;
+    }
+
     try {
+        // 2. BUSCA NO BACKGROUND: Vai no Supabase ver se tem novidades
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
+        
+        // 3. ATUALIZAÇÃO SILENCIOSA: Atualiza os dados e redesenha sem piscar
         window.globalOrcamentosList = orcamentos || []; 
         window.renderizarTabelaReal(window.globalOrcamentosList);
     } catch (erro) {
         console.error("Erro no Supabase:", erro);
-        document.getElementById('tabela-orcamentos-real').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50">Falha de conexão com o servidor.</td></tr>`;
+        const tbody = document.getElementById('tabela-orcamentos-real');
+        if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-bold bg-red-50"><i class="ph-bold ph-warning-circle text-2xl mb-1"></i><br>Falha de conexão.</td></tr>`;
     }
 };
 
