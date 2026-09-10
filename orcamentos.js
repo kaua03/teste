@@ -193,42 +193,101 @@ window.atualizarInterfaceItensETotais = function() {
 // 3. FOTOS, VÍDEOS E UPLOAD (SUPABASE STORAGE)
 // ========================================================
 
+// ========================================================
+// 3. FOTOS, VÍDEOS E UPLOAD (SUPABASE STORAGE + COMPRESSOR BLOB)
+// ========================================================
+
+window.comprimirImagem = function(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                // Mantém qualidade HD para ver as peças, mas evita 4K desnecessário
+                const MAX_WIDTH = 1280; 
+                const MAX_HEIGHT = 1280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Converte o canvas para Blob (Ficheiro físico) em vez de Base64
+                // 0.8 garante 80% de qualidade (Excelente para a web)
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.8); 
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
 window.processarImagens = async function(event) {
     const files = event.target.files;
-    if(files.length === 0) return;
+    if(!files || files.length === 0) return;
     
-    window.dispararAlerta("Enviando mídia para a nuvem. Aguarde...", "sucesso");
+    window.dispararAlerta("Processando e enviando para a nuvem...", "sucesso");
     
     for (let file of files) {
         if (file.size > 50 * 1024 * 1024) { 
-            window.dispararAlerta(`O arquivo ${file.name} passou de 50MB.`, "erro");
+            window.dispararAlerta(`O arquivo passou do limite de 50MB.`, "erro");
             continue;
         }
 
-        const extensao = file.name.split('.').pop();
-        const nomeUnico = `os_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${extensao}`;
-
         try {
+            let arquivoParaEnviar = file;
+            let extensao = file.name ? file.name.split('.').pop().toLowerCase() : 'jpg';
+            let contentType = file.type;
+
+            // 🔥 A MÁGICA: Se for imagem, aciona o compressor antes de enviar à nuvem
+            if (file.type.startsWith('image/')) {
+                arquivoParaEnviar = await window.comprimirImagem(file);
+                extensao = 'jpg';
+                contentType = 'image/jpeg';
+            }
+
+            const nomeUnico = `os_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${extensao}`;
+
+            // 1. Faz o Upload do ficheiro (ou do Blob comprimido)
             const { data, error } = await window.banco.storage
                 .from('anexos_os')
-                .upload(nomeUnico, file);
+                .upload(nomeUnico, arquivoParaEnviar, {
+                    contentType: contentType
+                });
 
             if (error) throw error;
 
+            // 2. Pega o Link Público
             const { data: publicUrlData } = window.banco.storage
                 .from('anexos_os')
                 .getPublicUrl(nomeUnico);
 
             window.imagensUploadArray.push(publicUrlData.publicUrl);
             
-            // 🔥 MARCA COMO ALTERADO APÓS UPLOAD
+            // Marca a O.S como alterada
             if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         } catch (e) {
             console.error("Erro no Upload:", e);
-            window.dispararAlerta(`Falha ao enviar ${file.name}`, "erro");
+            window.dispararAlerta(`Falha ao enviar um dos arquivos.`, "erro");
         }
     }
+    
+    // Avisa que terminou com sucesso e tira o "Enviando..."
+    window.dispararAlerta("Upload concluído com sucesso!", "sucesso");
+
+    // 🔥 Limpa a memória do input para permitir enviar a mesma foto se for preciso
+    event.target.value = '';
     
     document.getElementById('preview-anexos').classList.remove('hidden');
     window.renderizarPreviewFotos();
