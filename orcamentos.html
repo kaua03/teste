@@ -119,7 +119,37 @@
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
                             
-                            <div id="box-upload-fotos">
+                            <!-- PAINEL DE FOTOS E CÂMERA INTELIGENTE -->
+<div id="box-upload-fotos">
+    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Evidências (Fotos e Vídeos)</label>
+    
+    <!-- VISÃO MOBILE: 2 Botões (Câmera e Galeria Local) -->
+    <div class="grid grid-cols-2 gap-3 md:hidden">
+        <!-- Botão 1: Lente da Câmera Direta (Apenas Fotos para o Android abrir a câmera instantaneamente) -->
+        <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+            <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
+            <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Usar<br>Câmera</p>
+            <input type="file" class="hidden" accept="image/*" capture="environment" onchange="window.processarImagens(event)" />
+        </label>
+        
+        <!-- Botão 2: Galeria Local (Hack das extensões para blindar contra o Google Fotos) -->
+        <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+            <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
+            <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Galeria<br>Local</p>
+            <input type="file" class="hidden" multiple accept="image/jpeg,image/png,image/jpg,video/mp4,video/quicktime" onchange="window.processarImagens(event)" />
+        </label>
+    </div>
+
+    <!-- VISÃO DESKTOP: 1 Botão Grande (Explorador de Arquivos do Windows/Mac) -->
+    <div class="hidden md:block">
+        <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition group">
+            <i class="ph-bold ph-upload-simple text-3xl text-slate-400 mb-2 group-hover:-translate-y-1 transition-transform"></i>
+            <p class="text-sm font-bold text-slate-600">Clique para anexar Arquivos</p>
+            <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-wider">Fotos e Vídeos do Computador</p>
+            <input type="file" class="hidden" multiple accept="image/*,video/*" onchange="window.processarImagens(event)" />
+        </label>
+    </div>
+</div>
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
                                 <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
                                     <label class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
