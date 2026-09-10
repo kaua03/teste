@@ -125,7 +125,8 @@
                                     <label class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                         <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
                                         <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Usar<br>Câmera</p>
-                                        <input type="file" id="input-anexos-camera" class="hidden" accept="image/*,video/*" capture="environment" onchange="window.processarImagens(event)" />
+                                        <!-- 🔥 MÁGICA: Removido o video/* para forçar o SO a abrir a câmera direto -->
+                                        <input type="file" id="input-anexos-camera" class="hidden" accept="image/*" capture="environment" onchange="window.processarImagens(event)" />
                                     </label>
                                     <label class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
                                         <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
