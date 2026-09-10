@@ -561,23 +561,26 @@ window.confirmarExclusaoAnexo = async function() {
         try {
             // 1. Apaga fisicamente da pasta do Supabase Storage
             if (urlMidia.includes('supabase.co')) {
-                // A extração perfeita: pega exatamente o que está depois da pasta 'anexos_os/'
-                const nomeArquivo = decodeURIComponent(urlMidia.split('/anexos_os/')[1].split('?')[0]);
+                const nomeArquivo = decodeURIComponent(urlMidia.split('/').pop().split('?')[0]);
+                console.log("Exterminando arquivo no Storage:", nomeArquivo);
+                
                 const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
-                if (error) console.error("Aviso Storage:", error); // Loga no F12 mas não trava o sistema
+                if (error) console.warn("Aviso Storage:", error); // Loga, mas não trava se já tiver apagado antes
             }
 
-            // 2. Remove do array visual na tela
+            // 2. Remove do array visual da sua tela
             window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
             
-            // 3. 🔥 A MÁGICA: Atualiza a tabela "orcamentos" no banco de dados na MESMA HORA
+            // 3. 🔥 O ELO PERDIDO: Atualiza a tabela "orcamentos" no banco de dados na MESMA HORA!
             if (window.osEmEdicaoId) {
                 const { error: dbError } = await window.banco.from('orcamentos')
                     .update({ anexos: window.imagensUploadArray })
                     .eq('id', window.osEmEdicaoId);
+                
                 if (dbError) throw dbError;
             }
 
+            // 4. Redesenha a tela limpa
             window.renderizarPreviewFotos();
             window.dispararAlerta("Evidência apagada com sucesso.", "sucesso");
 
