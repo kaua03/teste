@@ -559,22 +559,31 @@ window.confirmarExclusaoAnexo = async function() {
         btnExcluir.disabled = true;
 
         try {
+            // 1. Apaga fisicamente da pasta do Supabase Storage
             if (urlMidia.includes('supabase.co')) {
-                const nomeArquivo = decodeURIComponent(urlMidia.split('/').pop().split('?')[0]);
-                console.log("Tentando apagar arquivo no Supabase:", nomeArquivo);
-                
+                // A extração perfeita: pega exatamente o que está depois da pasta 'anexos_os/'
+                const nomeArquivo = decodeURIComponent(urlMidia.split('/anexos_os/')[1].split('?')[0]);
                 const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
-                if (error) throw error;
+                if (error) console.error("Aviso Storage:", error); // Loga no F12 mas não trava o sistema
             }
 
+            // 2. Remove do array visual na tela
             window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
+            
+            // 3. 🔥 A MÁGICA: Atualiza a tabela "orcamentos" no banco de dados na MESMA HORA
+            if (window.osEmEdicaoId) {
+                const { error: dbError } = await window.banco.from('orcamentos')
+                    .update({ anexos: window.imagensUploadArray })
+                    .eq('id', window.osEmEdicaoId);
+                if (dbError) throw dbError;
+            }
+
             window.renderizarPreviewFotos();
             window.dispararAlerta("Evidência apagada com sucesso.", "sucesso");
-            if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         } catch (e) {
             console.error("Erro ao excluir anexo:", e);
-            window.dispararAlerta("Falha ao excluir. Verifique as Políticas (RLS) no Supabase.", "erro");
+            window.dispararAlerta("Falha ao atualizar o banco de dados.", "erro");
         } finally {
             btnExcluir.innerHTML = textoOriginal;
             btnExcluir.disabled = false;
@@ -1787,6 +1796,7 @@ window.gerarPDFSupabase = async function(id) {
     const orc = window.globalOrcamentosList.find(o => o.id == id);
     if (!orc) return;
     
+    // Injeção de Dados no HTML do PDF
     document.getElementById('pdf-id').innerText = orc.numero_os;
     const dataAbertura = new Date(orc.data_criacao);
     const pdfDataAberturaEl = document.getElementById('pdf-data-abertura');
@@ -1905,7 +1915,7 @@ window.gerarPDFSupabase = async function(id) {
     const el = document.getElementById('pdf-template-real');
     el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '9999';
 
-    // 🔥 PADRONIZAÇÃO DO NOME DO ARQUIVO (PDF)
+    // 🔥 PADRONIZAÇÃO DO NOME DO ARQUIVO (A Mágica)
     const d = new Date();
     const dia = String(d.getDate()).padStart(2, '0');
     const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -1914,16 +1924,20 @@ window.gerarPDFSupabase = async function(id) {
     const min = String(d.getMinutes()).padStart(2, '0');
     const dataHoraStr = `${dia}${mes}${ano}_${hora}${min}`;
     
+    // Limpa os nomes para não quebrarem o salvamento do Windows/Android
     const clienteSafe = (orc.cliente_nome || 'Cliente').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
     const placaSafe = (orc.veiculo_placa || 'Sem_Placa').replace(/[^a-zA-Z0-9]/g, '');
     
     const nomeArquivoPDF = `OS_${orc.numero_os}_${clienteSafe}_${placaSafe}_${dataHoraStr}.pdf`;
 
+    // O .save() força o download direto com o nome correto!
     html2pdf().set({ 
-        margin: 0.3, filename: nomeArquivoPDF, image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
-    }).from(el).outputPdf('bloburl').then((pdfUrl) => {
-        window.open(pdfUrl, '_blank');
+        margin: 0.3, 
+        filename: nomeArquivoPDF, 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, useCORS: true }, 
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+    }).from(el).save().then(() => {
         el.style.left = '-9999px'; el.style.top = '-9999px';
     });
 };
