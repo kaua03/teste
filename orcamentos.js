@@ -190,10 +190,6 @@ window.atualizarInterfaceItensETotais = function() {
 };
 
 // ========================================================
-// 3. FOTOS, VÍDEOS E UPLOAD (SUPABASE STORAGE)
-// ========================================================
-
-// ========================================================
 // 3. FOTOS, VÍDEOS E UPLOAD (SUPABASE STORAGE + COMPRESSOR BLOB)
 // ========================================================
 
