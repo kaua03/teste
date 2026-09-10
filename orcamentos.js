@@ -1,5 +1,5 @@
 // ========================================================
-// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL 3.0)
+// AutoManager - Módulo de Orçamentos e O.S. (INQUEBRÁVEL 4.0)
 // ========================================================
 
 window.itensTemporarios = [];
@@ -105,7 +105,6 @@ window.filtrarTabelaOS = function() {
 window.renderizarTabelaReal = function(dados) {
     const tbody = document.getElementById('tabela-orcamentos-real');
     
-    // 🔥 O ESCUDO: Se a tabela não estiver mais na tela (usuário mudou de aba), cancela a operação!
     if (!tbody) return; 
 
     if (!dados || dados.length === 0) { 
@@ -216,14 +215,12 @@ window.comprimirImagem = function(file) {
                 ctx.drawImage(img, 0, 0, width, height);
                 
                 canvas.toBlob((blob) => {
-                    resolve(blob || file); // Se falhar, devolve o original
+                    resolve(blob || file); 
                 }, 'image/jpeg', 0.8); 
             };
-            // 🔥 ESCUDO ANTI-TRAVAMENTO: Se a imagem for num formato ilegível (ex: HEIC), ignora a compressão
             img.onerror = () => resolve(file); 
             img.src = event.target.result;
         };
-        // 🔥 ESCUDO ANTI-TRAVAMENTO 2
         reader.onerror = () => resolve(file);
         reader.readAsDataURL(file);
     });
@@ -276,11 +273,9 @@ window.processarImagens = async function(event) {
         }
     }
     
-    // Alerta de sucesso!
     window.dispararAlerta("Upload concluído com sucesso!", "sucesso");
     event.target.value = '';
     
-    // 🔥 ESCUDO ANTI-CRASH: Só tenta revelar a moldura se ela existir no HTML
     const previewContainer = document.getElementById('preview-anexos');
     if(previewContainer) {
         previewContainer.classList.remove('hidden');
@@ -322,7 +317,7 @@ window.renderizarPreviewFotos = function() {
 };
 
 // ========================================================
-// 4. MODAIS E BLOQUEIO DE TELA
+// 4. MODAIS, BLOQUEIO DE TELA E ZOOM (MOTOR)
 // ========================================================
 
 window.zoomScale = 1;
@@ -334,15 +329,12 @@ window.abrirVisualizadorMidia = function(index) {
     const modal = document.getElementById('modal-visualizador-midia');
     const container = document.getElementById('container-visualizador');
     
-    // Reseta a lupa virtual
     window.zoomScale = 1;
     window.posX = 0;
     window.posY = 0;
 
-    // touch-none é crucial para o celular não tentar rolar a página por trás
     container.className = "w-full h-full flex items-center justify-center relative overflow-hidden touch-none";
 
-    // 🔥 O Escudo Anti-Sabotagem: CSS e touch-action bloqueados
     const cssBlindagem = "user-select: none; -webkit-user-drag: none; -webkit-touch-callout: none; touch-action: none;";
 
     let midiaHTML = '';
@@ -358,7 +350,6 @@ window.abrirVisualizadorMidia = function(index) {
         </div>
     `;
 
-    // 🔥 Draggable="false" é a bala de prata contra o ghost-drag no Computador
     if(isVideo) {
         midiaHTML = `${controlesZoom}<video id="elemento-midia-zoom" src="${midiaStr}" controls autoplay draggable="false" class="max-w-full max-h-[90dvh] rounded-xl shadow-2xl outline-none object-contain m-auto transition-transform duration-100 ease-out" style="${cssBlindagem}"></video>`;
     } else {
@@ -378,7 +369,6 @@ window.abrirVisualizadorMidia = function(index) {
             window.posX = 0;
             window.posY = 0;
         }
-        // Aplica pela Placa de Vídeo (GPU)
         if(el) el.style.transform = `translate3d(${window.posX}px, ${window.posY}px, 0) scale(${window.zoomScale})`;
         const ind = document.getElementById('indicador-zoom');
         if(ind) ind.innerText = `${Math.round(window.zoomScale * 100)}%`;
@@ -420,15 +410,12 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    // ==========================================
-    // CÉREBRO 1: COMPUTADOR (RATO)
-    // ==========================================
     let isDragging = false;
     let startX = 0, startY = 0;
 
     const onMouseDown = (e) => {
         if(e.target.closest('.fixed') || e.target.tagName === 'VIDEO') return;
-        e.preventDefault(); // Impede seleção de texto e afins
+        e.preventDefault(); 
         isDragging = true;
         startX = e.clientX - window.posX;
         startY = e.clientY - window.posY;
@@ -460,19 +447,14 @@ window.abrirVisualizadorMidia = function(index) {
         window.alterarZoom(zoomAmount, e.clientX, e.clientY);
     };
 
-    // ==========================================
-    // CÉREBRO 2: SMARTPHONES (TOUCH)
-    // ==========================================
     let startDist = null;
 
     const onTouchStart = (e) => {
         if(e.target.closest('.fixed')) return;
         
         if(e.touches.length === 2) {
-            // Pinça (Dois dedos)
             startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         } else if (e.touches.length === 1) {
-            // Pan (Um dedo)
             isDragging = true;
             startX = e.touches[0].clientX - window.posX;
             startY = e.touches[0].clientY - window.posY;
@@ -482,8 +464,6 @@ window.abrirVisualizadorMidia = function(index) {
 
     const onTouchMove = (e) => {
         if(e.target.closest('.fixed')) return;
-        
-        // 🔥 A MÁGICA: Impede completamente o ecrã do telemóvel de mexer enquanto mexe na foto
         e.preventDefault(); 
 
         if(e.touches.length === 2) {
@@ -509,14 +489,12 @@ window.abrirVisualizadorMidia = function(index) {
             isDragging = false;
             if(el) el.style.transition = 'transform 0.1s ease-out';
         }
-        // Inteligência: Se tinha 2 dedos e levantou 1, recalcula o eixo para a foto não "saltar"
         if(e.touches.length === 1) {
             startX = e.touches[0].clientX - window.posX;
             startY = e.touches[0].clientY - window.posY;
         }
     };
 
-    // Amarra tudo com segurança
     container.addEventListener('touchstart', onTouchStart, {passive: false});
     container.addEventListener('touchmove', onTouchMove, {passive: false});
     container.addEventListener('touchend', onTouchEnd);
@@ -547,7 +525,7 @@ window.fecharVisualizadorMidia = function() {
 };
 
 // ==========================================
-// CONTROLE E EXCLUSÃO DE ANEXOS (O Exterminador Logístico)
+// CONTROLE E EXCLUSÃO DE ANEXOS E O.S (O Exterminador Logístico)
 // ==========================================
 
 window.abrirModalExcluirAnexo = function(index) {
@@ -555,7 +533,7 @@ window.abrirModalExcluirAnexo = function(index) {
     const modal = document.getElementById('modal-excluir-anexo');
     
     if (modal) {
-        document.body.appendChild(modal); // Teletransporte anti-bug para o body
+        document.body.appendChild(modal); 
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; 
     }
@@ -575,36 +553,29 @@ window.confirmarExclusaoAnexo = async function() {
     if (window.indexAnexoParaExcluir !== null) {
         const urlMidia = window.imagensUploadArray[window.indexAnexoParaExcluir];
         
-        // 1. Feedback Visual: Altera o botão para "Carregando"
         const btnExcluir = document.querySelector('#modal-excluir-anexo button:last-child');
         const textoOriginal = btnExcluir.innerHTML;
         btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
         btnExcluir.disabled = true;
 
         try {
-            // 2. Destruição na Nuvem (Apenas se for link do Supabase)
             if (urlMidia.includes('supabase.co')) {
-                // Extrai o nome do arquivo da URL (ex: os_123456_abcde.jpg)
-                const nomeArquivo = urlMidia.split('/anexos_os/')[1].split('?')[0];
+                const nomeArquivo = decodeURIComponent(urlMidia.split('/').pop().split('?')[0]);
+                console.log("Tentando apagar arquivo no Supabase:", nomeArquivo);
                 
-                // Pede pro Supabase destruir o arquivo no Storage
                 const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
                 if (error) throw error;
             }
 
-            // 3. Destruição na Tela (Remove do array visual)
             window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
             window.renderizarPreviewFotos();
-            window.dispararAlerta("Evidência apagada da nuvem com sucesso.", "sucesso");
-            
-            // 4. Bandeira: Avisa que a O.S. sofreu uma alteração para impedir saída sem salvar
+            window.dispararAlerta("Evidência apagada com sucesso.", "sucesso");
             if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         } catch (e) {
             console.error("Erro ao excluir anexo:", e);
-            window.dispararAlerta("Falha ao excluir arquivo da nuvem.", "erro");
+            window.dispararAlerta("Falha ao excluir. Verifique as Políticas (RLS) no Supabase.", "erro");
         } finally {
-            // 5. Restaura o botão e fecha o modal
             btnExcluir.innerHTML = textoOriginal;
             btnExcluir.disabled = false;
             window.fecharModalExcluirAnexo();
@@ -655,38 +626,35 @@ window.fecharModalExclusao = function() {
 window.confirmarExclusao = async function() {
     if (!window.idParaExcluir) return;
     
-    // 1. Feedback Visual: Botão Carregando
     const btnExcluir = document.querySelector('#modal-confirmacao-exclusao button:last-child');
     const textoOriginal = btnExcluir.innerHTML;
     btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
     btnExcluir.disabled = true;
 
     try {
-        // 2. Localiza a O.S. no sistema para inspecionar se há fotos dentro dela
         const orc = window.globalOrcamentosList.find(o => o.id == window.idParaExcluir);
         
-        // 3. Extermina TODAS as fotos da O.S. no Storage do Supabase de uma vez
+        // Extermina todas as fotos desta O.S juntas
         if (orc && orc.anexos && orc.anexos.length > 0) {
             const arquivosParaApagar = orc.anexos
                 .filter(url => url.includes('supabase.co'))
-                .map(url => url.split('/anexos_os/')[1].split('?')[0]);
+                .map(url => decodeURIComponent(url.split('/').pop().split('?')[0]));
             
             if (arquivosParaApagar.length > 0) {
                 await window.banco.storage.from('anexos_os').remove(arquivosParaApagar);
             }
         }
 
-        // 4. Extermina a O.S da base de dados
+        // Extermina a O.S do banco
         const { error } = await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
         if (error) throw error;
         
         window.dispararAlerta("O.S. e arquivos excluídos permanentemente.", "sucesso");
-        window.buscarOrcamentosSupabase(); // Atualiza a tabela na tela
+        window.buscarOrcamentosSupabase(); 
     } catch (e) {
         console.error("Erro ao excluir OS:", e);
         window.dispararAlerta("Erro ao excluir a O.S.", "erro");
     } finally {
-        // 5. Restaura o botão e fecha o modal
         btnExcluir.innerHTML = textoOriginal;
         btnExcluir.disabled = false;
         window.fecharModalExclusao();
@@ -1052,7 +1020,6 @@ window.adicionarOuEditarItem = function() {
     
     window.calcularTotais();
     
-    // 🔥 MARCA COMO ALTERADO APÓS ADICIONAR/EDITAR ITEM
     if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 };
 
@@ -1060,7 +1027,6 @@ window.removerItemDB = function(id) {
     window.itensTemporarios = window.itensTemporarios.filter(i => i.id_temp !== id); 
     window.calcularTotais(); 
     
-    // 🔥 MARCA COMO ALTERADO APÓS REMOVER ITEM
     if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 };
 
@@ -1393,7 +1359,6 @@ window.gerarLinhasParcelasTab = function() {
 // 7. BANCO DE DADOS (SUPABASE) E INTEGRAÇÃO FINAL
 // ===================================================================================
 window.initOrcamentos = function() {
-    // 🔥 Removemos os "awaits". As chamadas rodam livres em background sem travar a tela.
     window.carregarListasBD();
     window.buscarOrcamentosSupabase();
     
@@ -1407,7 +1372,6 @@ window.carregarListasBD = async function() {
     const selCli = document.getElementById('db-cliente-nome');
     const selVei = document.getElementById('db-veiculo-placa');
     
-    // Função auxiliar para injetar as opções nos Selects protegendo contra nulos
     const popularDropdowns = (clientes, veiculos) => {
         if (!selCli || !selVei) return;
         const cliAtual = selCli.value; 
@@ -1423,14 +1387,11 @@ window.carregarListasBD = async function() {
         if(veiAtual) selVei.value = veiAtual;
     };
 
-    // 1. CARREGAMENTO IMEDIATO: Usa o que já tem no cache
     popularDropdowns(window.globalClientes, window.globalVeiculos);
 
-    // 2. BUSCA NO BACKGROUND: Busca clientes e veículos novos
     const { data: cli } = await window.banco.from('clientes').select('*').order('nome');
     const { data: vei } = await window.banco.from('veiculos').select('*').order('placa');
     
-    // 3. ATUALIZAÇÃO SILENCIOSA
     window.globalClientes = cli || window.globalClientes || [];
     window.globalVeiculos = vei || window.globalVeiculos || [];
     
@@ -1450,21 +1411,17 @@ window.vincularClienteViceVersa = function(gatilho) {
 };
 
 window.buscarOrcamentosSupabase = async function() {
-    // 1. CARREGAMENTO IMEDIATO: Se tiver cache, mostra na hora!
     if (window.globalOrcamentosList && window.globalOrcamentosList.length > 0) {
         window.renderizarTabelaReal(window.globalOrcamentosList);
     } else {
-        // Se for a primeira vez, mostra um loading limpo na tabela
         const tbody = document.getElementById('tabela-orcamentos-real');
         if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center"><i class="ph-bold ph-spinner animate-spin text-3xl text-blue-500 mb-2"></i><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sincronizando O.S...</p></td></tr>`;
     }
 
     try {
-        // 2. BUSCA NO BACKGROUND: Vai no Supabase ver se tem novidades
         const { data: orcamentos, error } = await window.banco.from('orcamentos').select('*').order('id', { ascending: false });
         if (error) throw error;
         
-        // 3. ATUALIZAÇÃO SILENCIOSA: Atualiza os dados e redesenha sem piscar
         window.globalOrcamentosList = orcamentos || []; 
         window.renderizarTabelaReal(window.globalOrcamentosList);
     } catch (erro) {
@@ -1533,23 +1490,6 @@ window.abrirVisualizacaoOS = function(id) {
 
 window.abrirFaturamentoDireto = function(id) {
     window.abrirEdicaoOS(id, 'fin', false);
-};
-
-window.processarDestravarOS = async function() {
-    const senhaDigitada = document.getElementById('input-senha-reabrir').value;
-    const usuarioLogadoStr = localStorage.getItem('usuarioLogado');
-    if(!usuarioLogadoStr) { window.dispararAlerta("Sessão inválida. Faça login novamente."); return; }
-    const usuarioLogado = JSON.parse(usuarioLogadoStr);
-
-    if(senhaDigitada !== usuarioLogado.senha) { window.dispararAlerta("Senha incorreta. Acesso negado."); return; }
-    
-    try {
-        window.fecharModalDestravar();
-        window.isOSDestravada = true;
-        await window.abrirEdicaoOS(window.osParaDestravarId, 'dados', false);
-        window.dispararAlerta("O.S destravada temporariamente para edição. O status no banco só mudará se você salvar.", "sucesso");
-        window.osTemAlteracoesNaoSalvas = false;
-    } catch(e) { window.dispararAlerta("Erro ao destravar a O.S no banco."); }
 };
 
 window.salvarOrcamentoReal = async function() {
@@ -1716,7 +1656,7 @@ window.processarLancarFinanceiroTab = async function() {
 window.excluirParcelaManual = function(id) {
     window.idParcelaParaExcluir = id;
     const modal = document.getElementById('modal-confirmacao-exclusao-parcela');
-    document.body.appendChild(modal); // Teleporte anti-bug
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
@@ -1730,7 +1670,6 @@ window.fecharModalExcluirParcela = function() {
 window.confirmarExclusaoParcelaBanco = async function() {
     if (!window.idParcelaParaExcluir) return;
     
-    // Altera o botão para estado de carregamento
     const btnExcluir = document.querySelector('#modal-confirmacao-exclusao-parcela button:last-child');
     const textoOriginal = btnExcluir.innerHTML;
     btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
@@ -1753,7 +1692,6 @@ window.confirmarExclusaoParcelaBanco = async function() {
              if(window.osParaDestravarDados) window.osParaDestravarDados.status = 'Finalizado';
         }
         
-        // Suja a bandeira da O.S para impedir saída sem salvar
         if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         window.dispararAlerta("Lançamento excluído com sucesso.", "sucesso");
@@ -1771,7 +1709,6 @@ window.adicionarNovaParcelaManual = async function() {
     const cliente = document.getElementById('db-cliente-nome').value;
     if(!cliente) { window.dispararAlerta("Defina um cliente na aba 'Detalhes da O.S.' primeiro."); return; }
     
-    // 1. Calcula o saldo restante para sugerir o valor
     let somaAtual = 0;
     window.currentOSFinanceiro.forEach((r, idx) => {
         const inputVal = document.getElementById(`edit-rec-val-${idx}`);
@@ -1782,48 +1719,40 @@ window.adicionarNovaParcelaManual = async function() {
     let valorSugerido = window.valoresFinais.total - somaAtual;
     if(valorSugerido < 0) valorSugerido = 0;
 
-    // 2. HERANÇA INTELIGENTE: Inspeciona a última parcela existente
     let dataSugerida = new Date();
     let formaPagtoSugerida = 'Cartão de Crédito';
     let sufixoNome = '';
 
     if (window.currentOSFinanceiro && window.currentOSFinanceiro.length > 0) {
-        // Pega a última parcela do array
         const ultimaParcela = window.currentOSFinanceiro[window.currentOSFinanceiro.length - 1];
-        
-        // Puxa a forma de pagamento do último item
         formaPagtoSugerida = ultimaParcela.forma_pagamento || 'Cartão de Crédito';
         
-        // Pega a data de vencimento do último item, garante o fuso horário (T12:00) e soma 1 mês
         if (ultimaParcela.data_vencimento) {
             let dataUltima = new Date(ultimaParcela.data_vencimento + 'T12:00:00Z');
             dataUltima.setMonth(dataUltima.getMonth() + 1);
             dataSugerida = dataUltima;
         }
-
-        sufixoNome = ` Extra`; // Só pra diferenciar se já existirem outras
+        sufixoNome = ` Extra`; 
     }
 
     const novaParcela = {
         descricao: `Parcela${sufixoNome} O.S #${window.osEmEdicaoNumero} - ${cliente}`,
         categoria: 'Serviços O.S',
         valor: parseFloat(valorSugerido.toFixed(2)),
-        data_vencimento: window.formatarDataISO(dataSugerida), // Usa a data herdada
+        data_vencimento: window.formatarDataISO(dataSugerida), 
         status: 'Pendente',
-        forma_pagamento: formaPagtoSugerida // Usa o método de pagamento herdado
+        forma_pagamento: formaPagtoSugerida 
     };
 
     try {
         const { error } = await window.banco.from('contas_receber').insert([novaParcela]);
         if (error) throw error;
         
-        // Suja a bandeira da O.S para impedir saída sem salvar
         if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         window.dispararAlerta("Lançamento extra inserido na lista.", "sucesso");
         await window.recarregarFinanceiroDaOS();
         
-        // Rola a tela suavemente para o final para mostrar a nova parcela
         setTimeout(() => {
             const painel = document.getElementById('lista-financeiro-vinculado');
             if(painel) painel.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -1976,8 +1905,22 @@ window.gerarPDFSupabase = async function(id) {
     const el = document.getElementById('pdf-template-real');
     el.style.left = '0'; el.style.top = '0'; el.style.zIndex = '9999';
 
+    // 🔥 PADRONIZAÇÃO DO NOME DO ARQUIVO (PDF)
+    const d = new Date();
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const ano = d.getFullYear();
+    const hora = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const dataHoraStr = `${dia}${mes}${ano}_${hora}${min}`;
+    
+    const clienteSafe = (orc.cliente_nome || 'Cliente').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    const placaSafe = (orc.veiculo_placa || 'Sem_Placa').replace(/[^a-zA-Z0-9]/g, '');
+    
+    const nomeArquivoPDF = `OS_${orc.numero_os}_${clienteSafe}_${placaSafe}_${dataHoraStr}.pdf`;
+
     html2pdf().set({ 
-        margin: 0.3, filename: `OS_${orc.numero_os}.pdf`, image: { type: 'jpeg', quality: 0.98 }, 
+        margin: 0.3, filename: nomeArquivoPDF, image: { type: 'jpeg', quality: 0.98 }, 
         html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
     }).from(el).outputPdf('bloburl').then((pdfUrl) => {
         window.open(pdfUrl, '_blank');
@@ -1987,7 +1930,7 @@ window.gerarPDFSupabase = async function(id) {
 
 window.abrirModalConfirmarSaida = function() {
     const modal = document.getElementById('modal-confirmacao-saida');
-    document.body.appendChild(modal); // Teletransporte anti-bug
+    document.body.appendChild(modal); 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
 };
@@ -1999,12 +1942,9 @@ window.fecharModalConfirmarSaida = function() {
 
 window.confirmarSaida = function() {
     window.fecharModalConfirmarSaida();
-    // Chama a função de voltar, mas desta vez manda ignorar o aviso!
     window.alternarSubTelaOrcamento('lista', true); 
 };
 
-// Escuta tudo o que for digitado ou clicado na tela de edição para "sujar" a bandeira
-// Removido o DOMContentLoaded para garantir a leitura correta dos eventos logo que o script carregar
 const telaEdicao = document.getElementById('view-novo-orcamento');
 if(telaEdicao) {
     telaEdicao.addEventListener('input', () => { if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true; });
