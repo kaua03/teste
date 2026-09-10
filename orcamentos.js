@@ -200,7 +200,6 @@ window.comprimirImagem = function(file) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Mantém qualidade HD para ver as peças, mas evita 4K desnecessário
                 const MAX_WIDTH = 1280; 
                 const MAX_HEIGHT = 1280;
                 let width = img.width;
@@ -216,14 +215,16 @@ window.comprimirImagem = function(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Converte o canvas para Blob (Ficheiro físico) em vez de Base64
-                // 0.8 garante 80% de qualidade (Excelente para a web)
                 canvas.toBlob((blob) => {
-                    resolve(blob);
+                    resolve(blob || file); // Se falhar, devolve o original
                 }, 'image/jpeg', 0.8); 
             };
+            // 🔥 ESCUDO ANTI-TRAVAMENTO: Se a imagem for num formato ilegível (ex: HEIC), ignora a compressão
+            img.onerror = () => resolve(file); 
             img.src = event.target.result;
         };
+        // 🔥 ESCUDO ANTI-TRAVAMENTO 2
+        reader.onerror = () => resolve(file);
         reader.readAsDataURL(file);
     });
 };
@@ -243,9 +244,8 @@ window.processarImagens = async function(event) {
         try {
             let arquivoParaEnviar = file;
             let extensao = file.name ? file.name.split('.').pop().toLowerCase() : 'jpg';
-            let contentType = file.type;
+            let contentType = file.type || 'application/octet-stream';
 
-            // 🔥 A MÁGICA: Se for imagem, aciona o compressor antes de enviar à nuvem
             if (file.type.startsWith('image/')) {
                 arquivoParaEnviar = await window.comprimirImagem(file);
                 extensao = 'jpg';
@@ -254,7 +254,6 @@ window.processarImagens = async function(event) {
 
             const nomeUnico = `os_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${extensao}`;
 
-            // 1. Faz o Upload do ficheiro (ou do Blob comprimido)
             const { data, error } = await window.banco.storage
                 .from('anexos_os')
                 .upload(nomeUnico, arquivoParaEnviar, {
@@ -263,29 +262,29 @@ window.processarImagens = async function(event) {
 
             if (error) throw error;
 
-            // 2. Pega o Link Público
             const { data: publicUrlData } = window.banco.storage
                 .from('anexos_os')
                 .getPublicUrl(nomeUnico);
 
             window.imagensUploadArray.push(publicUrlData.publicUrl);
             
-            // Marca a O.S como alterada
             if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
 
         } catch (e) {
             console.error("Erro no Upload:", e);
-            window.dispararAlerta(`Falha ao enviar um dos arquivos.`, "erro");
+            window.dispararAlerta(`Falha ao enviar um arquivo.`, "erro");
         }
     }
     
-    // Avisa que terminou com sucesso e tira o "Enviando..."
+    // Alerta de sucesso!
     window.dispararAlerta("Upload concluído com sucesso!", "sucesso");
-
-    // 🔥 Limpa a memória do input para permitir enviar a mesma foto se for preciso
     event.target.value = '';
     
-    document.getElementById('preview-anexos').classList.remove('hidden');
+    // 🔥 ESCUDO ANTI-CRASH: Só tenta revelar a moldura se ela existir no HTML
+    const previewContainer = document.getElementById('preview-anexos');
+    if(previewContainer) {
+        previewContainer.classList.remove('hidden');
+    }
     window.renderizarPreviewFotos();
 };
 
