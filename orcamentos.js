@@ -420,27 +420,6 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
-    window.abrirModalExcluirAnexo = function(index) {
-    window.indexAnexoParaExcluir = index;
-    const modal = document.getElementById('modal-excluir-anexo');
-    
-    if (modal) {
-        document.body.appendChild(modal); // Teletransporte anti-bug para o body
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; 
-    }
-};
-
-window.fecharModalExcluirAnexo = function() {
-    window.indexAnexoParaExcluir = null;
-    const modal = document.getElementById('modal-excluir-anexo');
-    
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    document.body.style.overflow = 'auto'; 
-};
-    
     // ==========================================
     // CÉREBRO 1: COMPUTADOR (RATO)
     // ==========================================
@@ -567,6 +546,74 @@ window.fecharVisualizadorMidia = function() {
     document.body.style.overflow = 'auto'; 
 };
 
+// ==========================================
+// CONTROLE E EXCLUSÃO DE ANEXOS (O Exterminador Logístico)
+// ==========================================
+
+window.abrirModalExcluirAnexo = function(index) {
+    window.indexAnexoParaExcluir = index;
+    const modal = document.getElementById('modal-excluir-anexo');
+    
+    if (modal) {
+        document.body.appendChild(modal); // Teletransporte anti-bug para o body
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; 
+    }
+};
+
+window.fecharModalExcluirAnexo = function() {
+    window.indexAnexoParaExcluir = null;
+    const modal = document.getElementById('modal-excluir-anexo');
+    
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    document.body.style.overflow = 'auto'; 
+};
+
+window.confirmarExclusaoAnexo = async function() {
+    if (window.indexAnexoParaExcluir !== null) {
+        const urlMidia = window.imagensUploadArray[window.indexAnexoParaExcluir];
+        
+        // 1. Feedback Visual: Altera o botão para "Carregando"
+        const btnExcluir = document.querySelector('#modal-excluir-anexo button:last-child');
+        const textoOriginal = btnExcluir.innerHTML;
+        btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
+        btnExcluir.disabled = true;
+
+        try {
+            // 2. Destruição na Nuvem (Apenas se for link do Supabase)
+            if (urlMidia.includes('supabase.co')) {
+                // Extrai o nome do arquivo da URL (ex: os_123456_abcde.jpg)
+                const nomeArquivo = urlMidia.split('/anexos_os/')[1].split('?')[0];
+                
+                // Pede pro Supabase destruir o arquivo no Storage
+                const { error } = await window.banco.storage.from('anexos_os').remove([nomeArquivo]);
+                if (error) throw error;
+            }
+
+            // 3. Destruição na Tela (Remove do array visual)
+            window.imagensUploadArray.splice(window.indexAnexoParaExcluir, 1);
+            window.renderizarPreviewFotos();
+            window.dispararAlerta("Evidência apagada da nuvem com sucesso.", "sucesso");
+            
+            // 4. Bandeira: Avisa que a O.S. sofreu uma alteração para impedir saída sem salvar
+            if(!window.isVisualizacaoModo) window.osTemAlteracoesNaoSalvas = true;
+
+        } catch (e) {
+            console.error("Erro ao excluir anexo:", e);
+            window.dispararAlerta("Falha ao excluir arquivo da nuvem.", "erro");
+        } finally {
+            // 5. Restaura o botão e fecha o modal
+            btnExcluir.innerHTML = textoOriginal;
+            btnExcluir.disabled = false;
+            window.fecharModalExcluirAnexo();
+        }
+    } else {
+        window.fecharModalExcluirAnexo();
+    }
+};
+
 window.abrirModalDestravar = function(id) {
     window.osParaDestravarId = id; 
     window.osParaDestravarDados = window.globalOrcamentosList.find(o => o.id == id);
@@ -603,6 +650,47 @@ window.fecharModalExclusao = function() {
     window.idParaExcluir = null; 
     document.getElementById('modal-confirmacao-exclusao').classList.add('hidden'); 
     document.body.style.overflow = 'auto'; 
+};
+
+window.confirmarExclusao = async function() {
+    if (!window.idParaExcluir) return;
+    
+    // 1. Feedback Visual: Botão Carregando
+    const btnExcluir = document.querySelector('#modal-confirmacao-exclusao button:last-child');
+    const textoOriginal = btnExcluir.innerHTML;
+    btnExcluir.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Excluindo...';
+    btnExcluir.disabled = true;
+
+    try {
+        // 2. Localiza a O.S. no sistema para inspecionar se há fotos dentro dela
+        const orc = window.globalOrcamentosList.find(o => o.id == window.idParaExcluir);
+        
+        // 3. Extermina TODAS as fotos da O.S. no Storage do Supabase de uma vez
+        if (orc && orc.anexos && orc.anexos.length > 0) {
+            const arquivosParaApagar = orc.anexos
+                .filter(url => url.includes('supabase.co'))
+                .map(url => url.split('/anexos_os/')[1].split('?')[0]);
+            
+            if (arquivosParaApagar.length > 0) {
+                await window.banco.storage.from('anexos_os').remove(arquivosParaApagar);
+            }
+        }
+
+        // 4. Extermina a O.S da base de dados
+        const { error } = await window.banco.from('orcamentos').delete().eq('id', window.idParaExcluir);
+        if (error) throw error;
+        
+        window.dispararAlerta("O.S. e arquivos excluídos permanentemente.", "sucesso");
+        window.buscarOrcamentosSupabase(); // Atualiza a tabela na tela
+    } catch (e) {
+        console.error("Erro ao excluir OS:", e);
+        window.dispararAlerta("Erro ao excluir a O.S.", "erro");
+    } finally {
+        // 5. Restaura o botão e fecha o modal
+        btnExcluir.innerHTML = textoOriginal;
+        btnExcluir.disabled = false;
+        window.fecharModalExclusao();
+    }
 };
 
 window.abrirModalCadastro = function(tipo) {
@@ -1625,9 +1713,6 @@ window.processarLancarFinanceiroTab = async function() {
     finally { btnSalvar.innerHTML = '<i class="ph-bold ph-check-circle text-xl"></i> Gerar Faturamento e Fechar O.S'; btnSalvar.disabled = false; }
 };
 
-// ==========================================
-// CONTROLE DO MODAL DE EXCLUSÃO DE PARCELA
-// ==========================================
 window.excluirParcelaManual = function(id) {
     window.idParcelaParaExcluir = id;
     const modal = document.getElementById('modal-confirmacao-exclusao-parcela');
@@ -1642,9 +1727,6 @@ window.fecharModalExcluirParcela = function() {
     document.body.style.overflow = 'auto'; 
 };
 
-// ==========================================
-// OPERAÇÕES DE BANCO (FINANCEIRO MANUAL)
-// ==========================================
 window.confirmarExclusaoParcelaBanco = async function() {
     if (!window.idParcelaParaExcluir) return;
     
