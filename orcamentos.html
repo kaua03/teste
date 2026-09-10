@@ -119,24 +119,32 @@
                                 <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
                             </div>
                             
-<div id="box-upload-fotos">
-    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
-    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
+<div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+    <h3 class="text-xs md:text-sm font-bold text-slate-700 uppercase tracking-wider mb-5 border-b border-slate-50 pb-3 flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs border border-blue-100">3</div> Detalhes e Anexos Digitais</h3>
+    <div class="space-y-5">
+        <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Observação Geral da O.S (Aparece no PDF)</label>
+            <textarea id="db-obs" rows="3" placeholder="Ex: Cliente relatou barulho ao frear..." class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 bg-slate-50 resize-none"></textarea>
+        </div>
         
-        <!-- BOTÃO 1: CÂMERA (Com sr-only e for="" para precisão total) -->
-        <label for="input-anexos-camera" class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
-            <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
-            <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Usar<br>Câmera</p>
-            <input type="file" id="input-anexos-camera" class="sr-only" accept="image/*" capture="environment" onchange="window.processarImagens(event)" />
-        </label>
+        <div id="box-upload-fotos">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Fotos e Vídeos (Salvas apenas no sistema)</label>
+            <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
+                <label for="input-anexos-camera" class="md:hidden flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                    <i class="ph-bold ph-camera text-2xl text-slate-400 mb-1"></i>
+                    <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Usar<br>Câmera</p>
+                    <input type="file" id="input-anexos-camera" class="sr-only" accept="image/*" capture="environment" onchange="window.processarImagens(event)" />
+                </label>
+                <label for="input-anexos-galeria" class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
+                    <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
+                    <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Galeria /<br>Arquivos</p>
+                    <input type="file" id="input-anexos-galeria" class="sr-only" multiple accept="image/jpeg,image/png,image/jpg,video/mp4,video/quicktime" onchange="window.processarImagens(event)" />
+                </label>
+            </div>
+        </div>
         
-        <!-- BOTÃO 2: GALERIA LOCAL -->
-        <label for="input-anexos-galeria" class="flex flex-col items-center justify-center w-full h-20 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition">
-            <i class="ph-bold ph-image text-2xl text-slate-400 mb-1"></i>
-            <p class="text-[10px] text-slate-500 font-bold text-center leading-tight px-1">Galeria /<br>Arquivos</p>
-            <input type="file" id="input-anexos-galeria" class="sr-only" multiple accept="image/jpeg,image/png,image/jpg,video/mp4,video/quicktime" onchange="window.processarImagens(event)" />
-        </label>
-
+        <!-- 🔥 A MOLDURA VOLTOU: Container onde as miniaturas aparecem -->
+        <div id="preview-anexos" class="flex overflow-x-auto gap-3 mt-4 pb-2 hidden scrollbar-hide"></div>
     </div>
 </div>
                 
