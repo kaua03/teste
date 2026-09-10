@@ -420,6 +420,27 @@ window.abrirVisualizadorMidia = function(index) {
         window.atualizarTransform();
     };
 
+    window.abrirModalExcluirAnexo = function(index) {
+    window.indexAnexoParaExcluir = index;
+    const modal = document.getElementById('modal-excluir-anexo');
+    
+    if (modal) {
+        document.body.appendChild(modal); // Teletransporte anti-bug para o body
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; 
+    }
+};
+
+window.fecharModalExcluirAnexo = function() {
+    window.indexAnexoParaExcluir = null;
+    const modal = document.getElementById('modal-excluir-anexo');
+    
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    document.body.style.overflow = 'auto'; 
+};
+    
     // ==========================================
     // CÉREBRO 1: COMPUTADOR (RATO)
     // ==========================================
